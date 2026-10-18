@@ -1,0 +1,24 @@
+MEUH - fabriquer l'APK dans le nuage (GitHub), tout depuis le cellulaire
+
+Contenu de ce dossier (tout se met "à plat" dans le dépôt GitHub) :
+  index.html            l'application
+  icon-only.png, icon-foreground.png, icon-background.png   l'icône (photo du chat)
+  package.json, capacitor.config.json                      nom MEUH et réglages
+  debug.keystore        clé de signature (garde le dépôt PRIVÉ)
+  build.yml.txt         le programme de construction, à coller dans GitHub (étape 5)
+
+ÉTAPES
+1. Crée un compte gratuit sur github.com (dans Chrome) et confirme ton courriel.
+2. Nouveau dépôt ("New repository") : nom  meuh , choisis PRIVATE, ne coche rien d'autre, "Create repository".
+3. Dézippe ce dossier (application Fichiers > touche le zip > Extraire).
+4. Sur la page du dépôt vide : lien "uploading an existing file". Touche "choose your files" et
+   sélectionne TOUS les fichiers extraits SAUF build.yml.txt. Puis "Commit changes".
+5. Bouton "Add file" > "Create new file". Dans le nom, tape exactement :  .github/workflows/build.yml
+   (les barres / créent les dossiers). Ouvre build.yml.txt, copie tout son contenu et colle-le dans la grande zone.
+   "Commit changes" : la construction démarre toute seule.
+6. Onglet "Actions" : attends 5 à 10 minutes. Coche verte = c'est prêt. Croix rouge = ouvre l'étape en erreur,
+   copie le texte de l'erreur et envoie-le moi.
+7. Page d'accueil du dépôt > à droite "Releases" > "MEUH - dernière version" > Assets > app-debug.apk.
+   Télécharge-le, touche-le, autorise "Installer des applications inconnues" pour ton navigateur.
+8. Mise à jour plus tard : dans le dépôt, remplace index.html (Add file > Upload files, même nom) puis "Commit".
+   Une nouvelle construction démarre. Installe le nouvel APK PAR-DESSUS l'ancien : tes réglages restent.

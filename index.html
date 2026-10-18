@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MEUH</title>
+<style>
+:root{--og:#e08a00;--pk:#d1478f;--on:#fff;--gr:#1b7a3a;--rd:#d32f2f;--ye:#c99700;--bl:#1565c0;--pu:#7b1fa2;--bg:#f6f5f0;--card:#fff;--tx:#1d1d1b;--mut:#6b6a63;--ac:#2f6f4e;--ln:#e2e0d6;--warn:#b4531c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--og:#ffa940;--pk:#f29bc7;--on:#161714;--gr:#5fd08a;--rd:#ff7b72;--ye:#ffd23f;--bl:#6ea8ff;--pu:#c48bf0;--bg:#161714;--card:#21221e;--tx:#ecebe4;--mut:#9a998f;--ac:#6fbf94;--ln:#34352f;--warn:#e8925a}}
+*{box-sizing:border-box}html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100%}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln);z-index:2}
+h1{font-size:18px;margin:0 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sub{font-size:12px;color:var(--mut)}
+input[type=search]{width:100%;padding:10px 12px;font-size:16px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx)}
+.row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:14px;padding:7px 12px;border-radius:999px;border:1px solid var(--ln);background:var(--card);color:var(--tx);cursor:pointer}
+button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.btn{display:inline-block}main{padding:10px 12px;max-width:720px;margin:0 auto}
+.cow{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;cursor:pointer}
+.cow b{font-size:17px}.mut{color:var(--mut);font-size:13px}.tag{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--ln);white-space:nowrap}
+.tag.w{background:var(--warn);color:#fff}.tag.g{background:var(--ac);color:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.kv{background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:8px 10px}.kv small{display:block;color:var(--mut);font-size:12px}.kv span{font-weight:600}
+.ev{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln)}.ev time{min-width:88px;color:var(--mut);font-size:13px}.ev em{font-style:normal;font-weight:600}
+.empty{text-align:center;color:var(--mut);padding:40px 10px}
+.back{margin-bottom:6px}.wheel{width:100%;max-width:440px;display:block;margin:6px auto}.lg{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:13px;font-weight:600}svg text{fill:var(--mut);font-size:11px}h3{margin:18px 0 2px;font-size:16px}
+.ev{border-left:4px solid transparent;padding-left:8px}.t-SAILF em,.t-GST em{color:var(--bl)}.t-TAR em{color:var(--pu)}.t-SAILF,.t-GST{border-left:4px solid var(--bl);padding-left:8px}.t-TAR{border-left:4px solid var(--pu);padding-left:8px}button[data-t=SAILF],button[data-t=GST]{color:var(--bl);border-color:var(--bl)}button[data-t=TAR]{color:var(--pu);border-color:var(--pu)}button.on[data-t]{color:#fff}.t-VELA em{color:var(--ye)}.t-VELA{border-left:4px solid var(--ye);padding-left:8px}button[data-t=VELA]{color:var(--ye);border-color:var(--ye)}button.on[data-t=VELA]{background:var(--ye);border-color:var(--ye);color:#1d1d1b}.cow>div:last-child{text-align:right;white-space:nowrap;font-weight:700;font-size:14px}.s-g{color:var(--bl)}.s-t{color:var(--pu)}.s-p{color:var(--pk)}.s-v{color:var(--tx)}.s-s{color:var(--gr)}.s-o{color:var(--rd)}.s-r{color:#e08a00}#vw button[data-v=ges]{color:var(--bl);border-color:var(--bl)}#vw button.on[data-v=ges]{background:var(--bl);color:var(--on);border-color:var(--bl)}#vw button[data-v=tar]{color:var(--pu);border-color:var(--pu)}#vw button.on[data-v=tar]{background:var(--pu);color:var(--on);border-color:var(--pu)}#vw button[data-v=ouv]{color:var(--rd);border-color:var(--rd)}#vw button.on[data-v=ouv]{background:var(--rd);color:var(--on);border-color:var(--rd)}#vw button[data-v=taur]{color:var(--rd);border-color:var(--rd)}#vw button.on[data-v=taur]{background:var(--rd);color:var(--on);border-color:var(--rd)}#vw button[data-v=sai]{color:var(--gr);border-color:var(--gr)}#vw button.on[data-v=sai]{background:var(--gr);color:var(--on);border-color:var(--gr)}#chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-top:6px}#chips button{white-space:nowrap;flex:none}.grid{gap:6px;margin:6px 0}.kv{padding:5px 8px}.kv small{font-size:11px}.kv span{font-size:14px}#vw button[data-v=ref]{color:#e08a00;border-color:#e08a00}#vw button.on[data-v=ref]{background:#e08a00;color:#fff;border-color:#e08a00}.zi{width:70px;padding:6px;font-size:16px;border:1px solid var(--ln);border-radius:8px;background:var(--card);color:var(--tx);text-align:center}#rchips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#rchips button{white-space:nowrap;flex:none}#vw button[data-v=tges]{color:var(--bl);border-color:var(--bl)}#vw button.on[data-v=tges]{background:var(--bl);color:var(--on);border-color:var(--bl)}#vw button[data-v=tsai]{color:var(--gr);border-color:var(--gr)}#vw button.on[data-v=tsai]{background:var(--gr);color:var(--on);border-color:var(--gr)}#vw button[data-v=gen]{color:var(--pk);border-color:var(--pk)}#vw button.on[data-v=gen]{background:var(--pk);color:var(--on);border-color:var(--pk)}#vw button[data-v=veau]{color:var(--tx);border-color:var(--tx)}#vw button.on[data-v=veau]{background:var(--tx);color:var(--bg);border-color:var(--tx)}.bdg{font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;white-space:nowrap;color:var(--on)}.bg-g{background:var(--bl)}.bg-t{background:var(--pu)}.bg-s{background:var(--gr)}.bg-o{background:var(--rd)}.bg-p{background:var(--pk)}.bg-v{background:var(--tx);color:var(--bg)}.bg-r{background:var(--og)}
+.t-REF em,.t-ELIM em{color:var(--og)}.t-REF,.t-ELIM{border-left:4px solid var(--og);padding-left:8px}button[data-t=REF],button[data-t=ELIM]{color:var(--og);border-color:var(--og)}button.on[data-t=REF],button.on[data-t=ELIM]{background:var(--og);border-color:var(--og);color:var(--on)}#tabs{gap:4px}#tabs button{padding:6px 8px;font-size:13px}.dn{padding:2px 10px;font-weight:700}.pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px;white-space:nowrap;color:var(--on)}.psub{font-size:11.5px;color:var(--mut);font-weight:400;margin-top:3px}.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.cald{padding:6px 0;border:1px solid var(--ln);background:var(--card);color:var(--tx);border-radius:8px;min-height:46px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:14px}.cald.t{border-color:var(--ac);font-weight:700}.cald.s{background:var(--ac);color:var(--on);border-color:var(--ac)}.cald .dots{display:flex;gap:2px;min-height:6px}.chip{padding:5px 11px;font-weight:700}#vw{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#vw button{white-space:nowrap;flex:none}#vw button[data-v=actives]{font-weight:800;border:2px solid var(--tx)}#vw button.on[data-v=actives]{background:var(--tx);color:var(--bg)}#vw button[data-v=elim]{color:var(--mut)}#vw button[data-v=vel]{color:var(--rd);border-color:var(--rd)}#vw button.on[data-v=vel]{background:var(--rd);color:var(--on);border-color:var(--rd)}#tabs{flex-wrap:nowrap;overflow-x:auto}#tabs button{flex:none}.pcard{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;margin:8px 0}#tabs button{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#tabs .drag{transform:scale(1.1);box-shadow:0 4px 12px rgba(0,0,0,.28);position:relative;z-index:3}</style></head><body>
+<header><h1><span id="ttl">🐄 MEUH</span><span style="display:flex;gap:6px"><button id="gear" type="button" aria-label="Réglages" title="Réglages">⚙</button><button id="imp" type="button" style="font-weight:600">Importer</button></span><input id="f" type="file" style="display:none"></h1>
+<div class="sub" id="info">Aucun fichier chargé</div>
+<div class="row" id="tabs" style="margin:0 0 8px"><button id="t1" class="on">Fiches</button><button id="t2">Roulette</button><button id="t3">À faire</button><button id="t4">Recherche</button><button id="t6">Rappels</button><button id="t7">Protocoles</button><button id="t5" style="display:none">Rapport</button></div><div id="bar"><input id="q" type="search" placeholder="Numéro ou nom…" autocomplete="off">
+<div class="row" id="vw"></div><div class="row" id="srt" style="margin-top:6px"></div></div></header>
+<main id="m"><div class="empty">Appuie sur <b>Importer</b> et choisis le fichier <b>Synchro_OUT…zip</b> exporté de DSA.</div></main>
+<script>
+const D0=Date.UTC(1840,11,31),DAY=864e5;
+const toDate=n=>new Date(D0+n*DAY),fmt=n=>toDate(n).toISOString().slice(0,10);
+const todayN=Math.floor((Date.now()-D0)/DAY);
+const LBL={NAIS:'Naissance',SAIL:'Saillie',SAILF:'Saillie fécondante',GST:'Test de gestation',VELA:'Vêlage',TAR:'Tarissement',VACC:'Vaccin',ELIM:'Élimination',CHAL:'Chaleur',CHIN:'Hormone',TX:'Traitement',POUB:'Traitement',RP:'Rétention placentaire',OMA:'Mammite',MAMM:'Mammite',SX:'Symptômes',DYST:'Vêlage difficile',PLOC:'Pattes',REF:'Raison de réforme',SUPP:'Supplément',FV:'Fièvre du lait',EXM:'Examen',AVOR:'Avortement',PREP:'Préparation',DIAR:'Diarrhée',EXC:'Examen clinique'};
+const ELM={VABA:'vente abattoir',MORT:'morte',MAMM:'mammite',VLAI:'vente laitière',EUTH:'euthanasie'};
+const REF={REP:'reproduction',FPRO:'faible production',RLOC:'pattes',TDIF:'traite difficile',AGE:'âge',AUTR:'autre',MAMM:'mammite'};
+function parse(txt){
+ const L=txt.split(/\r?\n/),cows={};
+ const info=(L[0]||'').match(/(\d{4}-\d\d-\d\d)/);
+ for(const l of L){
+  let m=l.match(/^\^va\((\d+)\)=(.*)$/);
+  if(m){const h=m[2].split('\\');cows[m[1]]={id:m[1],num:h[0],nom:(h[1]||'').trim(),natl:h[3]||'',flag:(h[5]||'').trim(),naiss:+h[4]||0,lact:+h[6]||0,ev:[]};continue}
+  m=l.match(/^\^va\((\d+),(\d+),"(\w+)"\)=(.*)$/);
+  if(m&&cows[m[1]])cows[m[1]].ev.push({d:+m[2],t:m[3],raw:m[4]});
+ }
+ const arr=Object.values(cows);
+ for(const c of arr){
+  c.ev.sort((a,b)=>a.d-b.d);
+  const last=t=>[...c.ev].reverse().find(e=>e.t===t);
+  c.elim=c.flag==='E'?(last('ELIM')||{d:0,t:'ELIM',raw:''}):null;const v=last('VELA');c.vela=v&&v.d;
+  const sf=c.ev.filter(e=>e.t==='SAILF'||e.t==='SAIL').pop();c.sail=sf;
+  const vd=c.vela||0,brs=c.ev.filter(e=>(e.t==='SAIL'||e.t==='SAILF')&&e.d>vd),lb=brs[brs.length-1]||null;c.lb=lb;c.gstAfter=!!lb&&c.ev.some(e=>e.t==='GST'&&e.d>lb.d);c.tarAfter=!!lb&&c.ev.some(e=>e.t==='TAR'&&e.d>lb.d);
+  let ns=0,pd=-99;for(const b of brs){if(b.d-pd>3)ns++;pd=b.d}c.nServ=ns;
+  const lf=[...brs].reverse().find(e=>e.t==='SAILF')||null;c.lf=lf;
+  c.gest=!!(lf&&!brs.some(e=>e.d>lf.d+3)&&!c.elim);
+  c.prevu=c.gest?lf.d+280:0;c.nbVela=c.ev.filter(e=>e.t==='VELA').length;
+ }
+ return {cows:arr,date:info?info[1]:''};
+}
+function pretty(e){
+ const parts=e.raw.split('\\').filter(Boolean);
+ const out=[];
+ for(const p of parts){
+  const i=p.indexOf('|');
+  if(i<0){out.push(p);continue}
+  const k=p.slice(0,i),r=p.slice(i+1);
+  if(k==='COM'||k==='MESS'){if(r.trim())out.push(r.trim());continue}
+  if(k==='IA'){out.push('IA taureau '+r.replace(/[;\s]+$/,''));continue}
+  if(k==='INSE'){const o={};r.split(';').forEach(x=>{const [a,b]=x.split('=');o[a]=b});out.push('Taureau '+(o.NomTaureau||'')+' ('+(o.CodeTaureau||'')+')');continue}
+  if(r.includes(';')){const [nm,...rest]=r.split(';'),o={};rest.forEach(x=>{const [a,b]=x.split('=');o[a]=b});
+   out.push((nm||k)+(o.DOSE?' · dose '+o.DOSE:'')+(o.VET?' · '+o.VET.trim():''));continue}
+  out.push(k+' '+r);
+ }
+ if(e.t==='VELA'){const g=e.raw;const sx=[];if(/JU\\/.test(g))sx.push('jumeaux');
+  const mm=[...g.matchAll(/(MA|FE)\|(\S*)/g)].map(x=>(x[1]==='MA'?'mâle':'femelle')+(x[2]?' n° '+x[2].replace(/\[.*/,''):''));
+  const mn=/MORN/.test(g)?' (mort-né)':'';return sx.concat(mm).join(', ')+mn+(/TAU#\|([^\\]+)/.test(g)?' · taureau '+g.match(/TAU#\|([^\\]+)/)[1]:'')+(out.filter(x=>x.length>12&&!/ATQ|Vigoureux|Saillie|^TAU#/.test(x)).length?' — '+out.filter(x=>x.length>12&&!/ATQ|Vigoureux|^TAU#/.test(x)).join('; '):'')}
+ if(e.t==='ELIM'){const c=parts.map(p=>(p.split('|')[0])).filter(x=>ELM[x]).map(x=>ELM[x]);return c.join(', ')+(out.filter(x=>!ELM[x]&&!/^(MAMM|MORT|VABA|VLAI|EUTH)/.test(x)).length?' — '+out.filter(x=>!ELM[x]&&!/^(MAMM|MORT|VABA|VLAI|EUTH)/.test(x)).join('; '):'')}
+ if(e.t==='REF')return parts.map(p=>{const k=p.split('|')[0],r=p.split('|').slice(1).join('|');return k==='COM'?r:(REF[k]||k)+(r?' ('+r+')':'')}).join(', ');
+ return out.join(' ; ');
+}
+let DB=null,view='actives',q='',tab='fiches',rwin=7,sel=null;
+let grp=[];
+const $=id=>document.getElementById(id);
+const age=c=>{if(!c.naiss)return'';const mo=Math.floor((todayN-c.naiss)/30.44);return mo<24?mo+' mois':(mo/12).toFixed(1).replace('.',',')+' ans'};
+function etat(c){
+ if(c.elim)return '<span class="tag">éliminée</span>';
+ const st=stat(c);if(!st)return'';
+ const mo=c.naiss?(todayN-c.naiss)/30.44:0;
+ const k=c.gest?(c.tarAfter&&c.vela?'tar':'ges'):c.lb?'sai':c.vela?'vel':(mo<6?'vo':'gen');
+ let t='';
+ if(k==='ges'){const d=c.prevu-todayN;t='<span class="s-g">'+(c.vela?'Gestante':'Taure gestante')+(c.vela?' · ':'<br>')+(d>=0?'dans '+d+' j':'dépassé '+(-d)+' j')+'</span>'}
+ else if(k==='tar'){const d=c.prevu-todayN;t='<span class="s-t">Tarie · '+(d>=0?'dans '+d+' j':'dépassé '+(-d)+' j')+'</span>'}
+ else if(k==='sai')t='<span class="s-s">'+(c.vela?'Saillie':'Taure saillie')+(c.vela?' · ':'<br>')+(todayN-c.lb.d)+' j</span>';
+ else if(k==='vel')t='<span class="s-o">Vache ouverte · '+(todayN-c.vela)+' j</span>';
+ else if(k==='gen'&&mo>=13)t='<span class="s-o">Taure ouverte</span>';
+ else if(k==='gen')t='<span class="s-p">Génisse</span>';
+ else if(k==='vo')t='<span class="s-v">Veau</span>';
+ if(st[0]==='ref')t+=(t?'<br>':'')+'<span class="s-r" style="font-size:12px">✕ réformée</span>';
+ return t;
+}
+const kind=c=>c.elim?'':(c.flag==='R'?'ref':kind0(c));
+const kind0=c=>{if(c.elim)return'';const mo=c.naiss?(todayN-c.naiss)/30.44:0;return c.gest?(c.tarAfter&&c.vela?'tar':'ges'):c.lb?'sai':c.vela?'vel':(mo<6?'vo':'gen')};
+const moisAge=c=>c.naiss?(todayN-c.naiss)/30.44:0;
+const VIEWS={actives:c=>!c.elim,elim:c=>!!c.elim,ges:c=>kind(c)==='ges'&&!!c.vela,tges:c=>kind(c)==='ges'&&!c.vela,tar:c=>kind(c)==='tar',vel:c=>kind(c)==='vel'&&todayN-c.vela<40,ouv:c=>kind(c)==='vel'&&todayN-c.vela>=40,taur:c=>kind(c)==='gen'&&moisAge(c)>=13,sai:c=>kind(c)==='sai'&&!!c.vela,tsai:c=>kind(c)==='sai'&&!c.vela,veau:c=>kind(c)==='vo',gen:c=>kind(c)==='gen'&&moisAge(c)<13,ref:c=>!c.elim&&c.flag==='R'};
+const VLBL=[['actives','Actives'],['ges','Vaches gestantes'],['tges','Taures gestantes'],['tar','Taries'],['vel','Fraîches vêlées'],['ouv','Vaches ouvertes'],['taur','Taures ouvertes'],['sai','Vaches saillies'],['tsai','Taures saillies'],['gen','Génisses'],['veau','Veaux'],['ref','Réformées'],['elim','Éliminées']];
+function renderViews(){$('vw').innerHTML=VLBL.map(([v,l])=>`<button data-v="${v}"${v===view?' class="on"':''}>${l} <small>${DB.cows.filter(VIEWS[v]).length}</small></button>`).join('')}
+let SORT={k:'num',d:1};try{const s=JSON.parse(localStorage.getItem('dsa_sort')||'null');if(s&&['num','nom','age'].includes(s.k))SORT={k:s.k,d:s.d===-1?-1:1}}catch(e){}
+const numCmp=(x,y)=>x.num.localeCompare(y.num,'fr',{numeric:true});
+function sortCows(a){const d=SORT.d;return a.sort((x,y)=>{
+ if(SORT.k==='nom'){const nx=(x.nom||'').trim(),ny=(y.nom||'').trim();if(!nx&&!ny)return numCmp(x,y);if(!nx)return 1;if(!ny)return -1;return nx.localeCompare(ny,'fr')*d||numCmp(x,y)}
+ if(SORT.k==='age'){const ax=x.naiss||0,ay=y.naiss||0;if(!ax&&!ay)return numCmp(x,y);if(!ax)return 1;if(!ay)return -1;return (ax-ay)*d||numCmp(x,y)}
+ return numCmp(x,y)*d})}
+const SRTL={num:['Numéro','1→9','9→1'],nom:['Nom','A→Z','Z→A'],age:['Âge','vieilles→jeunes','jeunes→vieilles']};
+function renderSort(){$('srt').innerHTML='<span class="mut" style="align-self:center">Trier :</span>'+Object.keys(SRTL).map(k=>`<button data-sk="${k}"${SORT.k===k?' class="on"':''}>${SRTL[k][0]}${SORT.k===k?' '+(SORT.d===1?SRTL[k][1]:SRTL[k][2]):''}</button>`).join('')}
+$('srt').onclick=e=>{const b=e.target.closest('[data-sk]');if(!b)return;const k=b.dataset.sk;if(SORT.k===k)SORT.d=-SORT.d;else SORT={k,d:1};try{localStorage.setItem('dsa_sort',JSON.stringify(SORT))}catch(x){}list()};
+function statusInfo(c){
+ if(c.elim)return{col:'var(--mut)',lab:'Éliminée',sub:'',ref:false};
+ const st=stat(c);if(!st)return null;
+ const k=kind0(c),mo=moisAge(c),T=todayN;let col='var(--tx)',lab='Veau',sub='';
+ if(k==='ges'){const d=c.prevu-T;col='var(--bl)';lab=c.vela?'Gestante':'Taure gestante';sub=d>=0?'dans '+d+' j':'dépassé '+(-d)+' j'}
+ else if(k==='tar'){const d=c.prevu-T;col='var(--pu)';lab='Tarie';sub=d>=0?'dans '+d+' j':'dépassé '+(-d)+' j'}
+ else if(k==='sai'){col='var(--gr)';lab=c.vela?'Saillie':'Taure saillie';sub=(T-c.lb.d)+' j'}
+ else if(k==='vel'){col='var(--rd)';lab=(T-c.vela)<40?'Fraîche vêlée':'Vache ouverte';sub=(T-c.vela)+' j'}
+ else if(k==='gen'&&mo>=13){col='var(--rd)';lab='Taure ouverte'}
+ else if(k==='gen'){col='var(--pk)';lab='Génisse'}
+ if(c.flag==='R')return{col:'var(--og)',lab:'Réformée',sub:lab+(sub?' · '+sub:''),ref:false};
+ return{col,lab,sub,ref:false};
+}
+function list(){if(tab!=='fiches'){show();return}
+ renderViews();renderSort();
+ let a=DB.cows.filter(VIEWS[view]||VIEWS.actives);
+ if(q){const s=q.toLowerCase();a=a.filter(c=>c.num.toLowerCase().includes(s)||c.nom.toLowerCase().includes(s))}
+ sortCows(a);
+ $('m').innerHTML=a.length?a.slice(0,300).map(c=>{const si=statusInfo(c);const sty=si?` style="border-left:6px solid ${si.col};border-radius:0;background:color-mix(in srgb, ${si.col} 13%, var(--card))"`:'';const right=si?`<span class="pill" style="background:${si.col}">${si.lab}</span>${si.sub?`<div class="psub">${si.sub}</div>`:''}${si.ref?'<div class="psub" style="color:var(--og)">✕ réformée</div>':''}`:'';return `<div class="cow" data-id="${c.id}"${sty}><div><b>${c.num}</b> ${c.nom}<div class="mut">${c.lact?c.lact+' lact. · ':''}${age(c)}${c.vela?' · vêlée '+fmt(c.vela):''}</div></div><div>${right}</div></div>`}).join('')+(a.length>300?'<div class="empty">Précise ta recherche…</div>':''):'<div class="empty">Aucune vache</div>';
+ $('info').textContent=DB.cows.filter(c=>!c.elim).length+' actives / '+DB.cows.length+' fiches · fichier du '+DB.date;
+}
+const sizeEvs=()=>{const e=$('evs');if(!e)return;e.style.overflowY='auto';e.style.height=Math.max(220,innerHeight-(e.getBoundingClientRect().top+scrollY)-12)+'px'};
+const toBottom=()=>setTimeout(()=>{const e=$('evs');if(e)e.scrollTop=e.scrollHeight},0);
+addEventListener('resize',()=>{if($('evs'))sizeEvs()});
+function statutBadge(c){
+ const b=(cls,t)=>`<span class="bdg ${cls}">${t}</span>`;
+ if(c.elim)return b('bg-r','Éliminée');
+ const k=kind0(c),st=stat(c);let o='';
+ if(k==='gen')o=moisAge(c)>=13?b('bg-o','Ouverte'):b('bg-p','Génisse');
+ else{const m={ges:['bg-g','Gestante'],tar:['bg-t','Tarie'],sai:['bg-s','Saillie'],vel:[(c.vela&&todayN-c.vela<40)?'bg-o':'bg-o',(c.vela&&todayN-c.vela<40)?'Fraîche vêlée':'Ouverte'],vo:['bg-v','Veau']};if(m[k])o=b(m[k][0],m[k][1])}
+ if(st&&st[0]==='ref')o+=b('bg-r','Réformée');
+ return o;
+}
+function fiche(id){
+ const c=DB.cows.find(x=>x.id===id);if(!c){show();return}
+ const dim=c.vela&&!c.elim?todayN-c.vela:null;
+ const kv=(k,v)=>v?`<div class="kv"><small>${k}</small><span>${v}</span></div>`:'';
+ const types=[...new Set(c.ev.map(e=>e.t))];
+ $('bar').style.display='none';
+ $('m').innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="back" onclick="back()" style="margin:0;padding:7px 12px" title="Retour" aria-label="Retour">←</button><h2 style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${c.num} ${c.nom} ${statutBadge(c)}</h2></div>
+ 
+ <div class="grid">${kv('Naissance',c.naiss?fmt(c.naiss)+' ('+age(c)+')':'')}${kv('Lactation',c.lact||'')}${kv('Dernier vêlage',c.vela?fmt(c.vela)+(dim!=null?' · '+dim+' j en lait':''):'')}${kv('Dernière saillie',c.sail?fmt(c.sail.d)+(c.lb?' · '+(todayN-c.lb.d)+' j':'')+' — '+pretty(c.sail):'')}${kv('Vêlage prévu (estimé)',c.prevu?(c.prevu>=todayN?(c.prevu-todayN)+' j avant le vêlage':'dépassé de '+(todayN-c.prevu)+' j')+' · '+fmt(c.prevu):'')}${kv('ATQ',c.natl)}</div>
+ <div class="row" id="chips"><button class="on" data-t="">Tout</button>${types.map(t=>`<button data-t="${t}">${LBL[t]||t}</button>`).join('')}</div><div id="evs"></div>`;
+ const draw=t=>{$('evs').innerHTML=c.ev.filter(e=>!t||e.t===t).map(e=>`<div class="ev t-${e.t}"><time>${fmt(e.d)}</time><div><em>${LBL[e.t]||e.t}</em> <span class="mut">${pretty(e)}</span></div></div>`).join('')};
+ $('chips').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;[...$('chips').children].forEach(x=>x.classList.toggle('on',x===b));draw(b.dataset.t);toBottom()};
+ scrollTo(0,0);sizeEvs();draw('');toBottom();
+}
+function show(){const f=tab==='fiches';$('bar').style.display=f?'':'none';if(tab==='reglages'){reglages();return}if(tab==='rappels'){rappels();return}if(tab==='proto'){protos();return}if(DB){if(f)list();else if(tab==='roulette')roulette();else if(tab==='recherche')recherche();else if(tab==='rapport')rapport();else regie()}}
+
+/* ===== Réglages, nom, rappels, rapport ===== */
+const pad=n=>String(n).padStart(2,'0');
+let APPNAME='MEUH';try{APPNAME=localStorage.getItem('dsa_nom')||APPNAME}catch(e){}
+const saveName=()=>{try{localStorage.setItem('dsa_nom',APPNAME)}catch(e){}};
+const setTitle=()=>{$('ttl').textContent='🐄 '+APPNAME;document.title=APPNAME};
+setTitle();
+let RSHOW={gen:true,vo:true,ref:true};try{const s=JSON.parse(localStorage.getItem('dsa_rshow')||'null');if(s)RSHOW={...RSHOW,...s}}catch(e){}
+const NTDEF={on:false,hh:7,mm:0,det:true,cat:{tar:{on:true,mode:'new',adv:0},ret:{on:true,mode:'new',adv:0},tg:{on:true,mode:'new',adv:0},vel:{on:true,mode:'new',adv:0},ins:{on:false,mode:'new',adv:0},eco:{on:true,mode:'new',adv:0}}};
+let NT=JSON.parse(JSON.stringify(NTDEF));
+try{const s=JSON.parse(localStorage.getItem('dsa_notif')||'null');if(s){
+ for(const k of ['on','hh','mm','det'])if(s[k]!==undefined)NT[k]=s[k];
+ for(const k in NT.cat){const o={...((s.cat&&s.cat[k])||{})};if(!s.cat){if(s[k]!==undefined)o.on=!!s[k];if(s.mode)o.mode=s.mode}NT.cat[k]={...NT.cat[k],...o}}
+}}catch(e){}
+const saveNT=()=>{try{localStorage.setItem('dsa_notif',JSON.stringify(NT))}catch(e){}};
+let NTSTATUS='';
+const NATIVE=()=>{try{return !!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications)}catch(e){return false}};
+const NCAT=[['tar','Tarissements'],['ret','Retours de chaleur'],['tg','Tests de gestation'],['vel','Vêlages à venir'],['ins','À inséminer'],['eco','Veaux à écorner']];
+const CATCOL={tar:'var(--pu)',ret:'var(--rd)',tg:'var(--bl)',vel:'var(--ye)',ins:'var(--gr)',eco:'var(--tx)'};
+const ntDesc=k=>({
+ tar:`Une vache gestante arrive dans la fenêtre de tarissement : de ${RG.ta} à ${RG.tb} jours avant le vêlage prévu.`,
+ ret:`Saillie non confirmée : 1er cycle de ${RG.r1a} à ${RG.r1b} jours après la saillie, 2e cycle de ${RG.r2a} à ${RG.r2b} jours.`,
+ tg:`Saillie de ${RG.ga} à ${RG.gb} jours sans test de gestation.`,
+ vel:`Vêlage prévu dans les ${RG.vb} prochains jours (ou en retard de moins de ${RG.va} jours).`,
+ eco:`Veau de moins de 6 mois, dès ${RG.ecmin} jours après la naissance${RG.ecmax==null?', sans limite maximale':', jusqu’à '+RG.ecmax+' jours'} (à écorner).`,
+ ins:`Vache de ${RG.ia} à ${RG.ib} jours en lait sans saillie, ou génisse de ${RG.gm} mois et plus sans saillie.`})[k];
+function notifPlan(maxDays=30){
+ if(!DB)return[];
+ const memo={},tk=D=>memo[D]||(memo[D]=tasks(D)),out=[];
+ for(let D=todayN;D<todayN+maxDays;D++){
+  const items=[];let total=0;
+  for(const [k,label] of NCAT){
+   const s=NT.cat[k];if(!s.on)continue;
+   const adv=Math.max(0,+s.adv||0),E=D+adv;
+   let rows=tk(E)[k].filter(r=>!DONE[r.key]);
+   if(s.mode==='new'){const pk=new Set(tk(E-1)[k].map(r=>r.key));rows=rows.filter(r=>!pk.has(r.key))}
+   if(!rows.length)continue;
+   total+=rows.length;items.push({k,label,adv,rows});
+  }
+  if(!items.length)continue;
+  const dt=toDate(D);
+  const body=items.map(it=>{const w=it.adv?` dans ${it.adv} j`:'';return NT.det?`${it.label}${w} (${it.rows.length}) : ${it.rows.map(r=>r.c.num).join(', ')}`:`${it.label}${w} : ${it.rows.length}`}).join('\n');
+  out.push({D,items,total,at:new Date(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate(),NT.hh,NT.mm,0),title:`${APPNAME} · ${total} à faire`,body});
+ }
+ return out;
+}
+let schedTimer=null;const schedSoon=()=>{clearTimeout(schedTimer);schedTimer=setTimeout(()=>scheduleNotifs().then(updNt),800)};
+async function scheduleNotifs(){
+ if(!NATIVE()||!DB)return 'web';
+ const LN=Capacitor.Plugins.LocalNotifications;
+ try{
+  const pend=await LN.getPending();
+  if(pend.notifications&&pend.notifications.length)await LN.cancel({notifications:pend.notifications.map(n=>({id:n.id}))});
+  if(!NT.on&&!PT.on){NTSTATUS='Rappels et alertes désactivés.';return 'off'}
+  let perm=await LN.checkPermissions();
+  if(perm.display!=='granted')perm=await LN.requestPermissions();
+  if(perm.display!=='granted'){NTSTATUS='Permission refusée : autorise les notifications pour l’application dans les réglages Android.';return 'perm'}
+  const now=Date.now()+60000;
+  const p1=NT.on?notifPlan().filter(p=>p.at.getTime()>now):[],p2=PT.on?protoPlan().filter(p=>p.at.getTime()>now):[];
+  const all=p1.map((p,i)=>({id:1000+i,title:p.title,body:p.body,largeBody:p.body,schedule:{at:p.at,allowWhileIdle:true}})).concat(p2.map((p,i)=>({id:5000+i,title:p.title,body:p.body,largeBody:p.body,schedule:{at:p.at,allowWhileIdle:true}})));
+  if(all.length)await LN.schedule({notifications:all});
+  NTSTATUS=p1.length+' rappel(s) et '+p2.length+' alerte(s) de protocole programmé(s).';return 'ok';
+ }catch(e){NTSTATUS='Erreur : '+e.message;return 'err'}
+}
+function updNt(){const e=$('ntst');if(e)e.textContent=NTSTATUS}
+async function ntAction(a){
+ if(!NATIVE())return;
+ if(a==='apply'){await scheduleNotifs();updNt();return}
+ if(a==='test'){try{const LN=Capacitor.Plugins.LocalNotifications;let p=await LN.checkPermissions();if(p.display!=='granted')p=await LN.requestPermissions();
+   if(p.display!=='granted'){NTSTATUS='Permission refusée.';updNt();return}
+   await LN.schedule({notifications:[{id:999999,title:APPNAME,body:'Notification de test : les rappels fonctionnent.',schedule:{at:new Date(Date.now()+4000)}}]});NTSTATUS='Test envoyé : il arrive dans quelques secondes.'}catch(e){NTSTATUS='Erreur : '+e.message}updNt()}
+}
+function reglages(){
+ $('info').textContent='Réglages';
+ $('m').innerHTML=`<h3>Nom de l’application</h3><input id="nm" class="zi" style="width:100%;text-align:left" value="${APPNAME.replace(/"/g,'&quot;')}" maxlength="40" autocomplete="off"><div class="mut" style="margin:4px 0 14px">S’affiche en haut de l’écran.</div><div class="mut">Les rappels (notifications) ont maintenant leur propre onglet : <b>Rappels</b>.</div>`;
+}
+let rpSub='list',cal={y:null,m:null},calSel=null;
+const MOISL=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const catDot=k=>`<i style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${CATCOL[k]}"></i>`;
+function calHtml(){
+ if(!DB)return '<div class="empty">Importe d’abord ton fichier pour voir les rappels.</div>';
+ const plan=notifPlan(120),byD={};plan.forEach(p=>byD[p.D]=p);
+ const t=toDate(todayN);if(cal.y==null){cal.y=t.getUTCFullYear();cal.m=t.getUTCMonth()}
+ if(calSel==null)calSel=todayN;
+ const first=Date.UTC(cal.y,cal.m,1),firstN=Math.round((first-D0)/DAY),dow=(new Date(first).getUTCDay()+6)%7,nd=new Date(Date.UTC(cal.y,cal.m+1,0)).getUTCDate();
+ let cells='';for(let i=0;i<dow;i++)cells+='<span></span>';
+ for(let d=1;d<=nd;d++){const n=firstN+d-1,p=byD[n];
+  cells+=`<button class="cald${n===todayN?' t':''}${n===calSel?' s':''}" data-cd="${n}"><span>${d}</span><span class="dots">${p?p.items.map(it=>catDot(it.k)).join(''):''}</span></button>`}
+ const sel=byD[calSel],dtxt=cap(toDate(calSel).toLocaleDateString('fr-CA',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}));
+ let det=`<h3 style="margin:14px 0 4px">${dtxt}</h3>`;
+ if(sel)det+=`<div class="mut">Rappel à ${pad(NT.hh)}:${pad(NT.mm)} · ${sel.total} à faire</div>`+sel.items.map(it=>`<div style="margin:8px 0"><b style="color:${CATCOL[it.k]}">${it.label}</b>${it.adv?` <span class="mut">(dans ${it.adv} j)</span>`:''} <span class="tag">${it.rows.length}</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${it.rows.map(r=>`<button class="chip" data-open="${r.c.id}">${r.c.num}</button>`).join('')}</div></div>`).join('');
+ else det+='<div class="mut">Aucun rappel ce jour-là'+(calSel<todayN?' (jour passé)':(calSel>=todayN+120?' (trop loin pour être calculé)':''))+'.</div>';
+ const lg=NCAT.map(([k,l])=>`<span style="white-space:nowrap">${catDot(k)} ${l}</span>`).join(' &nbsp; ');
+ return `<div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px"><button data-cm="-1">‹</button><b>${cap(MOISL[cal.m])} ${cal.y}</b><button data-cm="1">›</button></div>
+ <div class="calg" style="margin-bottom:4px">${['L','M','M','J','V','S','D'].map(x=>`<span class="mut" style="text-align:center;font-size:12px">${x}</span>`).join('')}</div><div class="calg">${cells}</div>
+ <div class="mut" style="font-size:12px;margin-top:8px;line-height:1.8">${lg}</div>${NT.on?'':'<div class="mut" style="margin-top:6px">Les rappels sont désactivés (sous-onglet Réglages) : ceci est un aperçu.</div>'}${det}`;
+}
+function rpListHtml(){
+ if(!DB)return '<div class="empty">Importe d’abord ton fichier pour voir les rappels.</div>';
+ const plan=notifPlan(30);
+ const note=NT.on?'':'<div class="mut" style="margin-bottom:6px">Les rappels sont désactivés (sous-onglet Réglages) : ceci est un aperçu.</div>';
+ if(!plan.length)return note+'<div class="mut">Aucun rappel prévu dans les 30 prochains jours avec ces réglages.</div>';
+ return note+plan.map(p=>`<div class="pcard"><b>${dateLong(p.D)}</b> <span class="mut">· ${pad(NT.hh)}:${pad(NT.mm)} · ${p.total} à faire</span>`+p.items.map(it=>`<div style="margin:8px 0 0"><b style="color:${CATCOL[it.k]}">${it.label}</b>${it.adv?` <span class="mut">(dans ${it.adv} j)</span>`:''} <span class="tag">${it.rows.length}</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${it.rows.map(r=>`<button class="chip" data-open="${r.c.id}">${r.c.num}</button>`).join('')}</div></div>`).join('')+'</div>').join('');
+}
+function rpRegHtml(){
+ const nat=NATIVE();
+ const catc=NCAT.map(([k,l])=>{const s=NT.cat[k];return `<div style="background:var(--card);border:1px solid var(--ln);border-left:5px solid ${CATCOL[k]};padding:10px 12px;margin:8px 0">
+ <label><input type="checkbox" data-ntc="${k}.on" ${s.on?'checked':''}> <b>${l}</b></label>
+ <div class="mut" style="margin:2px 0 6px 24px">${ntDesc(k)}</div>
+ <div style="margin-left:24px"><div style="margin:4px 0">Quand : <select data-ntc="${k}.mode" class="zi" style="width:auto;text-align:left"><option value="new" ${s.mode==='new'?'selected':''}>Une seule fois, à l’entrée dans la liste</option><option value="all" ${s.mode==='all'?'selected':''}>Chaque jour, tant qu’elle y est</option></select></div>
+ <div style="margin:4px 0">Avertir <input type="number" inputmode="numeric" min="0" max="30" class="zi" style="width:64px" data-ntc="${k}.adv" value="${s.adv}"> jour(s) <span class="mut">avant qu’elle entre dans la liste (0 = le jour même)</span></div></div></div>`}).join('');
+ return `${nat?'':'<div class="mut" style="margin-bottom:6px">Les notifications arrivent seulement dans l’application installée (APK). Ici, tu peux régler les rappels et voir la liste à venir dans l’onglet Liste.</div>'}
+ <label style="display:block;margin:10px 0"><input type="checkbox" data-nt="on" ${NT.on?'checked':''}> <b>Activer les rappels</b></label>
+ <div style="margin:10px 0">Heure : <input type="time" class="zi" style="width:auto" data-ntv="time" value="${pad(NT.hh)}:${pad(NT.mm)}"></div>
+ <label style="display:block;margin:10px 0"><input type="checkbox" data-nt="det" ${NT.det?'checked':''}> Inclure les numéros des vaches dans le message</label>
+ <h3>Quels rappels ?</h3><div class="mut">Les fenêtres de jours sont celles de l’onglet À faire (⚙ Réglages des jours).</div>${catc}
+ <div class="mut" id="ntst" style="margin:8px 0">${NTSTATUS}</div>
+ ${nat?'<div class="row"><button data-ntb="apply">Reprogrammer maintenant</button><button data-ntb="test">Envoyer un test</button></div>':''}
+ <div class="mut" style="margin-top:12px">Les rappels sont calculés avec le dernier fichier importé. Une vache cochée « fait » dans À faire n’est plus rappelée.</div>`;
+}
+function rappels(){
+ $('info').textContent='Rappels';
+ $('m').innerHTML=`<div class="row" style="margin:0 0 10px"><button data-rsub="list" class="${rpSub==='list'?'on':''}">Liste</button><button data-rsub="reg" class="${rpSub==='reg'?'on':''}">Réglages</button></div>`+(rpSub==='reg'?rpRegHtml():rpListHtml());
+}
+function rapport(){
+ const T=todayN,f1=x=>x==null?'—':x.toFixed(1).replace('.',','),mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null,med=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+ const first=[],open=[],serv=[],fert1=[],ivl=[],afc=[];
+ for(const c of DB.cows){
+  const V=c.ev.filter(e=>e.t==='VELA').map(e=>e.d),B=c.ev.filter(e=>e.t==='SAIL'||e.t==='SAILF');
+  V.forEach((v,i)=>{
+   const nv=i+1<V.length?V[i+1]:1e9,bs=B.filter(b=>b.d>v&&b.d<nv);
+   if(v>=T-455&&v<=T-90&&bs.length){
+    first.push(bs[0].d-v);
+    const gr=[];bs.forEach(b=>{const g=gr[gr.length-1];if(g&&b.d-g[g.length-1].d<=3)g.push(b);else gr.push([b])});
+    const gi=gr.findIndex(g=>g.some(b=>b.t==='SAILF'));
+    if(gi>=0){open.push(gr[gi].find(b=>b.t==='SAILF').d-v);serv.push(gi+1);fert1.push(gi===0?1:0)}
+   }
+  });
+  if(V.length>=2&&V[V.length-1]>=T-545){const d=V[V.length-1]-V[V.length-2];if(d>=250&&d<=700)ivl.push(d)}
+  if(V.length&&c.naiss){const m=(V[0]-c.naiss)/30.44;if(V[0]>=T-730&&m>=18&&m<=40)afc.push(m)}
+ }
+ const card=(l,v,n)=>`<div class="kv"><small>${l}</small><span>${v}</span><small>${n}</small></div>`;
+ const cnt={};for(const c of DB.cows){const s=stat(c);if(s)cnt[s[0]]=(cnt[s[0]]||0)+1}
+ const herd=Object.keys(CL).map(k=>`<span style="color:${CL[k][1]};font-weight:600;margin-right:10px;white-space:nowrap;display:inline-block">${CL[k][0]} : ${cnt[k]||0}</span>`).join('')+`<span style="color:var(--og);font-weight:600;white-space:nowrap;display:inline-block">Réformées : ${cnt.ref||0}</span>`;
+ const watch=DB.cows.filter(c=>!c.elim&&kind(c)==='vel'&&T-c.vela>=100).sort((a,b)=>a.vela-b.vela);
+ $('info').textContent='Rapport · fichier du '+DB.date;
+ $('m').innerHTML=`<h3>Troupeau</h3><div style="line-height:1.9">${herd}</div>
+ <h3>Reproduction</h3><div class="mut">Vêlages d’il y a 3 à 15 mois, d’après l’historique du fichier (valeurs indicatives).</div>
+ <div class="grid">${card('Vêlage → 1re saillie',f1(mean(first))+' j','médiane '+f1(med(first))+' j · n = '+first.length)}${card('Jours ouverts (→ saillie fécondante)',f1(mean(open))+' j','médiane '+f1(med(open))+' j · n = '+open.length)}${card('Saillies par conception',f1(mean(serv)),'n = '+serv.length)}${card('Réussite à la 1re saillie',fert1.length?f1(100*mean(fert1))+' %':'—','n = '+fert1.length)}${card('Intervalle entre vêlages',f1(mean(ivl))+' j','vaches vêlées 2 fois ou plus · n = '+ivl.length)}${card('Âge au 1er vêlage',f1(mean(afc))+' mois','1er vêlage dans les 2 dernières années · n = '+afc.length)}</div>
+ <h3>Vaches ouvertes à surveiller <span class="tag">${watch.length}</span></h3><div class="mut">Vêlées depuis 100 jours ou plus, sans saillie</div>`+
+ (watch.length?watch.slice(0,40).map(c=>`<div class="cow" data-id="${c.id}"><div><b>${c.num}</b> ${c.nom}<div class="mut">Vêlée le ${fmt(c.vela)} · lactation ${c.lact}</div></div><div><span class="s-o">${T-c.vela} j</span></div></div>`).join(''):'<div class="mut" style="padding:6px 0">Aucune</div>');
+}
+function rsMatches(v){const q=nz(v.trim());if(!q)return[];return DB.cows.filter(c=>!c.elim&&(nz(c.num).includes(q)||nz(c.nom).includes(q))).sort((a,b)=>{const sa=nz(a.num).startsWith(q)?0:1,sb=nz(b.num).startsWith(q)?0:1;return sa-sb||numCmp(a,b)}).slice(0,8)}
+function rsSuggest(v){const el=$('rsug');if(!el)return;if(!v.trim()){el.innerHTML='';return}const m=rsMatches(v);
+ el.innerHTML=m.length?m.map(c=>{const si=statusInfo(c);return `<div class="cow" data-rsel="${c.id}" style="padding:6px 10px"><div><b>${c.num}</b> ${c.nom}</div><div>${si?`<span class="pill" style="background:${si.col}">${si.lab}</span>`:''}</div></div>`}).join(''):'<div class="mut" style="padding:4px 2px">Aucune vache trouvée</div>'}
+function rsSelect(id){const c=DB.cows.find(x=>x.id===id);if(!c)return;sel=id;const st=stat(c);if(st&&RSHOW[st[0]]===false){RSHOW[st[0]]=true;try{localStorage.setItem('dsa_rshow',JSON.stringify(RSHOW))}catch(x){}}roulette()}
+$('m').onkeydown=e=>{if(e.key==='Enter'&&e.target.id==='rsq'){const m=rsMatches(e.target.value);if(m.length)rsSelect(m[0].id)}};
+/* ===== Protocoles ===== */
+const uid=()=>Math.random().toString(36).slice(2,8);
+const KIND={inj:['Injection','var(--bl)'],ins:['Insémination','var(--gr)'],aut:['Autre','var(--ye)']};
+const mkStep=(d,txt,kind,time,before)=>({d,txt,kind:kind||'inj',on:true,time:time||'07:00',before:before||0});
+const TPL721=()=>({id:'t721',name:'Double 7-2-1',steps:[mkStep(1,'2 cc Fertiline'),mkStep(8,'2 cc Estrumate'),mkStep(11,'2 cc Fertiline'),mkStep(18,'2 cc Fertiline'),mkStep(25,'2 cc Estrumate'),mkStep(26,'2 cc Estrumate'),mkStep(27,'2 cc Fertiline (PM)'),mkStep(28,'Insémination','ins','19:00',1)]});
+let PT={on:false,tpl:[TPL721()],act:[]};
+try{const s=JSON.parse(localStorage.getItem('dsa_proto')||'null');if(s)PT={on:!!s.on,tpl:(Array.isArray(s.tpl)&&s.tpl.length)?s.tpl:PT.tpl,act:Array.isArray(s.act)?s.act:[]}}catch(e){}
+const savePT=()=>{try{localStorage.setItem('dsa_proto',JSON.stringify(PT))}catch(e){}};
+let pSub='cal',pCal={y:null,m:null},pSel=null,PF={tpl:'',start:null,cows:''};
+const tplOf=id=>PT.tpl.find(x=>x.id===id);
+function parseCows(text){
+ const toks=(Array.isArray(text)?text:String(text||'').split(/[\s,;]+/)).map(x=>String(x).trim()).filter(Boolean);
+ const seen=new Set(),ok=[],bad=[],uniq=[];
+ for(const tk of toks){if(seen.has(tk.toLowerCase()))continue;seen.add(tk.toLowerCase());uniq.push(tk);
+  const c=DB&&DB.cows.find(c=>!c.elim&&(c.num.toLowerCase()===tk.toLowerCase()||c.num.toLowerCase().startsWith(tk.toLowerCase()+'-')));
+  if(c)ok.push(c);else bad.push(tk)}
+ return{toks:uniq,ok,bad};
+}
+const cowChips=toks=>{const r=parseCows(toks);return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${r.ok.map(c=>`<button class="chip" data-open="${c.id}">${c.num}</button>`).join('')}${r.bad.map(t=>`<span class="tag w" title="Introuvable parmi les vaches actives">${t} ?</span>`).join('')}</div>`};
+function protoEvents(){
+ const ev=[];
+ for(const it of PT.act){const t=tplOf(it.tpl);if(!t||!t.steps.length)continue;const n=Math.max(...t.steps.map(s=>s.d));
+  for(const s of t.steps)ev.push({D:it.start+s.d-1,it,t,s,n})}
+ return ev;
+}
+const beforeTxt=b=>b==0?'le jour même':b==1?'la veille':b+' jours avant';
+const alertTxt=e=>!PT.on?'Alertes de protocoles désactivées':!e.s.on?'Pas d’alerte pour cette étape':`Alerte ${beforeTxt(+e.s.before||0)} à ${e.s.time}`;
+function protoPlan(){
+ const out=[];
+ for(const e of protoEvents()){
+  if(!e.s.on)continue;
+  const D=e.D-(+e.s.before||0),dt=toDate(D),[hh,mm]=String(e.s.time||'07:00').split(':').map(Number);
+  const r=parseCows(e.it.cows),nums=r.ok.map(c=>c.num).concat(r.bad);
+  out.push({D,at:new Date(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate(),hh||0,mm||0,0),title:`${e.t.name} · Jour ${e.s.d}`,body:`${e.s.txt||'Étape'}${nums.length?'\nVaches : '+(nums.length>14?nums.slice(0,14).join(', ')+' +'+(nums.length-14):nums.join(', ')):''}`});
+ }
+ return out.filter(p=>p.D>=todayN-1&&p.D<=todayN+90).sort((a,b)=>a.at-b.at);
+}
+function protos(){
+ $('info').textContent='Protocoles';
+ const tabs=[['cal','Calendrier'],['act','Protocoles actifs'],['mod','Modèles']];
+ $('m').innerHTML=`<div class="row" style="margin:0 0 10px">${tabs.map(([k,l])=>`<button data-ptab="${k}" class="${pSub===k?'on':''}">${l}</button>`).join('')}</div>`+(pSub==='cal'?pCalHtml():pSub==='act'?pActHtml():pModHtml());
+ if(PK.open&&pSub==='act')pkList();
+}
+function pCalHtml(){
+ const ev=protoEvents(),byD={};ev.forEach(e=>(byD[e.D]=byD[e.D]||[]).push(e));
+ const t=toDate(todayN);if(pCal.y==null){pCal.y=t.getUTCFullYear();pCal.m=t.getUTCMonth()}
+ if(pSel==null)pSel=todayN;
+ const first=Date.UTC(pCal.y,pCal.m,1),firstN=Math.round((first-D0)/DAY),dow=(new Date(first).getUTCDay()+6)%7,nd=new Date(Date.UTC(pCal.y,pCal.m+1,0)).getUTCDate();
+ let cells='';for(let i=0;i<dow;i++)cells+='<span></span>';
+ for(let d=1;d<=nd;d++){const n=firstN+d-1,es=byD[n]||[],ks=[...new Set(es.map(e=>e.s.kind))];
+  cells+=`<button class="cald${n===todayN?' t':''}${n===pSel?' s':''}" data-pd="${n}"><span>${d}</span><span class="dots">${ks.map(k=>`<i style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${(KIND[k]||KIND.aut)[1]}"></i>`).join('')}</span></button>`}
+ const es=(byD[pSel]||[]).sort((a,b)=>a.t.name.localeCompare(b.t.name)||a.s.d-b.s.d);
+ let det=`<h3 style="margin:14px 0 4px">${dateLong(pSel)}</h3>`;
+ if(es.length)det+=es.map(e=>{const col=(KIND[e.s.kind]||KIND.aut)[1];return `<div class="pcard" style="border-left:5px solid ${col}"><div><b>${e.t.name}</b> <span class="mut">· jour ${e.s.d} sur ${e.n} · début ${fmt(e.it.start)}</span></div><div style="font-weight:700;font-size:17px;color:${col}">${e.s.txt||'(étape sans texte)'}</div><div class="mut">${alertTxt(e)}</div>${cowChips(e.it.cows)}</div>`}).join('');
+ else det+=`<div class="mut">Aucune étape de protocole ce jour-là.${PT.act.length?'':' Va dans <b>Protocoles actifs</b> pour en démarrer un.'}</div>`;
+ const lg=Object.values(KIND).map(([l,c])=>`<span style="white-space:nowrap"><i style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${c}"></i> ${l}</span>`).join(' &nbsp; ');
+ return `<div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px"><button data-pm="-1">‹</button><b>${cap(MOISL[pCal.m])} ${pCal.y}</b><button data-pm="1">›</button></div>
+ <div class="calg" style="margin-bottom:4px">${['L','M','M','J','V','S','D'].map(x=>`<span class="mut" style="text-align:center;font-size:12px">${x}</span>`).join('')}</div><div class="calg">${cells}</div>
+ <div class="mut" style="font-size:12px;margin-top:8px">${lg}</div>${det}`;
+}
+function pActHtml(){
+ if(PK.open)return pickerHtml();
+ const nat=NATIVE(),pf=PF.cows?parseCows(PF.cows):null;
+ if(!PF.tpl||!tplOf(PF.tpl))PF.tpl=PT.tpl[0].id;if(!PF.start)PF.start=todayN;
+ const form=`<h3>Démarrer un protocole</h3><div class="pcard">
+ <div style="margin:4px 0">Modèle : <select class="zi" style="width:auto;text-align:left" data-pf="newtpl">${PT.tpl.map(t=>`<option value="${t.id}" ${t.id===PF.tpl?'selected':''}>${t.name}</option>`).join('')}</select></div>
+ <div style="margin:4px 0">Jour 1 : <input type="date" class="zi" style="width:auto" data-pf="newstart" value="${fmt(PF.start)}"></div>
+ <div style="margin:4px 0">Vaches <span class="mut">(numéros séparés par des espaces ou des virgules)</span></div>
+ <textarea class="zi" rows="2" style="width:100%;text-align:left" data-pf="newcows" placeholder="Ex. : 1602 1603 2042">${PF.cows}</textarea>
+ <div style="margin-top:6px"><button data-pkopen="new">☰ Choisir dans la liste</button></div>
+ ${pf?cowChips(pf.toks):''}
+ <div style="margin-top:8px"><button data-pstart>Démarrer le protocole</button></div></div>`;
+ const act=PT.act.length?PT.act.map(it=>{const t=tplOf(it.tpl);if(!t)return '';const n=Math.max(...t.steps.map(s=>s.d)),j=todayN-it.start+1;
+  const st=j<1?`commence dans ${1-j} j`:j>n?'terminé':`jour ${j} sur ${n}`;
+  return `<div class="pcard"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${t.name}</b><button data-pdelinst="${it.id}">Supprimer</button></div>
+  <div class="mut">Jour 1 : ${fmt(it.start)} · ${st}</div>
+  <div style="margin:6px 0">Jour 1 : <input type="date" class="zi" style="width:auto" data-pf="start" data-pi="${it.id}" value="${fmt(it.start)}"></div>
+  <textarea class="zi" rows="2" style="width:100%;text-align:left" data-pf="cows" data-pi="${it.id}">${it.cows.join(' ')}</textarea><div style="margin-top:6px"><button data-pkopen="${it.id}">☰ Choisir dans la liste</button></div>${cowChips(it.cows)}
+  <div style="margin-top:8px;font-size:14px">${t.steps.map(s=>{const D=it.start+s.d-1,past=D<todayN;return `<div style="${past?'opacity:.5':''}"><b style="color:${(KIND[s.kind]||KIND.aut)[1]}">J${s.d}</b> · ${fmt(D)} · ${s.txt}</div>`}).join('')}</div></div>`}).join(''):'<div class="mut">Aucun protocole en cours.</div>';
+ return `<label style="display:block;margin:6px 0 10px"><input type="checkbox" data-pf="on" ${PT.on?'checked':''}> <b>Activer les alertes des protocoles</b><div class="mut" style="margin-left:24px">Chaque étape a son heure d’alerte (onglet Modèles). ${nat?'':'Les notifications arrivent seulement dans l’application installée (APK).'}</div></label>
+ <div class="mut" id="ntst" style="margin-bottom:6px">${NTSTATUS}</div>${nat?'<div class="row" style="margin-bottom:6px"><button data-ntb="apply">Reprogrammer maintenant</button><button data-ntb="test">Envoyer un test</button></div>':''}
+ ${form}<h3>Protocoles en cours <span class="tag">${PT.act.length}</span></h3>${act}`;
+}
+const stepHtml=(t,s,i)=>{const col=(KIND[s.kind]||KIND.aut)[1],ctx=`data-pt="${t.id}" data-ps="${i}"`;
+ return `<div style="border-top:1px solid var(--ln);border-left:4px solid ${col};padding:8px 0 8px 8px;margin-top:6px">
+ <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">Jour <input class="zi" type="number" inputmode="numeric" min="1" max="120" style="width:60px" data-pf="d" ${ctx} value="${s.d}">
+  <select class="zi" style="width:auto;text-align:left" data-pf="kind" ${ctx}>${Object.entries(KIND).map(([k,v])=>`<option value="${k}" ${s.kind===k?'selected':''}>${v[0]}</option>`).join('')}</select>
+  <button data-ptpl="delstep" ${ctx} title="Supprimer l’étape">Supprimer</button></div>
+ <input class="zi" style="width:100%;text-align:left;margin:6px 0" data-pf="txt" ${ctx} value="${String(s.txt||'').replace(/"/g,'&quot;')}" placeholder="Ex. : 2 cc Fertiline">
+ <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label><input type="checkbox" data-pf="on" ${ctx} ${s.on?'checked':''}> Alerte</label> à <input type="time" class="zi" style="width:auto" data-pf="time" ${ctx} value="${s.time||'07:00'}">
+  <select class="zi" style="width:auto;text-align:left" data-pf="before" ${ctx}>${[[0,'le jour même'],[1,'la veille'],[2,'2 jours avant'],[3,'3 jours avant']].map(([v,l])=>`<option value="${v}" ${(+s.before||0)===v?'selected':''}>${l}</option>`).join('')}</select></div></div>`};
+function pModHtml(){
+ return `<div class="mut" style="margin-bottom:6px">Crée tes propres protocoles : chaque étape a un jour (jour 1 = début), un texte, un type et une alerte (heure et jour : le jour même ou la veille).</div><div class="row"><button data-ptpl="new">➕ Nouveau modèle</button></div>`+PT.tpl.map(t=>`<div class="pcard">
+ <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input class="zi" style="flex:1;min-width:140px;width:auto;text-align:left;font-weight:700" data-pf="name" data-pt="${t.id}" value="${String(t.name).replace(/"/g,'&quot;')}"><button data-ptpl="dup" data-pt="${t.id}">Dupliquer</button><button data-ptpl="del" data-pt="${t.id}">Supprimer</button></div>
+ ${t.steps.map((s,i)=>stepHtml(t,s,i)).join('')}
+ <div style="margin-top:8px"><button data-ptpl="addstep" data-pt="${t.id}">➕ Ajouter une étape</button></div></div>`).join('');
+}
+function protoChange(el){
+ const f=el.dataset.pf,pi=el.dataset.pi,pt=el.dataset.pt,ps=el.dataset.ps;
+ if(f==='on'&&!pt){PT.on=el.checked;savePT();if(PT.on)scheduleNotifs().then(updNt);else schedSoon();return}
+ if(f==='newtpl'){PF.tpl=el.value;return}
+ if(f==='newstart'){PF.start=dayN(el.value)||todayN;return}
+ if(f==='newcows'){PF.cows=el.value;protos();return}
+ if(pi){const it=PT.act.find(x=>x.id===pi);if(!it)return;
+  if(f==='start')it.start=dayN(el.value)||it.start;else if(f==='cows')it.cows=parseCows(el.value).toks;
+  savePT();schedSoon();protos();return}
+ const t=tplOf(pt);if(!t)return;
+ if(ps===undefined){if(f==='name'){t.name=el.value.trim()||t.name;savePT()}return}
+ const s=t.steps[+ps];if(!s)return;
+ if(f==='d'){s.d=Math.max(1,Math.min(120,Math.round(+el.value)||1));t.steps.sort((a,b)=>a.d-b.d)}
+ else if(f==='txt')s.txt=el.value;else if(f==='kind')s.kind=el.value;else if(f==='on')s.on=el.checked;
+ else if(f==='time')s.time=el.value||'07:00';else if(f==='before')s.before=+el.value;
+ savePT();schedSoon();if(f==='d'||f==='kind')protos();
+}
+function protoClick(e){
+ let b;
+ if(b=e.target.closest('[data-pkopen]')){pkOpen(b.dataset.pkopen);return true}
+ if(b=e.target.closest('[data-pkv]')){PK.view=b.dataset.pkv;protos();return true}
+ if(b=e.target.closest('[data-pkall]')){pkRows().forEach(c=>{if(!PK.sel.includes(c.num))PK.sel.push(c.num)});pkList();return true}
+ if(b=e.target.closest('[data-pknone]')){const S=new Set(pkRows().map(c=>c.num));PK.sel=PK.sel.filter(n=>!S.has(n));pkList();return true}
+ if(b=e.target.closest('[data-pkcancel]')){PK.open=false;protos();return true}
+ if(b=e.target.closest('[data-pkok]')){const toks=PK.sel.concat(PK.extra);if(PK.target==='new')PF.cows=toks.join(' ');else{const it=PT.act.find(x=>x.id===PK.target);if(it){it.cows=toks;savePT();schedSoon()}}PK.open=false;protos();return true}
+ if(b=e.target.closest('[data-ptab]')){pSub=b.dataset.ptab;PK.open=false;protos();return true}
+ if(b=e.target.closest('[data-pm]')){pCal.m+=+b.dataset.pm;if(pCal.m<0){pCal.m=11;pCal.y--}if(pCal.m>11){pCal.m=0;pCal.y++}protos();return true}
+ if(b=e.target.closest('[data-pd]')){pSel=+b.dataset.pd;protos();return true}
+ if(b=e.target.closest('[data-pstart]')){
+  const r=parseCows(PF.cows);if(!r.ok.length){alert('Ajoute au moins une vache (numéros séparés par des espaces).');return true}
+  PT.act.push({id:uid(),tpl:PF.tpl,start:PF.start||todayN,cows:r.toks});savePT();schedSoon();
+  const d=toDate(PF.start||todayN);pCal={y:d.getUTCFullYear(),m:d.getUTCMonth()};pSel=PF.start||todayN;PF.cows='';pSub='cal';protos();return true}
+ if(b=e.target.closest('[data-pdelinst]')){if(confirm('Supprimer ce protocole ?')){PT.act=PT.act.filter(x=>x.id!==b.dataset.pdelinst);savePT();schedSoon();protos()}return true}
+ if(b=e.target.closest('[data-ptpl]')){const a=b.dataset.ptpl,t=tplOf(b.dataset.pt);
+  if(a==='new')PT.tpl.push({id:uid(),name:'Nouveau protocole',steps:[mkStep(1,'')]});
+  else if(a==='dup'&&t)PT.tpl.push({...JSON.parse(JSON.stringify(t)),id:uid(),name:t.name+' (copie)'});
+  else if(a==='del'&&t){if(PT.act.some(x=>x.tpl===t.id)){alert('Ce modèle est utilisé par un protocole en cours.');return true}if(PT.tpl.length<=1){alert('Garde au moins un modèle.');return true}if(!confirm('Supprimer ce modèle ?'))return true;PT.tpl=PT.tpl.filter(x=>x.id!==t.id)}
+  else if(a==='addstep'&&t){t.steps.push(mkStep(Math.max(0,...t.steps.map(s=>s.d))+1,''));t.steps.sort((x,y)=>x.d-y.d)}
+  else if(a==='delstep'&&t){t.steps.splice(+b.dataset.ps,1)}
+  savePT();schedSoon();protos();return true}
+ return false;
+}
+let PK={open:false,target:'new',sel:[],extra:[],q:'',view:'actives'};
+const PKV=['actives','ges','tges','tar','vel','ouv','taur','sai','tsai','gen','veau'];
+function pkOpen(target){const toks=target==='new'?parseCows(PF.cows).toks:((PT.act.find(x=>x.id===target)||{cows:[]}).cows);
+ const r=parseCows(toks);PK={open:true,target,sel:r.ok.map(c=>c.num),extra:r.bad,q:'',view:'actives'};protos()}
+function pkRows(){const q=nz(PK.q.trim()),f=VIEWS[PK.view]||VIEWS.actives;
+ return DB.cows.filter(c=>!c.elim&&f(c)&&(!q||nz(c.num).includes(q)||nz(c.nom).includes(q))).sort((a,b)=>numCmp(a,b))}
+function pkCount(){const el=$('pkcount');if(el)el.textContent=PK.sel.length+' vache(s) choisie(s)'}
+function pkList(){const el=$('pklist');if(!el)return;const rows=pkRows(),S=new Set(PK.sel);
+ el.innerHTML=rows.map(c=>{const si=statusInfo(c);return `<label class="cow" style="cursor:pointer;gap:8px;align-items:center;padding:6px 10px"><input type="checkbox" data-pkrow="${c.num}" ${S.has(c.num)?'checked':''}><span style="flex:1"><b>${c.num}</b> ${c.nom}</span>${si?`<span class="pill" style="background:${si.col}">${si.lab}</span>`:''}</label>`}).join('')||'<div class="mut">Aucune vache.</div>';
+ pkCount()}
+function pickerHtml(){
+ if(!DB)return '<div class="empty">Importe d’abord ton fichier.</div>';
+ return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><b>Choisir les vaches</b><span><button data-pkcancel>Annuler</button> <button class="on" data-pkok>Valider</button></span></div>
+ <input id="pkq" type="search" class="zi" style="width:100%;text-align:left;margin-top:6px" placeholder="Numéro ou nom…" value="${PK.q.replace(/"/g,'&quot;')}" autocomplete="off">
+ <div class="row" style="margin-top:6px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px">${PKV.map(v=>`<button data-pkv="${v}" class="${PK.view===v?'on':''}" style="white-space:nowrap;flex:none">${(VLBL.find(x=>x[0]===v)||[v,v])[1]}</button>`).join('')}</div>
+ <div class="row" style="align-items:center"><button data-pkall>Tout cocher (liste affichée)</button><button data-pknone>Tout décocher</button></div><div class="mut" id="pkcount" style="margin:4px 0 6px"></div><div id="pklist"></div>
+ <div style="margin-top:10px"><button class="on" data-pkok>Valider</button> <button data-pkcancel>Annuler</button></div>`;
+}
+const dateLong=n=>cap(toDate(n).toLocaleDateString('fr-CA',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}));
+function back(){show()}
+const TABS=['t1','t2','t3','t4','t5','t6','t7'];
+TABS.forEach(id=>$(id).onclick=()=>{tab={t1:'fiches',t2:'roulette',t3:'regie',t4:'recherche',t5:'rapport',t6:'rappels',t7:'proto'}[id];TABS.forEach(x=>$(x).classList.toggle('on',x===id));show()});
+$('gear').onclick=()=>{tab='reglages';TABS.forEach(x=>$(x).classList.remove('on'));show()};
+/* ===== Onglets : ordre personnalisable (appui long puis glisser) ===== */
+(function(){
+ const box=$('tabs');
+ try{let ord=JSON.parse(localStorage.getItem('dsa_tabs')||'null');if(Array.isArray(ord)){ord=ord.filter(id=>$(id));TABS.forEach(id=>{if(!ord.includes(id))ord.push(id)});ord.forEach(id=>box.appendChild($(id)))}}catch(e){}
+ let st=null,justDragged=false;
+ const end=(save)=>{if(!st)return;clearTimeout(st.timer);const was=st.drag;st.b.classList.remove('drag');try{st.b.releasePointerCapture(st.pid)}catch(e){}st=null;
+  if(was){if(save)try{localStorage.setItem('dsa_tabs',JSON.stringify([...box.children].map(c=>c.id)))}catch(e){}justDragged=true;setTimeout(()=>{justDragged=false},80)}};
+ box.addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||(e.pointerType==='mouse'&&e.button!==0))return;
+  st={b,pid:e.pointerId,x0:e.clientX,y0:e.clientY,drag:false,timer:setTimeout(()=>{if(!st)return;st.drag=true;st.b.classList.add('drag');try{st.b.setPointerCapture(st.pid)}catch(x){}try{navigator.vibrate&&navigator.vibrate(20)}catch(x){}},380)}});
+ box.addEventListener('pointermove',e=>{if(!st||e.pointerId!==st.pid)return;
+  if(!st.drag){if(Math.hypot(e.clientX-st.x0,e.clientY-st.y0)>10){clearTimeout(st.timer);st=null}return}
+  const x=e.clientX,kids=[...box.children].filter(c=>c.offsetParent!==null);
+  const iB=kids.indexOf(st.b);
+  for(let i=0;i<kids.length;i++){const o=kids[i];if(o===st.b)continue;const r=o.getBoundingClientRect(),mid=r.left+r.width/2;
+   if(iB<i&&x>mid){box.insertBefore(st.b,o.nextSibling);break}
+   if(iB>i&&x<mid){box.insertBefore(st.b,o);break}}
+  const br=box.getBoundingClientRect();if(x>br.right-36)box.scrollLeft+=10;else if(x<br.left+36)box.scrollLeft-=10;
+  e.preventDefault()});
+ box.addEventListener('pointerup',()=>end(true));
+ box.addEventListener('pointercancel',()=>end(true));
+ box.addEventListener('touchmove',e=>{if(st&&st.drag)e.preventDefault()},{passive:false});
+ box.addEventListener('contextmenu',e=>e.preventDefault());
+ box.addEventListener('click',e=>{if(justDragged){e.stopPropagation();e.preventDefault()}},true);
+})();
+
+const CL={vel:['Vélées','#d32f2f',.70],sai:['Saillies','#1b5e20',.55],ges:['Gestantes','#1565c0',.48],tar:['Taries GST','#7b1fa2',.38],gen:['Génisses','#e48ab8',.30],vo:['Veaux','var(--tx)',.20]};
+const MOIS=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+function stat(c){
+ if(c.elim)return null;
+ if(c.flag==='R'){const rf=c.ev.filter(e=>e.t==='REF').pop();return['ref',rf?rf.d:todayN]}
+ const ag=c.naiss?todayN-c.naiss:999;
+ if(c.gest)return[c.tarAfter&&c.vela?'tar':'ges',c.prevu];
+ if(c.lb)return['sai',c.lb.d-ZONES.s1];
+ if(c.vela)return['vel',c.vela];
+ return[ag<183?'vo':'gen',c.naiss];
+}
+/* 0° = haut = aujourd'hui ; les mois tournent, les zones grises restent fixes */
+function ang(n){let d=((n-todayN)%365+365)%365;if(d>182.5)d-=365;return d/365*360}
+/* zones grises : Prépa = 21→0 j avant le vêlage ; Saillies = dès 70 j en lait ; Dx gestation = 28 j après la saillie */
+const DG=d=>d*360/365;
+const ZDEF={p1:21,p2:0,s1:70,s2:92,dx1:28,dx2:50,t:60};
+let ZONES={...ZDEF},optOpen=false,rq='',ract=true,rper='all',rfrom='',rto='';
+try{const s=JSON.parse(localStorage.getItem('dsa_zones')||'null');if(s)for(const k in ZDEF)if(Number.isFinite(+s[k]))ZONES[k]=+s[k]}catch(e){}
+const saveZ=()=>{try{localStorage.setItem('dsa_zones',JSON.stringify(ZONES))}catch(e){}};
+const wedges=()=>[[DG(ZONES.p2),DG(ZONES.p1),'Prépa. au vêlage'],[360-DG(ZONES.s2),360-DG(ZONES.s1),'Saillies'],[360-DG(ZONES.s1+ZONES.dx2),360-DG(ZONES.s1+ZONES.dx1),'Dx gestation']];
+const zrow=(lab,k1,k2,unit)=>`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0"><b style="min-width:120px">${lab}</b> de <input class="zi" type="number" inputmode="numeric" min="0" max="365" data-zk="${k1}" value="${ZONES[k1]}"> à <input class="zi" type="number" inputmode="numeric" min="0" max="365" data-zk="${k2}" value="${ZONES[k2]}"> <span class="mut">${unit}</span></div>`;
+const zpanel=()=>`<div class="cow" style="display:block;cursor:default"><div class="mut">Choisis les jours des zones grises (la roulette se met à jour au fur et à mesure).</div>${zrow('Prépa. au vêlage','p1','p2','jours avant le vêlage')}${zrow('Saillies','s1','s2','jours en lait')}${zrow('Dx gestation','dx1','dx2','jours après la saillie')}<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0"><b style="min-width:120px">Tarissement</b> barre mauve à <input class="zi" type="number" inputmode="numeric" min="0" max="365" data-zk="t" value="${ZONES.t}"> <span class="mut">jours avant le vêlage</span></div><div class="mut">Les barres verte (Saillies) et bleue (Dx gestation) sont au début de leur zone grise.</div><button data-z="reset">Remettre les valeurs par défaut</button></div>`;
+function roulette(){
+ if(!DB)return;
+ const R=165,cx=200,cy=200,T=todayN,pt=(a,r)=>[(cx+r*Math.sin(a*Math.PI/180)).toFixed(1),(cy-r*Math.cos(a*Math.PI/180)).toFixed(1)];
+ const cnt={},dots=[],refs=[];let tot=0;
+ for(const c of DB.cows){const st=stat(c);if(!st)continue;tot++;cnt[kind0(c)]=(cnt[kind0(c)]||0)+1;if(st[0]==='ref'){refs.push([c,st]);continue}dots.push([c,st])}
+ const sc=sel&&DB.cows.find(c=>c.id===sel&&!c.elim);
+ let g=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--card)" stroke="var(--ln)"/>`;
+ for(const [a1,a2,lab] of wedges()){const [x1,y1]=pt(a1,R),[x2,y2]=pt(a2,R),m=(a1+a2)/2,[tx,ty]=pt(m,R*.66);
+  g+=`<path d="M${cx} ${cy}L${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}Z" fill="var(--ln)" opacity=".8"/><text x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${m<180?m-90:m+90} ${tx} ${ty})" style="font-size:9px">${lab}</text>`}
+ const t0=new Date(Date.UTC(toDate(T).getUTCFullYear(),toDate(T).getUTCMonth(),1));
+ for(let k=-7;k<=7;k++){
+  const b=new Date(Date.UTC(t0.getUTCFullYear(),t0.getUTCMonth()+k,1)),n1=Math.floor((b-D0)/DAY),mid=n1+14;
+  if(Math.abs(n1-T)<=182){const [a,bb]=pt(ang(n1),R),[a2,b2]=pt(ang(n1),R+6);g+=`<line x1="${a}" y1="${bb}" x2="${a2}" y2="${b2}" stroke="var(--mut)"/>`}
+  if(Math.abs(mid-T)<=182){const an=ang(mid),[lx,ly]=pt(an,R+17),rot=Math.abs(an)>90?an+180:an;
+   g+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rot.toFixed(1)} ${lx} ${ly})">${MOIS[b.getUTCMonth()]}</text>`}
+ }
+ g+=`<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy-R}" stroke="#d32f2f" stroke-width="1.5"/>`;
+ const bar=(a,col)=>{const [x,y]=pt(a,R);return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${col}" stroke-width="2"/><rect x="${x-3.5}" y="${y-3.5}" width="7" height="7" fill="${col}"/>`};
+ g+=bar(360-DG(ZONES.s1),'var(--gr)')+bar(360-DG(ZONES.s1+ZONES.dx1),'var(--bl)')+bar(DG(ZONES.t),'var(--pu)');
+ const P=dots.filter(([c,st])=>RSHOW[st[0]]!==false).map(([c,st])=>{const k=CL[st[0]],j=((+c.id*37)%100)/100-.5;let ring=k[2];if(!c.vela&&(st[0]==='sai'||st[0]==='ges'))ring-=0.05;const [x,y]=pt(ang(st[1]),(ring+j*.06)*R);return{c,st,k,x:+x,y:+y}});
+ grp=[];
+ if(sc){const s=P.find(q=>q.c.id===sc.id);grp=s?P.filter(q=>(q.st[0]===s.st[0]&&q.st[1]===s.st[1])||Math.hypot(q.x-s.x,q.y-s.y)<9).map(q=>q.c):[sc];grp.sort((a,b)=>a.num.localeCompare(b.num,'fr',{numeric:true}))}
+ const gi=new Set(grp.map(c=>c.id));
+ for(const {c,k,x,y} of P){const on=gi.has(c.id);
+  g+=`<g data-c="${c.id}"><circle cx="${x}" cy="${y}" r="13" fill="transparent"/><circle cx="${x}" cy="${y}" r="${on?7:4.5}" fill="${k[1]}" ${on?'stroke="var(--warn)" stroke-width="2"':''}/></g>`;
+ }
+ for(const [c,st] of (RSHOW.ref===false?[]:refs)){const j=((+c.id*37)%100)/100-.5,[x,y]=pt(ang(st[1]),(.5+j*.3)*R);
+  g+=`<g data-c="${c.id}">${sc&&sc.id===c.id?`<circle cx="${x}" cy="${y}" r="10" fill="none" stroke="var(--warn)" stroke-width="2"/>`:''}<circle cx="${x}" cy="${y}" r="13" fill="transparent"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" style="fill:#e08a00;font-size:15px;font-weight:700">✕</text></g>`}
+ if(sc)g+=`<rect x="${cx-30}" y="${cy-11}" width="60" height="22" rx="3" fill="#1b6b3a"/><text x="${cx}" y="${cy+1}" text-anchor="middle" dominant-baseline="middle" style="fill:#fff;font-size:13px;font-weight:700">${sc.num}</text>`;
+ const lg=Object.keys(CL).map(k=>`<span style="color:${CL[k][1]}${RSHOW[k]===false?';opacity:.4;text-decoration:line-through':''}">${CL[k][0]}: ${cnt[k]||0}</span>`).join('')+`<span>Total: ${tot}</span><span style="color:#e08a00${RSHOW.ref===false?';opacity:.4;text-decoration:line-through':''}">✕ Réformées: ${refs.length}</span>`;
+ let det='<div class="mut" style="text-align:center">Touche un point pour voir la vache. Trait rouge en haut = aujourd’hui.</div>';
+ const row=c=>{const si=statusInfo(c),B=x=>`<b style="color:var(--tx);font-size:inherit">${x}</b>`;
+ const sty=si?` style="border-left:6px solid ${si.col};border-radius:0;background:color-mix(in srgb, ${si.col} 13%, var(--card))"`:'';
+ const right=si?`<span class="pill" style="background:${si.col}">${si.lab}</span>${si.sub?`<div class="psub">${si.sub}</div>`:''}<div class="psub">Ouvrir ›</div>`:'<span class="mut">Ouvrir ›</span>';
+ const parts=[];if(c.vela)parts.push('vêlée '+fmt(c.vela)+' · '+B((T-c.vela)+' j en lait'));if(c.lb)parts.push('saillie '+fmt(c.lb.d)+' · '+B((T-c.lb.d)+' j'));if(c.gest)parts.push('vêlage prévu '+fmt(c.prevu));
+ return `<div class="cow" data-open="${c.id}"${sty}><div><b>${c.num}</b> ${c.nom}<div class="mut">${parts.join(' · ')}</div></div><div>${right}</div></div>`};
+ if(sc)det=grp.length>1?`<div class="mut" style="margin:6px 0"><b>${grp.length} animaux à cet endroit</b> — touche-en un pour ouvrir sa fiche</div>`+grp.map(row).join(''):row(sc);
+ $('m').innerHTML=`<div class="lg">${lg}</div><div style="display:flex;gap:8px;align-items:center;margin:6px 0"><input id="rsq" type="search" class="zi" style="flex:1;width:auto;min-width:0;text-align:left;padding:6px 10px;font-size:15px" placeholder="Chercher une vache (numéro ou nom)" autocomplete="off"><button data-z="toggle">⚙ Zones</button></div><div id="rsug"></div><div style="font-size:14px;margin:4px 0">Afficher : <label><input type="checkbox" data-rs="gen" ${RSHOW.gen===false?'':'checked'}> Génisses</label> &nbsp; <label><input type="checkbox" data-rs="vo" ${RSHOW.vo===false?'':'checked'}> Veaux</label> &nbsp; <label><input type="checkbox" data-rs="ref" ${RSHOW.ref===false?'':'checked'}> Réformées</label></div>${optOpen?zpanel():''}<svg class="wheel" viewBox="-15 -15 430 430">${g}</svg><div class="mut" style="text-align:center;font-size:12px">Barres : <b style="color:var(--gr)">verte</b> = début des saillies · <b style="color:var(--bl)">bleue</b> = début du Dx gestation · <b style="color:var(--pu)">mauve</b> = tarir (${ZONES.t} j avant le vêlage)</div>${det}`;
+ $('info').textContent='Roulette · '+tot+' animaux actifs · fichier du '+DB.date;
+}
+
+const nz=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const REC_EC={VELA:'var(--ye)',SAILF:'var(--bl)',GST:'var(--bl)',TAR:'var(--pu)',REF:'var(--og)',ELIM:'var(--og)'};
+function recherche(){
+ $('info').textContent='Recherche · fichier du '+DB.date;
+ const all=[...new Set(DB.cows.flatMap(c=>c.ev.map(e=>e.t)))];
+ const pref=['VELA','SAIL','SAILF','GST','TAR','NAIS','VACC','TX','CHIN','POUB','REF','ELIM'];
+ const codes=pref.filter(t=>all.includes(t));
+ $('m').innerHTML=`<input id="rq" type="search" class="zi" style="width:100%;text-align:left" placeholder="Ex. : vêlage, vel, gst, vaccin, un produit…" value="${rq.replace(/"/g,'&quot;')}" autocomplete="off"><div class="row" id="rchips" style="margin-top:8px">${codes.map(t=>`<button data-t="${t}" data-rq="${t}">${LBL[t]||t} <small>${t}</small></button>`).join('')}</div><div class="row" id="rper" style="margin:8px 0 0">${[['all','Toutes dates'],['7','7 j'],['30','30 j'],['90','90 j'],['c','Dates…']].map(([v,l])=>`<button data-rp="${v}" class="${rper===v?'on':''}">${l}</button>`).join('')}</div><div id="rdates" style="display:${rper==='c'?'flex':'none'};gap:6px;align-items:center;margin:6px 0">du <input type="date" id="rfrom" class="zi" style="width:auto" value="${rfrom}"> au <input type="date" id="rto" class="zi" style="width:auto" value="${rto}"></div><label style="display:block;margin:8px 0;font-size:14px"><input type="checkbox" id="ract" ${ract?'checked':''}> Actives seulement (sans les éliminées)</label><div id="rres"></div>`;
+ rupdate();
+}
+const dayN=s=>{const [y,m,d]=s.split('-').map(Number);return Math.round((Date.UTC(y,m-1,d)-D0)/DAY)};
+const rrange=()=>rper==='all'?[-1e9,1e9]:rper==='c'?[rfrom?dayN(rfrom):-1e9,rto?dayN(rto):1e9]:[todayN-(+rper),todayN];
+const rperLabel=()=>rper==='c'?'du '+(rfrom||'…')+' au '+(rto||'…'):'les '+rper+' derniers jours';
+function rupdate(){
+ const res=$('rres');if(!res||!DB)return;
+ const nq=nz(rq.trim());
+ [...$('rchips').children].forEach(b=>b.classList.toggle('on',nz(b.dataset.rq)===nq));
+ if(!nq){res.innerHTML='<div class="empty">Tape un mot (vêlage, vel, gst, vaccin, nom d’un produit…) ou touche un bouton.<br>La liste montre le dernier événement de ce type pour chaque vache.</div>';return}
+ const codes=[...new Set(DB.cows.flatMap(c=>c.ev.map(e=>e.t)))];
+ let types=codes.filter(t=>nz(t)===nq);
+ if(!types.length)types=codes.filter(t=>nz(t).startsWith(nq));
+ if(!types.length)types=codes.filter(t=>nz(LBL[t]||t).includes(nq));
+ const ok0=types.length?e=>types.includes(e.t):e=>nz((LBL[e.t]||e.t)+' '+pretty(e)).includes(nq);const [rf,rt]=rrange(),ok=e=>ok0(e)&&e.d>=rf&&e.d<=rt;
+ const out=[];
+ for(const c of DB.cows){if(ract&&c.elim)continue;let l=null;for(const e of c.ev)if(ok(e)&&(!l||e.d>=l.d))l=e;if(l)out.push([c,l])}
+ out.sort((a,b)=>b[1].d-a[1].d||a[0].num.localeCompare(b[0].num,'fr',{numeric:true}));
+ const what=types.length?'dernier événement « '+types.map(t=>LBL[t]||t).join(' / ')+' »':'texte « '+rq.trim()+' »';
+ res.innerHTML=`<div class="mut" style="margin:6px 0"><b>${out.length}</b> vache(s) — ${what}${rper==='all'?'':' · '+rperLabel()}</div>`+out.slice(0,300).map(([c,e])=>{const n=todayN-e.d,p=pretty(e);
+  return `<div class="cow" data-open="${c.id}"><div><b>${c.num}</b> ${c.nom}<div class="mut"><b style="color:${REC_EC[e.t]||'inherit'}">${LBL[e.t]||e.t}</b>${p?' · '+p:''}</div></div><div>${fmt(e.d)}<div class="mut" style="font-weight:400">${n>=0?'il y a '+n+' j':'dans '+(-n)+' j'}</div></div></div>`}).join('')+(out.length>300?'<div class="empty">Affichage limité à 300 — précise ta recherche.</div>':'');
+}
+const RGDEF={r1a:17,r1b:24,r2a:38,r2b:45,ga:35,gb:90,ia:50,ib:450,gm:14,va:15,vb:30,ta:0,tb:74,ecmin:0,ecmax:null};
+let RG={...RGDEF},rgOpen=false;
+try{const s=JSON.parse(localStorage.getItem('dsa_regie')||'null');if(s)for(const k in RGDEF)if(s[k]!==null&&s[k]!==undefined&&Number.isFinite(+s[k]))RG[k]=+s[k]}catch(e){}
+const saveRG=()=>{try{localStorage.setItem('dsa_regie',JSON.stringify(RG))}catch(e){}};
+const rin=k=>`<input class="zi" type="number" inputmode="numeric" min="0" max="1000" data-rk="${k}" value="${RG[k]==null?'':RG[k]}">`;
+const rgpanel=()=>`<div class="cow" style="display:block;cursor:default"><div class="mut">Chaque section s’affiche selon ces jours minimum et maximum (la page se met à jour au fur et à mesure).</div>
+<div style="margin:8px 0">Retours de chaleur, <b>1er cycle</b> : de ${rin('r1a')} à ${rin('r1b')} <span class="mut">jours de saillie</span></div>
+<div style="margin:8px 0">Retours de chaleur, <b>2e cycle</b> : de ${rin('r2a')} à ${rin('r2b')} <span class="mut">jours de saillie</span></div>
+<div style="margin:8px 0"><b>Tests de gestation</b> : de ${rin('ga')} à ${rin('gb')} <span class="mut">jours de saillie</span></div>
+<div style="margin:8px 0"><b>À inséminer</b> : vaches de ${rin('ia')} à ${rin('ib')} <span class="mut">jours en lait</span> · génisses dès ${rin('gm')} <span class="mut">mois</span></div>
+<div style="margin:8px 0"><b>Vêlages à venir</b> : de ${rin('va')} <span class="mut">jours de retard</span> à ${rin('vb')} <span class="mut">jours avant le vêlage</span></div>
+<div style="margin:8px 0"><b>Tarissements</b> : de ${rin('ta')} à ${rin('tb')} <span class="mut">jours avant le vêlage prévu</span></div>
+<div style="margin:8px 0"><b>Veaux à écorner</b> : de ${rin('ecmin')} à ${rin('ecmax')} <span class="mut">jours après la naissance (maximum vide = aucune limite)</span></div>
+<button data-rg="reset">Remettre les valeurs par défaut</button></div>`;
+let DONE={};try{DONE=JSON.parse(localStorage.getItem('dsa_done')||'{}')||{}}catch(e){}
+(()=>{let ch=false;for(const k in DONE)if(DONE[k]<todayN-200){delete DONE[k];ch=true}if(ch)try{localStorage.setItem('dsa_done',JSON.stringify(DONE))}catch(e){}})();
+const saveDone=()=>{try{localStorage.setItem('dsa_done',JSON.stringify(DONE))}catch(e){}};
+let showDone=false;
+function tasks(T){
+ const act=DB.cows.filter(c=>!c.elim),genMin=Math.round(RG.gm*30.44);
+ const ret=[],tg=[],ins=[],vel=[],tar=[];
+ for(const c of act){
+  const lb=c.lb,dim=c.vela?T-c.vela:null,RF=c.flag==='R';
+  if(!RF&&lb&&lb.t==='SAIL'&&!c.gest){
+   const j=T-lb.d,cyc=(j>=RG.r1a&&j<=RG.r1b)?1:(j>=RG.r2a&&j<=RG.r2b)?2:0;
+   if(cyc){const nx=lb.d+21*cyc;ret.push({c,key:`ret|${c.num}|${lb.d}|${cyc}`,text:`Saillie ${fmt(lb.d)} (jour ${j}) · ${cyc===1?'1er':'2e'} cycle · retour prévu ${fmt(nx)}`,dl:nx-T,sort:nx})}
+   if(j>=RG.ga&&j<=RG.gb&&!c.gstAfter)tg.push({c,key:`tg|${c.num}|${lb.d}`,text:`Saillie il y a ${j} j (${fmt(lb.d)})`,tag:`${j} j`,sort:-j});
+  }
+  if(!lb&&!RF){
+   if(c.vela&&dim>=RG.ia&&dim<=RG.ib)ins.push({c,key:`ins|${c.num}|${c.vela}`,text:`Vêlée il y a ${dim} j · lactation ${c.lact}`,tag:`${dim} j`,sort:-dim});
+   else if(!c.vela&&c.naiss&&T-c.naiss>=genMin&&!c.ev.some(e=>e.t.startsWith('SAIL')))ins.push({c,key:`ins|${c.num}|${c.naiss}`,text:`Génisse de ${Math.round((T-c.naiss)/30.44)} mois`,tag:'',sort:-(T-c.naiss)});
+  }
+  if(c.gest){const dv=c.prevu-T,dd=c.prevu-60-T;
+   if(dv>=-RG.va&&dv<=RG.vb)vel.push({c,key:`vel|${c.num}|${c.prevu}`,text:`Saillie ${fmt(c.lf.d)} · prévu ${fmt(c.prevu)}`,dl:dv,sort:c.prevu});
+   if(c.vela&&dv>=RG.ta&&dv<=RG.tb&&!c.tarAfter)tar.push({c,key:`tar|${c.num}|${c.prevu}`,text:`Tarissement ~${fmt(c.prevu-60)} · vêlage prévu ${fmt(c.prevu)}`,dl:dd,sort:c.prevu});}
+ }
+ const eco=[];for(const c of act){if(!c.vela&&!c.lb&&c.naiss&&kind0(c)==='vo'){const ag=T-c.naiss;if(ag>=RG.ecmin&&(RG.ecmax==null||ag<=RG.ecmax))eco.push({c,key:`eco|${c.num}|${c.naiss}`,text:`Né le ${fmt(c.naiss)} · ${ag} j`,tag:`${ag} j`,sort:-ag})}}
+ return {ret,tg,ins,vel,tar,eco};
+}
+function regie(){
+ if(!DB)return;
+ const act=DB.cows.filter(c=>!c.elim),T=todayN,tk=tasks(T);
+ const rel=d=>d<0?`<span class="tag w">retard ${-d} j</span>`:d===0?'<span class="tag w">aujourd’hui</span>':`<span class="tag">dans ${d} j</span>`;
+ const doneRows=[];
+ const sc=(t,sub,rows)=>{rows.filter(r=>DONE[r.key]).forEach(r=>doneRows.push({...r,cat:t}));
+  const pend=rows.filter(r=>!DONE[r.key]).sort((a,b)=>a.sort-b.sort);
+  return `<h3>${t} <span class="tag">${pend.length}</span></h3><div class="mut">${sub}</div>`+(pend.length?pend.map(r=>`<div class="cow" data-id="${r.c.id}"><div><b>${r.c.num}</b> ${r.c.nom}<div class="mut">${r.text}</div></div><div style="display:flex;gap:6px;align-items:center">${r.dl!==undefined?rel(r.dl):r.tag?`<span class="tag">${r.tag}</span>`:''}<button class="dn" data-done="${r.key}" title="Marquer comme fait">✓</button></div></div>`).join(''):'<div class="mut" style="padding:6px 0 12px">Rien à signaler</div>')};
+ const secs=sc('Retours de chaleur',`Saillie non confirmée · 1er cycle : ${RG.r1a} à ${RG.r1b} j de saillie · 2e cycle : ${RG.r2a} à ${RG.r2b} j`,tk.ret)
+ +sc('Tests de gestation à faire',`Saillie de ${RG.ga} à ${RG.gb} jours, sans test depuis`,tk.tg)
+ +sc('À inséminer',`Vaches de ${RG.ia} à ${RG.ib} j en lait sans saillie · génisses de ${RG.gm} mois et plus`,tk.ins)
+ +sc('Vêlages à venir',`De ${RG.va} j de retard à ${RG.vb} j avant la date prévue (saillie fécondante + 280 j)`,tk.vel)
+ +sc('Tarissements',`De ${RG.ta} à ${RG.tb} jours avant le vêlage prévu (tarissement ~60 j avant)`,tk.tar)
+ +sc('Veaux à écorner',`Veaux de moins de 6 mois, dès ${RG.ecmin} j après la naissance${RG.ecmax==null?' (aucune limite maximale)':', jusqu’à '+RG.ecmax+' j'}`,tk.eco);
+ const done=doneRows.length?`<h3 style="color:var(--mut)">Actions complétées <span class="tag">${doneRows.length}</span></h3><div class="mut">Touche ↩ pour remettre une vache dans sa liste.</div>`+doneRows.map(r=>`<div class="cow" data-id="${r.c.id}" style="filter:grayscale(1);opacity:.65"><div><b>${r.c.num}</b> ${r.c.nom}<div class="mut">${r.cat} · ${r.text}</div></div><div><button class="dn" data-done="${r.key}" title="Remettre dans la liste">↩</button></div></div>`).join(''):'';
+ $('m').innerHTML=`<div class="row"><button data-rg="toggle">⚙ Réglages des jours</button></div>${rgOpen?rgpanel():''}`+secs+done;
+ $('info').textContent='Régie · '+act.length+' actives · fichier du '+DB.date;
+}
+$('m').onchange=e=>{const pkr=e.target.closest('[data-pkrow]');if(pkr){const n=pkr.dataset.pkrow;if(pkr.checked){if(!PK.sel.includes(n))PK.sel.push(n)}else PK.sel=PK.sel.filter(x=>x!==n);pkCount();return}const pfe=e.target.closest('[data-pf]');if(pfe){protoChange(pfe);return}
+ const rs=e.target.closest('[data-rs]');if(rs){RSHOW[rs.dataset.rs]=rs.checked;try{localStorage.setItem('dsa_rshow',JSON.stringify(RSHOW))}catch(x){}roulette();return}
+ if(e.target.id==='nm'){APPNAME=e.target.value.trim()||'MEUH';saveName();setTitle();return}
+ const nc=e.target.closest('[data-ntc]');if(nc){const [k,f]=nc.dataset.ntc.split('.'),s=NT.cat[k];if(f==='on')s.on=nc.checked;else if(f==='mode')s.mode=nc.value;else if(f==='adv')s.adv=Math.max(0,Math.min(30,Math.round(+nc.value)||0));saveNT();schedSoon();return}
+ const nt=e.target.closest('[data-nt]');if(nt){NT[nt.dataset.nt]=nt.checked;saveNT();if(nt.dataset.nt==='on')scheduleNotifs().then(updNt);else schedSoon();return}
+ if(e.target.dataset&&e.target.dataset.ntv==='time'){const [a,b]=e.target.value.split(':').map(Number);if(Number.isFinite(a)){NT.hh=a;NT.mm=b||0;saveNT();schedSoon()}return}
+ if(e.target.id==='rfrom'||e.target.id==='rto'){rfrom=$('rfrom').value;rto=$('rto').value;rupdate();return}
+const rk=e.target.closest('[data-rk]');if(rk){RG[rk.dataset.rk]=(rk.dataset.rk==='ecmax'&&rk.value.trim()==='')?null:Math.max(0,Math.min(1000,Math.round(+rk.value)||0));if(RG.ecmax!=null&&RG.ecmin>RG.ecmax)[RG.ecmin,RG.ecmax]=[RG.ecmax,RG.ecmin];[['r1a','r1b'],['r2a','r2b'],['ga','gb'],['ia','ib'],['ta','tb']].forEach(([a,b])=>{if(RG[a]>RG[b])[RG[a],RG[b]]=[RG[b],RG[a]]});saveRG();schedSoon();regie();return}
+if(e.target.id==='ract'){ract=e.target.checked;rupdate();return}const i=e.target.closest('[data-zk]');if(!i)return;
+ const v=Math.max(0,Math.min(365,Math.round(+i.value)));ZONES[i.dataset.zk]=Number.isFinite(v)?v:ZDEF[i.dataset.zk];
+ if(ZONES.p1<ZONES.p2)[ZONES.p1,ZONES.p2]=[ZONES.p2,ZONES.p1];
+ if(ZONES.s1>ZONES.s2)[ZONES.s1,ZONES.s2]=[ZONES.s2,ZONES.s1];
+ if(ZONES.dx1>ZONES.dx2)[ZONES.dx1,ZONES.dx2]=[ZONES.dx2,ZONES.dx1];
+ saveZ();roulette()};
+$('m').oninput=e=>{if(e.target.id==='pkq'){PK.q=e.target.value;pkList();return}if(e.target.id==='rsq'){rsSuggest(e.target.value);return}if(e.target.id==='nm'){APPNAME=e.target.value||'MEUH';setTitle()}if(e.target.id==='rq'){rq=e.target.value;rupdate()}};
+$('m').onclick=e=>{if(protoClick(e))return;const rsl=e.target.closest('[data-rsel]');if(rsl){rsSelect(rsl.dataset.rsel);return}
+ const dn=e.target.closest('[data-done]');if(dn){const k=dn.dataset.done;if(DONE[k])delete DONE[k];else DONE[k]=todayN;saveDone();schedSoon();regie();return}
+ const rp=e.target.closest('[data-rp]');if(rp){rper=rp.dataset.rp;[...$('rper').children].forEach(b=>b.classList.toggle('on',b.dataset.rp===rper));$('rdates').style.display=rper==='c'?'flex':'none';rupdate();return}
+ const nb=e.target.closest('[data-ntb]');if(nb){ntAction(nb.dataset.ntb);return}
+ const cm=e.target.closest('[data-cm]');if(cm){cal.m+=+cm.dataset.cm;if(cal.m<0){cal.m=11;cal.y--}if(cal.m>11){cal.m=0;cal.y++}rappels();return}
+ const cd=e.target.closest('[data-cd]');if(cd){calSel=+cd.dataset.cd;rappels();return}
+ const rsb=e.target.closest('[data-rsub]');if(rsb){rpSub=rsb.dataset.rsub;rappels();return}
+const rz=e.target.closest('[data-rg]');if(rz){if(rz.dataset.rg==='reset'){RG={...RGDEF};saveRG();schedSoon()}else rgOpen=!rgOpen;regie();return}const rc=e.target.closest('[data-rq]');if(rc){rq=rc.dataset.rq;const i=$('rq');if(i)i.value=rq;rupdate();return}const z=e.target.closest('[data-z]');if(z){if(z.dataset.z==='reset'){ZONES={...ZDEF};saveZ()}else optOpen=!optOpen;roulette();return}const o=e.target.closest('[data-open]');if(o){fiche(o.dataset.open);return}const d=e.target.closest('[data-c]');if(d){sel=d.dataset.c;roulette();return}const w=e.target.closest('[data-w]');if(w){rwin=+w.dataset.w;regie();return}const c=e.target.closest('.cow');if(c&&c.dataset.id)fiche(c.dataset.id)};
+$('q').oninput=e=>{q=e.target.value.trim();list()};
+$('vw').onclick=e=>{const b=e.target.closest('button');if(!b)return;view=b.dataset.v;list()};
+async function unzipTxt(buf){
+ const dv=new DataView(buf);let e=buf.byteLength-22;
+ while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+ if(e<0)throw new Error('zip invalide');
+ const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);
+ for(let i=0;i<n;i++){
+  if(dv.getUint32(p,true)!==0x02014b50)break;
+  const meth=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lh=dv.getUint32(p+42,true);
+  const name=new TextDecoder().decode(new Uint8Array(buf,p+46,nl));
+  if(/Synchro.*\.txt$/i.test(name)){
+   const st=lh+30+dv.getUint16(lh+26,true)+dv.getUint16(lh+28,true),data=new Uint8Array(buf,st,cs);
+   if(meth===0)return new TextDecoder().decode(data);
+   return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  }
+  p+=46+nl+xl+cl;
+ }
+ throw new Error('fichier Synchro introuvable dans le zip');
+}
+function load(txt,save){DB=parse(txt);if(!DB.cows.length){$('m').innerHTML='<div class="empty">Fichier non reconnu.</div>';return}
+ if(save)try{const r=indexedDB.open('vaches',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>{try{r.result.transaction('k','readwrite').objectStore('k').put(txt,'txt')}catch(e){}}}catch(e){}
+ schedSoon();list()}
+$('imp').onclick=()=>{$('f').value='';$('f').click()};
+$('f').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+ $('m').innerHTML='<div class="empty">Lecture de '+f.name+'…</div>';
+ try{const buf=await f.arrayBuffer(),u=new Uint8Array(buf),zip=u[0]===0x50&&u[1]===0x4B;
+  const txt=zip?await unzipTxt(buf):new TextDecoder().decode(buf);
+  if(!/^DSA-SYNCHRO/.test(txt.trim().slice(0,20)))throw new Error('ce n’est pas un fichier Synchro de DSA ('+f.name+')');
+  load(txt,true)}
+ catch(err){$('m').innerHTML='<div class="empty">Impossible de lire ce fichier : '+err.message+'</div>'}};
+try{const r=indexedDB.open('vaches',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');
+ r.onsuccess=()=>{try{const g=r.result.transaction('k').objectStore('k').get('txt');g.onsuccess=()=>{if(g.result)load(g.result,false)}}catch(e){}}}catch(e){}
+</script></body></html>
