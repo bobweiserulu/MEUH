@@ -28,9 +28,11 @@ jobs:
           mkdir -p www assets
           cp index.html www/index.html
           cp icon-only.png icon-foreground.png icon-background.png assets/
-          npm install @capacitor/core@6 @capacitor/android@6 @capacitor/local-notifications@6
+          npm install @capacitor/core@6 @capacitor/android@6 @capacitor/local-notifications@6 @capacitor/haptics@6
           npm install -D @capacitor/cli@6 @capacitor/assets
           npx cap add android
+          sed -i 's#<application#<uses-permission android:name="android.permission.VIBRATE" />\n    <application#' android/app/src/main/AndroidManifest.xml
+          sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
           npx capacitor-assets generate --android
           npx cap sync android
 
@@ -43,11 +45,14 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug
 
+      - name: Empreinte de la clé de signature
+        run: |
+          AS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner
+          "$AS" verify --print-certs android/app/build/outputs/apk/debug/app-debug.apk | grep -i "SHA-256" || true
+
       - name: Publier l'APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: meuh-derniere-version
           name: MEUH - dernière version
           files: android/app/build/outputs/apk/debug/app-debug.apk
-
-          
