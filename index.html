@@ -172,9 +172,26 @@ function statutBadge(c){
  if(st&&st[0]==='ref')o+=b('bg-r','Réformée');
  return o;
 }
+let HOL={};try{HOL=JSON.parse(localStorage.getItem('dsa_hol')||'{}')||{}}catch(e){}
+for(const k in HOL){if(typeof HOL[k]==='string'){const m=HOL[k].match(/animalId=(\d+)/);if(m)HOL[k]=+m[1];else delete HOL[k]}}
+const saveHOL=()=>{try{localStorage.setItem('dsa_hol',JSON.stringify(HOL))}catch(e){}};
+const HB='https://portal.holstein.ca/en/AIS/',HP=()=>'https://portal.holstein.ca/'+(LANG==='fr'?'fr':'en')+'/AIS/';
+function holBlock(c){
+ if(!c.natl)return '';
+ const reg='HOCANF'+c.natl,id=HOL[c.natl],st='text-decoration:none;font-weight:600';
+ const lac=`<a class="btn" href="https://lactanetgen.ca/query/summary.php?breed=HO&country=CAN&sex=F&regnum=${c.natl}" target="_blank" rel="noopener" style="${st}">🧬 Lactanet ↗</a>`;
+ const ais=id?`${HP()}AIS?animalId=${id}&animalRegNo=${reg}`:`${HP()}Search?animalSearchString=${c.natl}`;
+ let h=`<div class="row" id="holrow" data-a="${c.natl}">${lac}<a class="btn" href="${ais}" target="_blank" rel="noopener" style="${st}">🐄 Holstein Canada ↗</a>`;
+ if(id)h+=`<a class="btn" href="${HP()}Conformation?animalId=${id}&animalRegNo=${reg}&uom=KG&me=BCA" target="_blank" rel="noopener" style="${st}">📋 Classification ↗</a>`;
+ return h+'</div>'}
+async function holLookup(c){
+ if(!c.natl||HOL[c.natl]||!gdCH())return;
+ try{const d=JSON.parse(await gdGet(HB+'ReadAnimalSearchGrid?animalSearchString='+encodeURIComponent(c.natl),'text'));
+  const L=d.Data||[],a=L.find(x=>String(x.RegNumber)===String(c.natl)&&x.SexCode==='F')||L.find(x=>String(x.RegNumber)===String(c.natl));
+  if(a&&a.AnimalId){HOL[c.natl]=a.AnimalId;saveHOL();const r=$('holrow');if(r&&r.dataset.a===c.natl)r.outerHTML=holBlock(c)}}catch(e){}}
 function fiche(id,fromPop){
  const c=DB.cows.find(x=>x.id===id);if(!c){show();return}
- if(!fromPop)pushNav(id);
+ if(!fromPop)pushNav(id);setTimeout(()=>holLookup(c),0);
  const dim=c.vela&&!c.elim?todayN-c.vela:null,dl=dlHtml(c);
  const kv=(k,v)=>v?`<div class="kv"><small>${k}</small><span>${v}</span></div>`:'';
  const types=[...new Set(c.ev.map(e=>e.t))];
@@ -182,6 +199,7 @@ function fiche(id,fromPop){
  $('m').innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="back" onclick="back()" style="margin:0;padding:7px 12px" title="Retour" aria-label="Retour">←</button><h2 style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${c.num} ${c.nom} ${statutBadge(c)}</h2></div>
  
  <div class="grid">${kv('Naissance',c.naiss?fmt(c.naiss)+' ('+age(c)+')':'')}${kv('Lactation',c.lact||'')}${kv('Dernier vêlage',c.vela?fmt(c.vela)+(dim!=null?' · '+dim+' JEL':''):'')}${kv('Dernière saillie',c.sail?fmt(c.sail.d)+' · '+(todayN-c.sail.d)+' JDS'+(bullCode(c.sail)?' · '+bullCode(c.sail):''):'')}${kv('Vêlage prévu (estimé)',c.prevu?(c.prevu>=todayN?(c.prevu-todayN)+' j avant le vêlage':'dépassé de '+(todayN-c.prevu)+' j')+' · '+fmt(c.prevu):'')}${kv('ATQ',c.natl)}${dl.boxes}</div>
+ ${holBlock(c)}
  <div class="row" id="chips">${ordBy(['',...types],t=>t,CHIPO).map(t=>t===''?'<button class="on" data-t="">Tout</button>':`<button data-t="${t}">${LBL[t]||t}</button>`).join('')}</div><div id="evs"></div>`;
  const draw=t=>{$('evs').innerHTML=c.ev.filter(e=>!t||e.t===t).map(e=>`<div class="ev t-${e.t}"><time>${fmt(e.d)}</time><div><em>${LBL[e.t]||e.t}</em> <span class="mut">${pretty(e)}</span></div></div>`).join('')};
  $('chips').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;[...$('chips').children].forEach(x=>x.classList.toggle('on',x===b));draw(b.dataset.t);toBottom()};
@@ -626,6 +644,11 @@ Rappels|Reminders|Recordatorios
 Protocoles|Protocols|Protocolos
 Rapport|Report|Informe
 Importer|Import|Importar
+📋 Classification ↗|📋 Classification ↗|📋 Clasificación ↗
+🐄 Classification Holstein Canada ↗|🐄 Holstein Canada classification ↗|🐄 Clasificación Holstein Canadá ↗
+Le numéro est copié quand tu touches le bouton. Colle-le dans la recherche, ouvre la fiche de classification, puis colle ici l’adresse de la page :|The number is copied when you tap the button. Paste it in the search, open the classification page, then paste the page address here:|El número se copia al tocar el botón. Pégalo en la búsqueda, abre la ficha de clasificación y pega aquí la dirección de la página:
+Lien Holstein enregistré ✓|Holstein link saved ✓|Enlace Holstein guardado ✓
+Effacer le lien Holstein de cette vache ?|Delete this cow’s Holstein link?|¿Borrar el enlace Holstein de esta vaca?
 📁 Mettre à jour avec un fichier local|📁 Update from a local file|📁 Actualizar con un archivo local
 Va dans <b>⚙ Réglages</b> et touche <b>Importer un fichier local</b> (fichier <b>Synchro_OUT…zip</b> exporté de DSA), ou configure la mise à jour Google Drive.|Go to <b>⚙ Settings</b> and tap <b>Import a local file</b> (the <b>Synchro_OUT…zip</b> exported from DSA), or set up the Google Drive update.|Ve a <b>⚙ Ajustes</b> y toca <b>Importar un archivo local</b> (el <b>Synchro_OUT…zip</b> exportado de DSA), o configura la actualización de Google Drive.
 ⟳ Mettre à jour|⟳ Update|⟳ Actualizar
