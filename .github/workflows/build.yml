@@ -33,6 +33,12 @@ jobs:
           npx cap add android
           sed -i 's#<application#<uses-permission android:name="android.permission.VIBRATE" />\n    <application#' android/app/src/main/AndroidManifest.xml
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+          python3 - <<'PYEOF'
+          p='android/app/build.gradle'
+          s=open(p).read()
+          s=s.replace("android {","android {\n    signingConfigs {\n        debug {\n            storeFile file('../../debug.keystore')\n            storePassword 'android'\n            keyAlias 'androiddebugkey'\n            keyPassword 'android'\n            storeType 'pkcs12'\n        }\n    }",1)
+          open(p,'w').write(s)
+          PYEOF
           npx capacitor-assets generate --android
           npx cap sync android
 
