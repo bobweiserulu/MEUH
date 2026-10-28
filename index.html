@@ -33,12 +33,13 @@ button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
 #tabs button.on .ic{background:color-mix(in srgb,var(--ac) 20%,transparent)}
 main{padding-bottom:84px}#toast{bottom:calc(80px + env(safe-area-inset-bottom,0px))}
 .ddb{padding:7px 12px;font-size:15px;font-weight:600}
+header h1{margin-bottom:6px}#gear,#upd{padding:5px 12px!important}
 #qb.on{background:var(--ac);color:#fff}
 #vw,#srt{display:none;position:absolute;left:0;right:0;top:100%;margin:0;padding:10px 12px;background:var(--bg);border-bottom:1px solid var(--ln);box-shadow:0 10px 18px rgba(0,0,0,.2);z-index:4;flex-wrap:wrap;overflow:auto;max-height:65vh;gap:8px}
 #vw.open,#srt.open{display:flex}
 </style>
 </head><body>
-<header><h1><span style="display:flex;flex-direction:column;min-width:0"><span id="ttl">🐄 MEUH</span><span class="sub" id="info" style="font-weight:400;line-height:1.2">Aucun fichier chargé</span></span><span style="display:flex;gap:6px;flex:none"><button id="upd" class="on" type="button" aria-label="Mettre à jour" title="Mettre à jour" style="font-weight:700;padding:8px 14px;font-size:15px">⟳</button><button id="gear" type="button" aria-label="Réglages" title="Réglages">⚙</button></span><input id="f" type="file" style="display:none"></h1>
+<header><h1><span style="display:flex;align-items:baseline;gap:8px;min-width:0;flex:1"><span id="ttl" style="white-space:nowrap">🐄 MEUH</span><span class="sub" id="info" style="font-weight:400;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">Aucun fichier chargé</span></span><span style="display:flex;gap:6px;flex:none"><button id="upd" class="on" type="button" aria-label="Mettre à jour" title="Mettre à jour" style="font-weight:700;padding:8px 14px;font-size:15px">⟳</button><button id="gear" type="button" aria-label="Réglages" title="Réglages">⚙</button></span><input id="f" type="file" style="display:none"></h1>
 <div id="bar"><div style="display:flex;gap:6px;align-items:center"><button id="vwb" type="button" class="ddb" style="flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis">Actives ▾</button><button id="srtb" type="button" class="ddb">Numéro ↑</button><button id="qb" type="button" class="ddb" aria-label="Rechercher">🔍</button></div><div id="qrow" style="display:none;margin-top:6px"><input id="q" type="search" placeholder="Nom ou numéro" autocomplete="off" style="padding:7px 10px;font-size:15px;border-radius:8px"></div><div class="row" id="vw"></div><div class="row" id="srt"></div></div></header>
 <main id="m"><div class="empty">Va dans <b>⚙ Réglages</b> et touche <b>Importer un fichier local</b> (fichier <b>Synchro_OUT…zip</b> exporté de DSA), ou configure la mise à jour Google Drive.</div></main>
 <nav id="tabs"><button id="t1" class="on"><span class="ic">🐄</span><span>Fiches</span></button><button id="t2"><span class="ic">🎯</span><span>Roulette</span></button><button id="t3"><span class="ic">✅</span><span>À faire</span></button><button id="t4"><span class="ic">🔍</span><span>Recherche</span></button><button id="t6"><span class="ic">🔔</span><span>Rappels</span></button><button id="t7"><span class="ic">📋</span><span>Protocoles</span></button><button id="t5" style="display:none"><span class="ic"></span><span>Rapport</span></button></nav>
@@ -152,13 +153,13 @@ function statusInfo(c){
  if(c.flag==='R')return{col:'var(--og)',lab:'Réformée',sub:lab+(sub?' · '+sub:''),ref:false,dl:delaiTag(c)};
  return{col,lab,sub,ref:false,dl:delaiTag(c)};
 }
-function list(){document.querySelector('header').style.display='';$('tabs').style.display='';if(tab!=='fiches'){show();return}
+function list(){document.querySelector('header').style.display='';$('tabs').style.display='';$('m').style.paddingBottom='';inF=false;if(tab!=='fiches'){show();return}
  renderViews();renderSort();
  let a=DB.cows.filter(VIEWS[view]||VIEWS.actives);
  if(q){const s=q.toLowerCase();a=a.filter(c=>c.num.toLowerCase().includes(s)||c.nom.toLowerCase().includes(s))}
  sortCows(a);
  $('m').innerHTML=a.length?a.slice(0,300).map(c=>{const si=statusInfo(c);const sty=si?` style="border-left:6px solid ${si.col};border-radius:0;background:color-mix(in srgb, ${si.col} 13%, var(--card))"`:'';const right=si?`<span class="pill" style="background:${si.col}">${si.lab}</span>${si.sub?`<div class="psub">${si.sub}</div>`:''}${si.ref?'<div class="psub" style="color:var(--og)">✕ réformée</div>':''}${si.dl?`<div class="psub" style="color:var(--rd);font-weight:800">${si.dl}</div>`:''}`:'';return `<div class="cow" data-id="${c.id}"${sty}><div><b>${c.num}</b> ${c.nom}<div class="mut">${c.lact?c.lact+' lact. · ':''}${age(c)}${c.vela?' · vêlée '+fmt(c.vela):''}</div></div><div>${right}</div></div>`}).join('')+(a.length>300?'<div class="empty">Précise ta recherche…</div>':''):'<div class="empty">Aucune vache</div>';
- $('info').textContent='fichier du '+DB.date;
+ $('info').textContent=DB.date;
 }
 const sizeEvs=()=>{const e=$('evs');if(!e)return;e.style.overflowY='auto';e.style.height=Math.max(220,innerHeight-(e.getBoundingClientRect().top+scrollY)-12)+'px'};
 const toBottom=()=>setTimeout(()=>{const e=$('evs');if(e)e.scrollTop=e.scrollHeight},0);
@@ -179,7 +180,7 @@ const HB='https://portal.holstein.ca/en/AIS/',HP=()=>'https://portal.holstein.ca
 function holBlock(c){
  if(!c.natl)return '';
  const reg='HOCANF'+c.natl,id=HOL[c.natl],st='text-decoration:none;font-weight:600';
- const lac=`<a class="btn" href="https://lactanetgen.ca/query/summary.php?breed=HO&country=CAN&sex=F&regnum=${c.natl}" target="_blank" rel="noopener" style="${st}">🧬 Lactanet ↗</a>`;
+ const lac=`<a class="btn" href="https://lactanetgen.ca/query/summary.php?breed=HO&country=CAN&sex=F&regnum=${c.natl}" target="_blank" rel="noopener" style="${st}">🧬 CDN ↗</a>`;
  const ais=id?`${HP()}AIS?animalId=${id}&animalRegNo=${reg}`:`${HP()}Search?animalSearchString=${c.natl}`;
  let h=`<div class="row" id="holrow" data-a="${c.natl}">${lac}<a class="btn" href="${ais}" target="_blank" rel="noopener" style="${st}">🐄 Holstein Canada ↗</a>`;
  if(id)h+=`<a class="btn" href="${HP()}Conformation?animalId=${id}&animalRegNo=${reg}&uom=KG&me=BCA" target="_blank" rel="noopener" style="${st}">📋 Classification ↗</a>`;
@@ -195,7 +196,7 @@ function fiche(id,fromPop){
  const dim=c.vela&&!c.elim?todayN-c.vela:null,dl=dlHtml(c);
  const kv=(k,v)=>v?`<div class="kv"><small>${k}</small><span>${v}</span></div>`:'';
  const types=[...new Set(c.ev.map(e=>e.t))];
- $('bar').style.display='none';document.querySelector('header').style.display='none';$('tabs').style.display='none';
+ $('bar').style.display='none';document.querySelector('header').style.display='none';$('tabs').style.display='none';$('m').style.paddingBottom='12px';inF=true;
  $('m').innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="back" onclick="back()" style="margin:0;padding:7px 12px" title="Retour" aria-label="Retour">←</button><h2 style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${c.num} ${c.nom} ${statutBadge(c)}</h2></div>
  
  <div class="grid">${kv('Naissance',c.naiss?fmt(c.naiss)+' ('+age(c)+')':'')}${kv('Lactation',c.lact||'')}${kv('Dernier vêlage',c.vela?fmt(c.vela)+(dim!=null?' · '+dim+' JEL':''):'')}${kv('Dernière saillie',c.sail?fmt(c.sail.d)+' · '+(todayN-c.sail.d)+' JDS'+(bullCode(c.sail)?' · '+bullCode(c.sail):''):'')}${kv('Vêlage prévu (estimé)',c.prevu?(c.prevu>=todayN?(c.prevu-todayN)+' j avant le vêlage':'dépassé de '+(todayN-c.prevu)+' j')+' · '+fmt(c.prevu):'')}${kv('ATQ',c.natl)}${dl.boxes}</div>
@@ -211,7 +212,7 @@ function openDD(id){const o=$(id).classList.contains('open');closeDD();if(!o)$(i
 $('vwb').onclick=()=>openDD('vw');$('srtb').onclick=()=>openDD('srt');
 $('qb').onclick=()=>{const r=$('qrow'),o=r.style.display!=='none';closeDD();if(o){r.style.display='none';$('q').value='';if(q){q='';list()}}else{r.style.display='';$('q').focus()}$('qb').classList.toggle('on',!o)};
 addEventListener('click',e=>{if(!e.target.closest('#vw,#srt,#vwb,#srtb'))closeDD()});
-function show(){closeDD();document.querySelector('header').style.display=tab==='fiches'?'':'none';$('tabs').style.display='';const f=tab==='fiches';$('bar').style.display=f?'':'none';if(tab==='reglages'){reglages();return}if(tab==='rappels'){rappels();return}if(tab==='proto'){protos();return}if(DB){if(f)list();else if(tab==='roulette')roulette();else if(tab==='recherche')recherche();else if(tab==='rapport')rapport();else regie()}}
+function show(){closeDD();document.querySelector('header').style.display=tab==='fiches'?'':'none';$('tabs').style.display='';$('m').style.paddingBottom='';inF=false;const f=tab==='fiches';$('bar').style.display=f?'':'none';if(tab==='reglages'){reglages();return}if(tab==='rappels'){rappels();return}if(tab==='proto'){protos();return}if(DB){if(f)list();else if(tab==='roulette')roulette();else if(tab==='recherche')recherche();else if(tab==='rapport')rapport();else regie()}}
 
 /* ===== Réglages, nom, rappels, rapport ===== */
 const pad=n=>String(n).padStart(2,'0');
@@ -1108,15 +1109,23 @@ new MutationObserver(ms=>{if(LANG==='fr')return;for(const m of ms)m.addedNodes.f
 function applyTheme(){document.documentElement.setAttribute('data-theme',THEME==='auto'?'':THEME)}
 function setLang(l){LANG=l;try{localStorage.setItem('dsa_lang',l)}catch(e){}document.documentElement.lang=l;MOISL=monthsLong();trNode(document.body);show();schedSoon()}
 applyTheme();document.documentElement.lang=LANG;
-function back(){if(history.state&&history.state.f)history.back();else show()}
+let inF=false;const tabHist=[];
+const AppP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;
+function back(){if(!AppP&&history.state&&history.state.f)history.back();else show()}
+function appBack(){
+ if($('vw').classList.contains('open')||$('srt').classList.contains('open')){closeDD();return}
+ if(inF){back();return}
+ if(tab!=='fiches'){tab=tabHist.length?tabHist.pop():'fiches';hlTab();show();return}
+ if(AppP&&AppP.exitApp)AppP.exitApp()}
+try{if(AppP&&AppP.addListener)AppP.addListener('backButton',appBack)}catch(e){}
 const TABS=['t1','t2','t3','t4','t5','t6','t7'];
 const TABMAP={t1:'fiches',t2:'roulette',t3:'regie',t4:'recherche',t5:'rapport',t6:'rappels',t7:'proto'};
 function hlTab(){const id=Object.keys(TABMAP).find(k=>TABMAP[k]===tab);TABS.forEach(x=>$(x).classList.toggle('on',x===id))}
-function pushNav(f){try{history.pushState({tab:tab,f:f||null},'')}catch(e){}}
+function pushNav(f){if(AppP)return;try{history.pushState({tab:tab,f:f||null},'')}catch(e){}}
 try{history.replaceState({tab:'fiches',f:null},'')}catch(e){}
 addEventListener('popstate',ev=>{const s=ev.state||{tab:'fiches',f:null};tab=s.tab||'fiches';hlTab();if(s.f&&DB)fiche(s.f,true);else show()});
-TABS.forEach(id=>$(id).onclick=()=>{if(tab!==TABMAP[id]){tab=TABMAP[id];pushNav()}tab=TABMAP[id];hlTab();show()});
-$('gear').onclick=()=>{if(tab!=='reglages'){tab='reglages';pushNav()}TABS.forEach(x=>$(x).classList.remove('on'));show()};
+TABS.forEach(id=>$(id).onclick=()=>{if(tab!==TABMAP[id]){tabHist.push(tab);tab=TABMAP[id];pushNav()}tab=TABMAP[id];hlTab();show()});
+$('gear').onclick=()=>{if(tab!=='reglages'){tabHist.push(tab);tab='reglages';pushNav()}TABS.forEach(x=>$(x).classList.remove('on'));show()};
 /* ===== Pastilles déplaçables (appui long puis glisser) ===== */
 const ordBy=(arr,key,ord)=>{if(!Array.isArray(ord))return arr;const rk=k=>{const i=ord.indexOf(k);return i<0?999:i};return [...arr].sort((a,b)=>rk(key(a))-rk(key(b)))};
 const loadOrd=k=>{try{const a=JSON.parse(localStorage.getItem(k)||'null');return Array.isArray(a)?a:null}catch(e){return null}};
