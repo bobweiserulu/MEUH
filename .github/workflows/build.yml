@@ -28,7 +28,7 @@ jobs:
           mkdir -p www assets
           cp index.html www/index.html
           cp icon-only.png icon-foreground.png icon-background.png assets/
-          npm install @capacitor/core@6 @capacitor/android@6 @capacitor/local-notifications@6 @capacitor/haptics@6
+          npm install @capacitor/core@6 @capacitor/android@6 @capacitor/local-notifications@6 @capacitor/haptics@6 @capacitor/app@6
           npm install -D @capacitor/cli@6 @capacitor/assets
           npx cap add android
           sed -i 's#<application#<uses-permission android:name="android.permission.VIBRATE" />\n    <application#' android/app/src/main/AndroidManifest.xml
