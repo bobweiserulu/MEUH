@@ -196,9 +196,16 @@ const escH=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;'
 let NOTES={},ACT=[];try{NOTES=JSON.parse(localStorage.getItem('dsa_notes')||'{}')||{};ACT=JSON.parse(localStorage.getItem('dsa_act')||'[]')||[]}catch(e){}
 const saveNotes=()=>{try{localStorage.setItem('dsa_notes',JSON.stringify(NOTES))}catch(e){}};
 const noteKey=c=>c.natl||('n'+c.num);
-function noteHtml(c,edit){const v=NOTES[noteKey(c)]||'';
- if(edit)return `<textarea id="noteta" rows="3" placeholder="Note sur cette vache…" style="width:100%;margin-top:6px;padding:8px 10px;font:inherit;font-size:15px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx)">${escH(v)}</textarea><div class="row" style="margin-top:6px"><button data-notesave class="on">Enregistrer</button>${v?'<button data-notedel>Effacer</button>':''}</div>`;
- return v?`<div class="nbox" data-noteedit>📝 ${escH(v)}</div>`:''}
+let NALARM={};try{NALARM=JSON.parse(localStorage.getItem('dsa_nalarm')||'{}')||{}}catch(e){}
+const saveNA=()=>{try{localStorage.setItem('dsa_nalarm',JSON.stringify(NALARM))}catch(e){}};
+const alDate=a=>{const [y,m,d]=a.d.split('-').map(Number),[h,mi]=a.t.split(':').map(Number);return new Date(y,m-1,d,h,mi,0)};
+const alTxt=a=>{if(!a)return'';const [y,m,d]=a.d.split('-');return '⏰ '+d+'/'+m+'/'+y+' '+a.t+(alDate(a).getTime()<Date.now()?' (passée)':'')};
+function alarmPlan(){const out=[],cm={};if(DB)DB.cows.forEach(c=>cm[noteKey(c)]=c);
+ for(const k in NALARM){const a=NALARM[k];if(!NOTES[k]||!a||!a.d)continue;const c=cm[k];out.push({k,c,at:alDate(a),title:APPNAME+' · ⏰ '+(c?c.num+' '+c.nom:'Note'),body:NOTES[k]})}
+ return out.sort((x,y)=>x.at-y.at)}
+function noteHtml(c,edit){const k=noteKey(c),v=NOTES[k]||'',a=NALARM[k];
+ if(edit)return `<textarea id="noteta" rows="3" placeholder="Note sur cette vache…" style="width:100%;margin-top:6px;padding:8px 10px;font:inherit;font-size:15px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx)">${escH(v)}</textarea><div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><b>⏰ Alarme</b><input type="date" id="nalD" value="${a?a.d:''}" style="padding:6px 8px;font:inherit;font-size:15px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx)"><input type="time" id="nalT" value="${a?a.t:pad(NT.hh)+':'+pad(NT.mm)}" style="padding:6px 8px;font:inherit;font-size:15px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx)"></div><div class="mut" style="margin-top:4px">Date vide = pas d’alarme. L’alarme sonne avec le texte de la note.</div><div class="row" style="margin-top:6px"><button data-notesave class="on">Enregistrer</button>${v?'<button data-notedel>Effacer</button>':''}</div>`;
+ return v?`<div class="nbox" data-noteedit>📝 ${escH(v)}${a?`<div class="mut" style="margin-top:4px">${alTxt(a)}</div>`:''}</div>`:''}
 const ACTYPES=[['VACC','💉 Vaccin','Produit'],['TAR','Tarissement','Produit (facultatif)'],['TX','💊 Traitement','Produit ou diagnostic'],['SAIL','Saillie','Taureau ou code'],['GST','Test de gestation','Résultat (positif ou négatif)'],['VELA','Vêlage','Détails (veau, sexe…)'],['ECN','Écornage','Détails (facultatif)'],['ELIM','Réforme ou élimination','Raison'],['AUTRE','Autre','Description']];
 const QTY=['TAR','TX'],RLTY=['VACC','TX','TAR'],ACMAP={VACC:['VACC'],TAR:['TAR'],TX:['TX','POUB'],SAIL:['SAIL','SAILF'],GST:['GST'],VELA:['VELA'],ECN:['ECN'],ELIM:['ELIM','REF']};
 let ACTP={hide:[],custom:[]};try{ACTP=Object.assign(ACTP,JSON.parse(localStorage.getItem('dsa_actypes')||'{}'))}catch(e){}
@@ -372,15 +379,17 @@ async function scheduleNotifs(){
  try{
   const pend=await LN.getPending();
   if(pend.notifications&&pend.notifications.length)await LN.cancel({notifications:pend.notifications.map(n=>({id:n.id}))});
-  if(!NT.on&&!PT.on){NTSTATUS='Rappels et alertes désactivés.';return 'off'}
+  if(!NT.on&&!PT.on&&!alarmPlan().length){NTSTATUS='Rappels et alertes désactivés.';return 'off'}
   let perm=await LN.checkPermissions();
   if(perm.display!=='granted')perm=await LN.requestPermissions();
   if(perm.display!=='granted'){NTSTATUS='Permission refusée : autorise les notifications pour l’application dans les réglages Android.';return 'perm'}
   const now=Date.now()+60000;
   const p1=NT.on?notifPlan().filter(p=>p.at.getTime()>now):[],p2=PT.on?protoPlan().filter(p=>p.at.getTime()>now):[];
   const all=p1.map((p,i)=>({id:1000+i,title:p.title,body:p.body,largeBody:p.body,schedule:{at:p.at,allowWhileIdle:true}})).concat(p2.map((p,i)=>({id:5000+i,title:p.title,body:p.body,largeBody:p.body,schedule:{at:p.at,allowWhileIdle:true}})));
+  const p3=alarmPlan().filter(a=>a.at.getTime()>now);
+  p3.forEach((a,i)=>all.push({id:8000+i,title:a.title,body:a.body,largeBody:a.body,schedule:{at:a.at,allowWhileIdle:true}}));
   if(all.length)await LN.schedule({notifications:all});
-  NTSTATUS=p1.length+' rappel(s) et '+p2.length+' alerte(s) de protocole programmé(s).';return 'ok';
+  NTSTATUS=p1.length+' rappel(s) et '+p2.length+' alerte(s) de protocole programmé(s).'+(p3.length?' '+p3.length+' alarme(s) de note.':'');return 'ok';
  }catch(e){NTSTATUS='Erreur : '+e.message;return 'err'}
 }
 function updNt(){const e=$('ntst');if(e)e.textContent=NTSTATUS}
@@ -1383,7 +1392,23 @@ const wedges=()=>[[DG(ZONES.p2),DG(ZONES.p1),'Prépa. au vêlage'],[360-DG(ZONES
 const zrow=(lab,k1,k2,unit)=>`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0"><b style="min-width:120px">${lab}</b> de <input class="zi" type="number" inputmode="numeric" min="0" max="365" data-zk="${k1}" value="${ZONES[k1]}"> à <input class="zi" type="number" inputmode="numeric" min="0" max="365" data-zk="${k2}" value="${ZONES[k2]}"> <span class="mut">${unit}</span></div>`;
 const zpanel=()=>`<div class="cow" style="display:block;cursor:default"><div class="mut">Choisis les jours des zones grises (la roulette se met à jour au fur et à mesure).</div>${zrow('Prépa. au vêlage','p1','p2','jours avant le vêlage')}${zrow('Saillies','s1','s2','jours en lait')}${zrow('Dx gestation','dx1','dx2','jours après la saillie')}<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0"><b style="min-width:120px">Tarissement</b> barre mauve à <input class="zi" type="number" inputmode="numeric" min="0" max="365" data-zk="t" value="${ZONES.t}"> <span class="mut">jours avant le vêlage</span></div><div class="mut">Les barres verte (Saillies) et bleue (Dx gestation) sont au début de leur zone grise.</div><button data-z="reset">Remettre les valeurs par défaut</button></div>`;
 let rsub='wheel',vmo='all',vq='',VELCOL={};
-const rsubBar=()=>`<div class="row" style="margin:0 0 10px"><button data-vsub="wheel" class="${rsub==='wheel'?'on':''}">🎯 Roulette</button><button data-vsub="vel" class="${rsub==='vel'?'on':''}">🍼 Vêlages prévus</button></div>`;
+const rsubBar=()=>`<div class="row" style="margin:0 0 10px"><button data-vsub="wheel" class="${rsub==='wheel'?'on':''}">🎯 Roulette</button><button data-vsub="vel" class="${rsub==='vel'?'on':''}">🍼 Vêlages prévus</button><button data-vsub="notes" class="${rsub==='notes'?'on':''}">📝 Notes</button></div>`;
+let nq='',nfl='all';
+function notesPage(){
+ $('m').innerHTML=rsubBar()+`<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><select id="nfl" class="zi" style="width:auto;max-width:42%;text-align:left"><option value="all">Toutes</option><option value="al">Avec alarme</option></select><input id="nq" type="search" class="zi" style="flex:1;width:auto;min-width:0;text-align:left;padding:6px 10px;font-size:15px" placeholder="Chercher une note" autocomplete="off" value="${nq.replace(/"/g,'&quot;')}"></div><div id="nlist"></div>`;
+ $('nfl').value=nfl;notesRows();$('info').textContent='Notes · '+Object.keys(NOTES).length;
+}
+function notesRows(){
+ const el=$('nlist');if(!el)return;
+ const cm={};DB.cows.forEach(c=>cm[noteKey(c)]=c);
+ const qq=nz(nq.trim());
+ let L=Object.keys(NOTES).map(k=>({k,c:cm[k],v:NOTES[k],a:NALARM[k]&&NALARM[k].d?NALARM[k]:null}));
+ if(nfl==='al')L=L.filter(x=>x.a);
+ if(qq)L=L.filter(x=>nz(x.v).includes(qq)||(x.c&&(nz(x.c.num).includes(qq)||nz(x.c.nom).includes(qq))));
+ L.sort((x,y)=>x.a&&y.a?alDate(x.a)-alDate(y.a):x.a?-1:y.a?1:(x.c&&y.c?numCmp(x.c,y.c):0));
+ if(!L.length){el.innerHTML='<div class="mut" style="padding:10px 0">Aucune note.</div>';return}
+ el.innerHTML='<div class="mut" style="margin:4px 0">'+L.length+' note'+(L.length>1?'s':'')+'</div>'+L.map(x=>`<div class="cow"${x.c?` data-open="${x.c.id}"`:''}><div><b>${x.c?x.c.num:'?'}</b> ${x.c?x.c.nom:'<span class="mut">vache absente du fichier</span>'}<div style="margin-top:4px;white-space:pre-wrap">📝 ${escH(x.v)}</div>${x.a?`<div class="mut" style="margin-top:4px">${alTxt(x.a)}</div>`:''}</div></div>`).join('');
+}
 const velCows=()=>DB.cows.filter(c=>!c.elim&&c.gest&&c.prevu&&c.lf).sort((a,b)=>a.prevu-b.prevu||numCmp(a,b));
 const velYM=n=>{const d=toDate(n);return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')};
 const velYMlab=k=>{const [y,m]=k.split('-');return cap(MOISL[+m-1])+' '+y};
@@ -1414,11 +1439,12 @@ function velRows(){
   h+=`<div class="cow" data-open="${c.id}" style="border-left:6px solid ${col};border-radius:0"><div><b>${c.num}</b> ${c.nom}<div class="mut">${ty} · saillie ${fmt(c.lf.d)}${bull?' · 🐂 '+bull:''}</div></div><div style="text-align:right"><b>${fmt(c.prevu)}</b><div class="psub"${d<0?' style="color:var(--rd);font-weight:800"':''}>${d>=0?'dans '+d+' j':'dépassé '+(-d)+' j'}</div></div></div>`}
  el.innerHTML=h;
 }
-$('m').addEventListener('input',e=>{if(e.target.id==='vq'){vq=e.target.value;velRows()}else if(e.target.id==='vmo'){vmo=e.target.value;velRows()}});
-$('m').addEventListener('change',e=>{if(e.target.id==='vmo'){vmo=e.target.value;velRows()}});
+$('m').addEventListener('input',e=>{if(e.target.id==='vq'){vq=e.target.value;velRows()}else if(e.target.id==='vmo'){vmo=e.target.value;velRows()}else if(e.target.id==='nq'){nq=e.target.value;notesRows()}else if(e.target.id==='nfl'){nfl=e.target.value;notesRows()}});
+$('m').addEventListener('change',e=>{if(e.target.id==='vmo'){vmo=e.target.value;velRows()}else if(e.target.id==='nfl'){nfl=e.target.value;notesRows()}});
 function roulette(){
  if(!DB)return;
  if(rsub==='vel'){velPrev();return}
+ if(rsub==='notes'){notesPage();return}
  const R=165,cx=200,cy=200,T=todayN,pt=(a,r)=>[(cx+r*Math.sin(a*Math.PI/180)).toFixed(1),(cy-r*Math.cos(a*Math.PI/180)).toFixed(1)];
  const cnt={},dots=[],refs=[];let tot=0;
  for(const c of DB.cows){const st=stat(c);if(!st)continue;tot++;cnt[kind0(c)]=(cnt[kind0(c)]||0)+1;if(st[0]==='ref'){refs.push([c,st]);continue}dots.push([c,st])}
@@ -1595,8 +1621,11 @@ $('m').onclick=e=>{if(protoClick(e))return;
  if(e.target.closest('[data-holall]')){holAll();return}
   const nt=e.target.closest('[data-note],[data-noteedit],[data-notesave],[data-notedel]');
   if(nt){const c=DB.cows.find(x=>x.id===CURID);if(!c)return;const k=noteKey(c),D=nt.dataset;
-   if('notesave' in D){const v=$('noteta').value.trim();if(v)NOTES[k]=v;else delete NOTES[k];saveNotes()}
-   else if('notedel' in D){delete NOTES[k];saveNotes()}
+   if('notesave' in D){const v=$('noteta').value.trim(),ad=$('nalD').value,at=$('nalT').value||'07:00';
+    if(ad&&!v){toast('Écris le texte de la note pour l’alarme.',3500);return}
+    if(v)NOTES[k]=v;else delete NOTES[k];saveNotes();
+    if(v&&ad)NALARM[k]={d:ad,t:at};else delete NALARM[k];saveNA();schedSoon()}
+   else if('notedel' in D){delete NOTES[k];saveNotes();delete NALARM[k];saveNA();schedSoon()}
    else{$('notebox').innerHTML=noteHtml(c,true);$('noteta').focus();sizeEvs();return}
    $('notebox').innerHTML=noteHtml(c,false);sizeEvs();return}
   const av=e.target.closest('[data-actvis]');
