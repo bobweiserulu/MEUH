@@ -278,15 +278,17 @@ let HOL={},HOLI={};try{HOL=JSON.parse(localStorage.getItem('dsa_hol')||'{}')||{}
 for(const k in HOL){if(typeof HOL[k]==='string'){const m=HOL[k].match(/animalId=(\d+)/);if(m)HOL[k]=+m[1];else delete HOL[k]}}
 const saveHOL=()=>{try{localStorage.setItem('dsa_hol',JSON.stringify(HOL));localStorage.setItem('dsa_holi',JSON.stringify(HOLI))}catch(e){}};
 const HB='https://portal.holstein.ca/en/AIS/',HP=()=>'https://portal.holstein.ca/'+(LANG==='fr'?'fr':'en')+'/AIS/';
-function holBlock(c){
- const ic=`<button data-note title="Note" aria-label="Note">📝</button><button data-actnew="${c.id}" title="Saisir une action" aria-label="Saisir une action">✍</button>`;
- if(!c.natl)return `<div class="row" id="holrow" data-a="">${ic}</div>`;
- const reg='HOCANF'+c.natl,id=HOL[c.natl],st='text-decoration:none;font-weight:600';
+function holBlock(c,ef){
+ const sm='padding:6px 10px;font-size:13px';
+ const ic=`<button data-evm style="${sm}">${evLabel(ef)} ▾</button>`;
+ const ic2=`<button data-note title="Note" aria-label="Note" style="${sm}">📝</button><button data-actnew="${c.id}" title="Saisir une action" aria-label="Saisir une action" style="${sm}">✍</button>`;
+ if(!c.natl)return `<div class="row" id="holrow" data-a="">${ic}${ic2}</div>`;
+ const reg='HOCANF'+c.natl,id=HOL[c.natl],st='text-decoration:none;font-weight:600;padding:6px 10px;font-size:13px';
  const lac=`<a class="btn" href="https://lactanetgen.ca/query/summary.php?breed=HO&country=CAN&sex=F&regnum=${c.natl}" target="_blank" rel="noopener" style="${st}">🧬 CDN ↗</a>`;
  const ais=`${HP()}AIS?animalRegNo=${reg}`;
- let h=`<div class="row" id="holrow" data-a="${c.natl}">${lac}<a class="btn" href="${ais}" target="_blank" rel="noopener" style="${st}">🐄 Holstein Canada ↗</a>`;
- if(id)h+=`<a class="btn" href="${HP()}Conformation?animalId=${id}&animalRegNo=${reg}&uom=KG&me=BCA" target="_blank" rel="noopener" style="${st}">📋 Classification ↗</a>`;
- h+=ic+'</div>';const I=HOLI[c.natl];
+ let h=`<div class="row" id="holrow" data-a="${c.natl}">${ic}${lac}<a class="btn" href="${ais}" target="_blank" rel="noopener" style="${st}">🐄 HC ↗</a>`;
+ if(id)h+=`<a class="btn" href="${HP()}Conformation?animalId=${id}&animalRegNo=${reg}&uom=KG&me=BCA" target="_blank" rel="noopener" style="${st}">📋 Class. ↗</a>`;
+ h+=ic2+'</div>';const I=HOLI[c.natl];
  if(I){const bits=[];if(I.n)bits.push(I.n);if(I.b)bits.push('Éleveur : '+I.b);if(I.o&&I.o!==I.b)bits.push('Propriétaire : '+I.o);if(I.p)bits.push('Pureté '+I.p+' %');if(I.c)bits.push(I.c);h+=`<div class="mut" id="holinfo" style="margin-top:4px;line-height:1.5">${bits.join(' · ')}</div>`}
  return h}
 async function holFetch(natl){
@@ -296,7 +298,7 @@ async function holFetch(natl){
  HOL[natl]=a.AnimalId;HOLI[natl]={n:a.DisplayAnimalName||'',b:a.BreederName||'',o:a.OwnerName||'',p:a.HerdBookPurityDisplay||'',c:a.Colour||''};saveHOL();return true}
 async function holLookup(c){
  if(!c.natl||(HOL[c.natl]&&HOLI[c.natl])||!gdCH())return;
- try{if(await holFetch(c.natl)){const r=$('holrow');if(r&&r.dataset.a===c.natl){const o=$('holinfo');if(o)o.remove();r.outerHTML=holBlock(c)}}}catch(e){}}
+ try{if(await holFetch(c.natl)){const r=$('holrow');if(r&&r.dataset.a===c.natl){const o=$('holinfo');if(o)o.remove();r.outerHTML=holBlock(c,EVF)}}}catch(e){}}
 let holBusy=false;
 async function holAll(){
  const S=s=>{const x=$('holst');if(x)x.textContent=s},B=s=>{const x=document.querySelector('[data-holall]');if(x)x.textContent=s},LBL0='🐄 Récupérer les infos Holstein (vaches actives)';
@@ -310,26 +312,57 @@ async function holAll(){
   try{(await holFetch(L[i].natl))?ok++:bad++;err=0}catch(e){bad++;if(++err>=5){S('Le site ne répond pas : arrêt. '+ok+' récupérées.');holBusy=false;B(LBL0);return}}
   await new Promise(r=>setTimeout(r,200))}
  holBusy=false;B(LBL0);S('Terminé : '+ok+' récupérées'+(bad?', '+bad+' introuvables':'')+'.')}
-function ficheMarkup(c){
- const dim=c.vela&&!c.elim?todayN-c.vela:null,dl=dlHtml(c);
- const kv=(k,v)=>v?`<div class="kv"><small>${k}</small><span>${v}</span></div>`:'';
+let EVF='';
+const evLabel=t=>t?(LBL[t]||t):'Tout';
+function retraitBox(c){const x=delaisOf(c),T=todayN;
+ const half=(lab,o)=>o?`<div style="flex:1.5;min-width:0;padding:4px 8px;background:color-mix(in srgb,var(--rd) 14%,var(--card))"><small style="display:block;font-size:11px;color:var(--rd);font-weight:700">${lab}</small><span style="font-size:13px;font-weight:700;color:var(--rd)">⚠ ${fmt(o.end).slice(0,5)} · ${o.end-T===0?'auj.':(o.end-T)+' j'}</span>${o.prods&&o.prods.length?`<small style="display:block;font-size:11px;color:var(--rd)">${o.prods.join(', ')}</small>`:''}</div>`:`<div style="flex:1;padding:4px 8px"><small style="display:block;font-size:11px;color:var(--mut)">${lab}</small><span style="font-size:14px;font-weight:600;color:var(--gr)">✓ Aucun</span></div>`;
+ const bad=x&&(x.lait||x.viande);
+ return `<div style="grid-column:span 6;display:flex;border:1px solid ${bad?'var(--rd)':'var(--ln)'};border-radius:10px;overflow:hidden;background:var(--card)">${half('Retrait lait',x&&x.lait)}<div style="width:1px;background:var(--ln)"></div>${half('Retrait viande',x&&x.viande)}</div>`}
+function cowStrips(c){const out=[];
+ for(const it of PT.act){if(!parseCows(it.cows).ok.some(x=>x.id===c.id))continue;
+  const tp=tplOf(it.tpl);if(!tp||!tp.steps||!tp.steps.length)continue;
+  const days=Math.max(...tp.steps.map(s=>+s.d||1)),end=it.start+days-1;if(end<todayN)continue;
+  const evs=protoEvents().filter(e=>e.it.id===it.id).sort((a,b)=>a.D-b.D);
+  let txt,col,go;
+  if(it.start>todayN){txt='🗓 '+escH(tp.name)+' · début '+fmt(it.start).slice(0,5);col='var(--og)';go=it.start}
+  else{const td=evs.filter(e=>e.D===todayN),nx=evs.find(e=>e.D>todayN);
+   let t2='';if(td.length){const dn=td.every(e=>PDONE[pdKey(e)]);t2=' · auj. : '+escH(td[0].s.txt||'étape')+(td.length>1?' +'+(td.length-1):'')+(dn?' ✓':'');go=todayN}
+   else if(nx){t2=' · proch. '+fmt(nx.D).slice(0,5)+' : '+escH(nx.s.txt||'étape');go=nx.D}else go=todayN;
+   txt='📋 '+escH(tp.name)+' · jour '+(todayN-it.start+1)+'/'+days+t2;col='var(--bl)'}
+  out.push(`<div data-pstrip="${go}" style="display:flex;align-items:center;gap:6px;margin:4px 0 0;padding:4px 8px;border:1px solid var(--ln);border-left:4px solid ${col};border-radius:8px;background:color-mix(in srgb,${col} 10%,var(--card));font-size:13px;cursor:pointer"><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${txt}</span><span class="mut">›</span></div>`)}
+ return out.join('')}
+function evMenu(btn){
+ const old=$('evpanel');if(old){old.remove();return}
+ const c=DB.cows.find(x=>x.id===CURID);if(!c)return;
+ const pend=ACT.filter(a=>a.st==='p'&&actHas(a,c)),cnt={};
+ c.ev.forEach(e=>cnt[e.t]=(cnt[e.t]||0)+1);pend.forEach(a=>cnt[a.ty]=(cnt[a.ty]||0)+1);
+ const list=ordBy(['',...Object.keys(cnt)],t=>t,CHIPO),r=btn.getBoundingClientRect();
+ const o=document.createElement('div');o.id='evpanel';
+ o.style.cssText='position:fixed;left:'+Math.max(6,r.left)+'px;top:'+(r.bottom+4)+'px;max-height:'+Math.max(160,innerHeight-r.bottom-20)+'px;overflow-y:auto;min-width:190px;z-index:45;background:var(--card);color:var(--tx);border:1px solid var(--ln);border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.25);padding:4px 0';
+ o.innerHTML=list.map(t=>`<div data-evp="${t}" style="padding:10px 16px;font-size:16px;cursor:pointer;${t===EVF?'font-weight:800;color:var(--ac)':''}">${t===EVF?'✓ ':''}${evLabel(t)}${t?` <span class="mut" style="font-size:13px">${cnt[t]}</span>`:` <span class="mut" style="font-size:13px">${c.ev.length+pend.length}</span>`}</div>`).join('');
+ document.body.appendChild(o)}
+function evSet(t){const c=DB.cows.find(x=>x.id===CURID);if(!c)return;EVF=t;const p=$('evpanel');if(p)p.remove();
+ const b=document.querySelector('[data-evm]');if(b)b.textContent=evLabel(t)+' ▾';
+ $('evs').innerHTML=evsHtml(c,t);toBottom()}
+document.addEventListener('click',e=>{const p=$('evpanel');if(!p)return;const it=e.target.closest('[data-evp]');if(it&&p.contains(it)){evSet(it.dataset.evp);return}if(!e.target.closest('[data-evm]'))p.remove()},true);
+function ficheMarkup(c,ef){
+ const dim=c.vela&&!c.elim?todayN-c.vela:null;
+ const ft=(n,k,v)=>v?`<div style="grid-column:span ${n};background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:4px 8px;min-width:0"><small style="display:block;color:var(--mut);font-size:11px;line-height:1.2">${k}</small><span style="font-size:13px;font-weight:600;line-height:1.3">${v}</span></div>`:'';
  const types=[...new Set(c.ev.map(e=>e.t))];
  return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="back" onclick="back()" style="margin:0;padding:7px 12px" title="Retour" aria-label="Retour">←</button><h2 style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${c.num} ${c.nom} ${statutBadge(c)}</h2></div>
  
- <div class="grid">${kv('Naissance',c.naiss?fmt(c.naiss)+' ('+age(c)+')':'')}${kv('Lactation',c.lact||'')}${kv('Dernier vêlage',c.vela?fmt(c.vela)+(dim!=null?' · '+dim+' JEL':''):'')}${kv('Dernière saillie',c.sail?fmt(c.sail.d)+' · '+(todayN-c.sail.d)+' JDS'+(bullCode(c.sail)?' · '+bullCode(c.sail):''):'')}${kv('Vêlage prévu (estimé)',c.prevu?(c.prevu>=todayN?(c.prevu-todayN)+' j avant le vêlage':'dépassé de '+(todayN-c.prevu)+' j')+' · '+fmt(c.prevu):'')}${kv('ATQ',c.natl)}${dl.boxes}</div>
- ${holBlock(c)}<div id="notebox">${noteHtml(c,false)}</div>
- <div class="row" id="chips">${ordBy(['',...types],t=>t,CHIPO).map(t=>t===''?'<button class="on" data-t="">Tout</button>':`<button data-t="${t}">${LBL[t]||t}</button>`).join('')}</div><div id="evs"></div>`;
+ <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:8px 0">${ft(3,'Naissance',c.naiss?fmt(c.naiss)+(age(c)?' · '+age(c):''):'')}${ft(1,'Lact.',c.lact||'')}${ft(2,'ATQ',c.natl||'')}${(()=>{const a=c.vela?fmt(c.vela)+(dim!=null?' · '+dim+' JEL':''):'',b=c.prevu?fmt(c.prevu)+' · '+(c.prevu>=todayN?(c.prevu-todayN)+' j':'dépassé '+(todayN-c.prevu)+' j'):'';return ft(a&&b?3:6,'Dernier vêlage',a)+ft(a&&b?3:6,'Vêlage prévu',b)})()}${ft(6,'Dernière saillie',c.sail?fmt(c.sail.d)+' · '+(todayN-c.sail.d)+' JDS'+(bullCode(c.sail)?' · '+bullCode(c.sail):''):'')}${retraitBox(c)}</div>${cowStrips(c)}
+ ${holBlock(c,ef||'')}<div id="notebox">${noteHtml(c,false)}</div>
+ <div id="evs"></div>`;
 }
 const evsHtml=(c,t)=>{const pend=ACT.filter(a=>a.st==='p'&&actHas(a,c));return c.ev.filter(e=>!t||e.t===t).map(e=>`<div class="ev t-${e.t}"><time>${fmt(e.d)}</time><div><em>${LBL[e.t]||e.t}</em> <span class="mut">${pretty(e)}</span></div></div>`).join('')+pend.filter(a=>!t||a.ty===t).map(a=>`<div class="ev" style="border-left:3px dashed var(--og)"><time>${fmt(a.d)}</time><div><em>${actLbl(a.ty)}</em> <span class="mut">${escH(a.txt)}${a.q&&a.q.length?' · quartiers '+a.q.join(', '):''} · ⏳ à entrer dans DSA</span></div></div>`).join('')};
 function fiche(id,fromPop){
  const c=DB.cows.find(x=>x.id===id);if(!c){show();return}
  CURID=id;if(!fromPop)pushNav(id);setTimeout(()=>holLookup(c),0);
  $('bar').style.display='none';document.querySelector('header').style.display='none';$('tabs').style.display='none';$('m').style.paddingBottom='12px';inF=true;
- $('m').innerHTML=ficheMarkup(c);
- const draw=t=>{$('evs').innerHTML=evsHtml(c,t)};
- $('chips').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;[...$('chips').children].forEach(x=>x.classList.toggle('on',x===b));draw(b.dataset.t);toBottom()};
- makeSortable($('chips'),b=>b.dataset.t,ids=>{CHIPO=ids;saveOrd('dsa_chipo',ids)});
- scrollTo(0,0);sizeEvs();draw('');toBottom();
+ EVF='';const pm=$('evpanel');if(pm)pm.remove();
+ $('m').innerHTML=ficheMarkup(c,'');
+ scrollTo(0,0);sizeEvs();$('evs').innerHTML=evsHtml(c,'');toBottom();
 }
 let sw={ok:false,lock:false,drag:false,busy:false,x:0,y:0,t:0,dx:0,i:-1,pn:null,pp:null};
 function swClean(){const m=$('m');m.style.transition='';m.style.transform='';m.style.position='';m.style.willChange='';m.querySelectorAll('.swpane').forEach(e=>e.remove());document.documentElement.style.overflowX='';document.body.style.overflowX='';sw.drag=false;sw.lock=false;sw.pn=sw.pp=null;sw.busy=false}
@@ -1758,6 +1791,8 @@ $('m').oninput=e=>{if(e.target.id==='pkq'){PK.q=e.target.value;pkList();return}i
 $('m').onclick=e=>{if(protoClick(e))return;
  if(e.target.closest('[data-cpnl]')){cpOpen($('nlV').value,true,t=>{$('nlV').value=t.join(' ')});return}
  if(e.target.closest('[data-cpnr]')){cpOpen($('nrV').value,false,t=>{$('nrV').value=t[0]||''});return}
+ const evm=e.target.closest('[data-evm]');if(evm){evMenu(evm);return}
+ const pst=e.target.closest('[data-pstrip]');if(pst){const D=+pst.dataset.pstrip,dt=toDate(D);tab='proto';pSub='cal';pSel=D;pCal.y=dt.getUTCFullYear();pCal.m=dt.getUTCMonth();list();return}
  const nlE=e.target.closest('[data-nledit]');if(nlE){nlForm=nlE.dataset.nledit;notesPage();scrollTo(0,0);return}
  const nlD=e.target.closest('[data-nldel]');if(nlD){const id=nlD.dataset.nldel;if(nlArm===id){clearTimeout(nlArmT);nlArm=null;NLISTS=NLISTS.filter(x=>x.id!==id);Object.keys(PCD).forEach(k=>{if(k.startsWith('L:'+id+'|'))delete PCD[k]});saveNL();savePCD();schedSoon()}else{nlArm=id;clearTimeout(nlArmT);nlArmT=setTimeout(()=>{nlArm=null;if(tab==='regie'&&afsub==='notes')notesPage()},4000)}notesPage();return}
  if(e.target.closest('[data-nlnew]')){nlForm=nlForm?null:'new';notesPage();return}
