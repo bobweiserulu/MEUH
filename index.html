@@ -200,7 +200,10 @@ let NALARM={};try{NALARM=JSON.parse(localStorage.getItem('dsa_nalarm')||'{}')||{
 const saveNA=()=>{try{localStorage.setItem('dsa_nalarm',JSON.stringify(NALARM))}catch(e){}};
 const alDate=a=>{const [y,m,d]=a.d.split('-').map(Number),[h,mi]=a.t.split(':').map(Number);return new Date(y,m-1,d,h,mi,0)};
 const alTxt=a=>{if(!a)return'';const [y,m,d]=a.d.split('-');return '⏰ '+d+'/'+m+'/'+y+' '+a.t+(alDate(a).getTime()<Date.now()?' (passée)':'')};
+let NREM=[];try{NREM=JSON.parse(localStorage.getItem('dsa_nrem')||'[]')||[]}catch(e){}
+const saveNREM=()=>{try{localStorage.setItem('dsa_nrem',JSON.stringify(NREM))}catch(e){}};
 function alarmPlan(){const out=[],cm={};if(DB)DB.cows.forEach(c=>cm[noteKey(c)]=c);
+ for(const r of NREM){if(!r.d||!r.text)continue;const c=r.num&&DB?parseCows(r.num).ok[0]:null;out.push({k:'r:'+r.id,rem:r,c,at:alDate(r),title:APPNAME+' · ⏰ '+(c?c.num+' '+c.nom:'Rappel'),body:r.text})}
  for(const k in NALARM){const a=NALARM[k];if(!NOTES[k]||!a||!a.d)continue;const c=cm[k];out.push({k,c,at:alDate(a),title:APPNAME+' · ⏰ '+(c?c.num+' '+c.nom:'Note'),body:NOTES[k]})}
  return out.sort((x,y)=>x.at-y.at)}
 function noteHtml(c,edit){const k=noteKey(c),v=NOTES[k]||'',a=NALARM[k];
@@ -1569,8 +1572,36 @@ let AFCOL={},AFON={};try{AFCOL=JSON.parse(localStorage.getItem('dsa_afcol')||'{}
 const saveAF=()=>{try{localStorage.setItem('dsa_afcol',JSON.stringify(AFCOL));localStorage.setItem('dsa_afon',JSON.stringify(AFON))}catch(e){}};
 const aoHtml=()=>`<div style="margin:10px 0 6px"><b>Rappels proposés</b> <span class="mut">(coche ceux que tu veux voir ; les flèches ▲ ▼ sont à côté de chaque titre)</span></div>`+Object.keys(AFLBL).map(k=>`<label style="display:block;margin:4px 0"><input type="checkbox" data-afon="${k}" ${AFON[k]===false?'':'checked'}> ${AFLBL[k]}</label>`).join('')+'<div style="height:8px"></div>';
 const relRet=d=>d<0?`<span class="tag w">il y a ${-d} j</span>`:d===0?'<span class="tag w">aujourd’hui</span>':`<span class="tag">dans ${d} j</span>`;
+let afsub='list',afForm=false;
+const afBar=()=>`<div class="row" style="margin:0 0 10px"><button data-afsub="list" class="${afsub==='list'?'on':''}">✅ À faire</button><button data-afsub="notif" class="${afsub==='notif'?'on':''}">🔔 Notifications</button></div>`;
+const dayOfDate=d=>Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-D0)/DAY);
+function notifItems(){
+ const out=[];
+ for(const e of protoEvents()){if(!e.s.on)continue;
+  const D=e.D-(+e.s.before||0),dt=toDate(D),[hh,mm]=String(e.s.time||'07:00').split(':').map(Number);
+  const r=parseCows(e.it.cows),nums=r.ok.map(c=>c.num).concat(r.bad);
+  out.push({kind:'p',at:new Date(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate(),hh||0,mm||0,0),ico:'📋',title:e.t.name+' · Jour '+e.s.d,body:(e.s.txt||'Étape')+(nums.length?' — '+(nums.length>10?nums.slice(0,10).join(', ')+' +'+(nums.length-10):nums.join(', ')):''),done:!!PDONE[pdKey(e)],off:!PT.on})}
+ for(const a of alarmPlan())out.push(a.rem?{kind:'r',at:a.at,ico:'⏰',title:a.c?a.c.num+' '+a.c.nom:'Rappel',body:a.body,c:a.c,rid:a.rem.id}:{kind:'n',at:a.at,ico:'📝',title:a.c?a.c.num+' '+a.c.nom:'Note',body:a.body,c:a.c});
+ return out;
+}
+function notifPage(){
+ const now=Date.now(),wk=now-7*DAY,all=notifItems();
+ const up=all.filter(x=>x.at.getTime()>=now&&x.at.getTime()<=now+90*DAY).sort((a,b)=>a.at-b.at);
+ const past=all.filter(x=>x.at.getTime()<now&&x.at.getTime()>=wk).sort((a,b)=>b.at-a.at);
+ const hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
+ const row=(x,gray)=>`<div class="cow"${x.c?` data-open="${x.c.id}"`:''} style="${gray?'opacity:.6;':''}"><div><div class="mut">${x.ico} ${hm(x.at)}${x.off?' · alertes de protocoles désactivées':''}${x.done?' · fait ✓':''}</div><b>${escH(x.title)}</b><div style="white-space:pre-wrap">${escH(x.body)}</div></div>${x.kind==='r'?`<button class="dn" data-remdel="${x.rid}" title="Supprimer" style="color:var(--rd)">✕</button>`:''}</div>`;
+ const grp=(L,gray)=>{let h='',last=null;for(const x of L){const D=dayOfDate(x.at);if(D!==last){last=D;h+=`<h3 style="margin:12px 0 6px">${D===todayN?'Aujourd’hui':D===todayN+1?'Demain':D===todayN-1?'Hier':cap(dateLong(D))}</h3>`}h+=row(x,gray)}return h};
+ const td=toDate(todayN),iso=td.getUTCFullYear()+'-'+pad(td.getUTCMonth()+1)+'-'+pad(td.getUTCDate());
+ const inp='padding:6px 8px;font:inherit;font-size:15px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx)';
+ const form=afForm?`<div class="pcard" style="margin:8px 0"><b>Nouvelle notification</b><textarea id="nrT" rows="2" placeholder="Texte du rappel…" style="width:100%;margin-top:8px;${inp}"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><input type="date" id="nrD" value="${iso}" style="${inp}"><input type="time" id="nrH" value="${pad(NT.hh)}:${pad(NT.mm)}" style="${inp}"></div><input id="nrV" placeholder="Vache (numéro, facultatif)" autocomplete="off" style="width:100%;margin-top:8px;${inp}"><div class="row" style="margin-top:8px"><button data-nrsave class="on">Ajouter</button><button data-afadd>Annuler</button></div></div>`:'';
+ $('m').innerHTML=afBar()+`<div class="row" style="margin:0 0 6px"><button data-afadd>＋ Ajouter une notification</button></div>`+form+
+  `<h3 style="margin:12px 0 6px">À venir <span class="tag">${up.length}</span></h3>`+(up.length?grp(up,false):'<div class="mut">Aucune notification à venir.</div>')+
+  `<h3 style="margin:18px 0 6px">Passées (7 derniers jours) <span class="tag">${past.length}</span></h3>`+(past.length?grp(past,true):'<div class="mut">Aucune dans les 7 derniers jours.</div>');
+ $('info').textContent='Notifications · '+up.length+' à venir';
+}
 function regie(){
  if(!DB)return;
+ if(afsub==='notif'){notifPage();return}
  const act=DB.cows.filter(c=>!c.elim),T=todayN,tk=tasks(T);
  const rel=d=>d<0?`<span class="tag w">retard ${-d} j</span>`:d===0?'<span class="tag w">aujourd’hui</span>':`<span class="tag">dans ${d} j</span>`;
  const doneRows=[],vis=afOrder().filter(k=>AFON[k]!==false);
@@ -1587,7 +1618,7 @@ function regie(){
   eco:()=>sc('eco',AFLBL.eco,`Veaux de moins de 6 mois, dès ${RG.ecmin} j après la naissance${RG.ecmax==null?' (aucune limite maximale)':', jusqu’à '+RG.ecmax+' j'}`,tk.eco)};
  const secs=vis.map(k=>defs[k]()).join('');
  const dclosed=AFCOL.done!==false,done=doneRows.length?`<div class="sechead" style="border-left:8px solid var(--mut)"><span class="sectitle" data-sec="done" style="color:var(--mut)"><span class="chev">${dclosed?'▸':'▾'}</span> Actions complétées</span><span class="tag" style="font-size:14px">${doneRows.length}</span></div>`+(dclosed?'':`<div class="mut">Touche ↩ pour remettre une vache dans sa liste.</div>`+doneRows.map(r=>`<div class="cow" data-id="${r.c.id}" style="filter:grayscale(1);opacity:.65"><div><b>${r.c.num}</b> ${r.c.nom}<div class="mut">${r.cat} · ${r.text}</div></div><div><button class="dn" data-done="${r.key}" title="Remettre dans la liste">↩</button></div></div>`).join('')):'';
- $('m').innerHTML=`<div class="row"><button data-rg="toggle">⚙ Réglages des jours</button></div>${rgOpen?rgpanel():''}`+(secs||'<div class="empty">Aucune section affichée : coche-les dans ⚙ Réglages des jours.</div>')+done;
+ $('m').innerHTML=afBar()+`<div class="row"><button data-rg="toggle">⚙ Réglages des jours</button></div>${rgOpen?rgpanel():''}`+(secs||'<div class="empty">Aucune section affichée : coche-les dans ⚙ Réglages des jours.</div>')+done;
  $('info').textContent='Régie · '+act.length+' actives · fichier du '+DB.date;
 }
 $('m').onchange=e=>{
@@ -1612,6 +1643,14 @@ if(e.target.id==='ract'){ract=e.target.checked;rupdate();return}const i=e.target
  saveZ();roulette()};
 $('m').oninput=e=>{if(e.target.id==='pkq'){PK.q=e.target.value;pkList();return}if(e.target.id==='rsq'){rsSuggest(e.target.value);return}if(e.target.id==='nm'){APPNAME=e.target.value||'MEUH';setTitle()}if(e.target.id==='rq'){rq=e.target.value;rupdate()}};
 $('m').onclick=e=>{if(protoClick(e))return;
+ const afs=e.target.closest('[data-afsub]');if(afs){afsub=afs.dataset.afsub;regie();return}
+ if(e.target.closest('[data-afadd]')){afForm=!afForm;notifPage();return}
+ const rdl=e.target.closest('[data-remdel]');if(rdl){NREM=NREM.filter(r=>r.id!==rdl.dataset.remdel);saveNREM();schedSoon();notifPage();return}
+ if(e.target.closest('[data-nrsave]')){const tx=$('nrT').value.trim(),d=$('nrD').value,t=$('nrH').value||'07:00',v=$('nrV').value.trim();
+  if(!tx){toast('Écris le texte du rappel.',3000);return}
+  if(!d){toast('Choisis une date.',3000);return}
+  if(v&&!parseCows(v).ok.length){toast('Vache « '+v+' » introuvable.',3500);return}
+  NREM.push({id:Date.now().toString(36),d,t,text:tx,num:v});saveNREM();afForm=false;schedSoon();notifPage();return}
  const vcl=e.target.closest('[data-vcol]');if(vcl){const k=vcl.dataset.vcol;VELCOL[k]=!VELCOL[k];velRows();return}
  const vsb=e.target.closest('[data-vsub]');if(vsb){rsub=vsb.dataset.vsub;roulette();return}
  const ao=e.target.closest('[data-ao]');if(ao){const [k,d]=ao.dataset.ao.split(':'),o=afOrder(),vs=o.filter(x=>AFON[x]!==false),vi=vs.indexOf(k),vj=d==='up'?vi-1:vi+1;if(vj>=0&&vj<vs.length){const a=o.indexOf(k),b=o.indexOf(vs[vj]);[o[a],o[b]]=[o[b],o[a]];AFORD=o;saveOrd('dsa_aford',o)}regie();return}
