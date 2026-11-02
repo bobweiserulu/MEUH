@@ -203,6 +203,7 @@ function renderFil(){const r=$('flrow');if(!r)return;const f=FIL,ip=(id,v,ph)=>`
  $('fpr').value=f.pr}
 function selDecorate(){document.querySelectorAll('#m .cow[data-id]').forEach(r=>{let k=r.querySelector('.sk');if(!k){k=document.createElement('span');k.className='sk';r.insertBefore(k,r.firstChild)}const on=SELS.has(r.dataset.id);k.classList.toggle('on',on);k.textContent=on?'✓':''})}
 let NLPRE='';
+function bkUse(nums){const n0=BK.length;BK=BK.filter(x=>!nums.includes(x));if(BK.length!==n0){saveBK();toast(BK.length?'Panier : '+(n0-BK.length)+' vache(s) utilisée(s), '+BK.length+' restante(s)':'Panier vidé (utilisé)',2200)}}
 function lbarRender(){let b=$('lbar');const sh=tab==='fiches'&&!inF&&(selMode||BK.length);
  if(!sh){if(b)b.remove();if(tab==='fiches'&&!inF)$('m').style.paddingBottom='';return}
  if(!b){b=document.createElement('div');b.id='lbar';b.onclick=lbarClick;document.body.appendChild(b)}
@@ -862,13 +863,13 @@ function protoClick(e){
  if(b=e.target.closest('[data-pkall]')){pkRows().forEach(c=>{if(!PK.sel.includes(c.num))PK.sel.push(c.num)});pkList();return true}
  if(b=e.target.closest('[data-pknone]')){const S=new Set(pkRows().map(c=>c.num));PK.sel=PK.sel.filter(n=>!S.has(n));pkList();return true}
  if(b=e.target.closest('[data-pkcancel]')){PK.open=false;protos();return true}
- if(b=e.target.closest('[data-pkok]')){const toks=PK.sel.concat(PK.extra);if(PK.target==='new')PF.cows=toks.join(' ');else{const it=PT.act.find(x=>x.id===PK.target);if(it){it.cows=toks;savePT();schedSoon()}}PK.open=false;protos();return true}
+ if(b=e.target.closest('[data-pkok]')){const toks=PK.sel.concat(PK.extra);if(PK.target==='new')PF.cows=toks.join(' ');else{const it=PT.act.find(x=>x.id===PK.target);if(it){it.cows=toks;savePT();schedSoon();bkUse(PK.sel)}}PK.open=false;protos();return true}
  if(b=e.target.closest('[data-ptab]')){pSub=b.dataset.ptab;PK.open=false;protos();return true}
  if(b=e.target.closest('[data-pm]')){pCal.m+=+b.dataset.pm;if(pCal.m<0){pCal.m=11;pCal.y--}if(pCal.m>11){pCal.m=0;pCal.y++}protos();return true}
  if(b=e.target.closest('[data-pd]')){pSel=+b.dataset.pd;protos();return true}
  if(b=e.target.closest('[data-pstart]')){
   const r=parseCows(PF.cows);if(!r.ok.length){alert(tr('Ajoute au moins une vache (numéros séparés par des espaces).'));return true}
-  PT.act.push({id:uid(),tpl:PF.tpl,start:PF.start||todayN,cows:r.toks});savePT();schedSoon();
+  PT.act.push({id:uid(),tpl:PF.tpl,start:PF.start||todayN,cows:r.toks});savePT();schedSoon();bkUse(r.ok.map(c=>c.num));
   const d=toDate(PF.start||todayN);pCal={y:d.getUTCFullYear(),m:d.getUTCMonth()};pSel=PF.start||todayN;PF.cows='';pSub='cal';protos();return true}
  if(b=e.target.closest('[data-pdelinst]')){if(confirm(tr('Supprimer ce protocole ?'))){PT.act=PT.act.filter(x=>x.id!==b.dataset.pdelinst);savePT();schedSoon();protos()}return true}
  if(b=e.target.closest('[data-ptpl]')){const a=b.dataset.ptpl,t=tplOf(b.dataset.pt);
@@ -1863,7 +1864,7 @@ $('m').onclick=e=>{
   if((al||cal)&&!dd){toast('Choisis une date pour l’alerte ou le calendrier.',3500);return}
   const extra={d:dd,t:hh,al:!!(al&&dd),cal:!!(cal&&dd)};
   if(nlForm==='new')NLISTS.unshift(Object.assign({id:Date.now().toString(36),title:t,nums:v,note:n},extra));else{const l=NLISTS.find(x=>x.id===nlForm);if(l){l.title=t;l.nums=v;l.note=n;Object.assign(l,extra)}}
-  saveNL();schedSoon();nlForm=null;NLPRE='';notesPage();return}
+  saveNL();schedSoon();bkUse(r.ok.map(c=>c.num));nlForm=null;NLPRE='';notesPage();return}
  const nlO=e.target.closest('[data-nlopen]');if(nlO){plOpen('L:'+nlO.dataset.nlopen);return}
  const afs=e.target.closest('[data-afsub]');if(afs){afsub=afs.dataset.afsub;regie();return}
  if(e.target.closest('[data-afadd]')){afForm=!afForm;notifPage();return}
