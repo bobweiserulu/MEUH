@@ -428,7 +428,7 @@ function swStart(){
  sw.i=i;sw.pn=i+1<LASTLIST.length?swPane(LASTLIST[i+1],'100%',cs):null;sw.pp=i>0?swPane(LASTLIST[i-1],'-100%',cs):null;sw.drag=true}
 document.addEventListener('touchstart',e=>{
  if(sw.busy){sw.ok=false;return}
- sw.ok=inF&&tab==='fiches'&&e.touches.length===1&&!e.target.closest('#chips,textarea,input,select');sw.lock=false;sw.drag=false;sw.dx=0;
+ sw.ok=inF&&!PLRET&&tab==='fiches'&&e.touches.length===1&&!e.target.closest('#chips,textarea,input,select');sw.lock=false;sw.drag=false;sw.dx=0;
  if(!sw.ok)return;const q=e.touches[0];sw.x=q.clientX;sw.y=q.clientY;sw.t=Date.now()},{passive:true});
 document.addEventListener('touchmove',e=>{
  if(!sw.ok)return;const q=e.touches[0],dx=q.clientX-sw.x,dy=q.clientY-sw.y;
@@ -458,7 +458,7 @@ $('flb').onclick=()=>{flOpen=!flOpen;$('flrow').style.display=flOpen?'block':'no
 $('selb').onclick=()=>{selMode=!selMode;if(!selMode)SELS.clear();if(tab==='fiches'&&!inF)list();else updFilBtn()};
 $('flrow').addEventListener('input',e=>{const i=e.target.id;if(i==='fjmin')FIL.jmin=e.target.value;else if(i==='fjmax')FIL.jmax=e.target.value;else if(i==='fsmin')FIL.smin=e.target.value;else if(i==='fsmax')FIL.smax=e.target.value;else if(i==='fpr')FIL.pr=e.target.value;else return;list()});
 $('flrow').addEventListener('click',e=>{if(e.target.closest('#fclr')){FIL={jmin:'',jmax:'',smin:'',smax:'',pr:'all'};renderFil();list()}});
-function show(){pre();closeDD();document.querySelector('header').style.display=tab==='fiches'?'':'none';$('tabs').style.display='';$('m').style.paddingBottom='';inF=false;const f=tab==='fiches';$('bar').style.display=f?'':'none';if(tab==='reglages'){reglages();return}if(tab==='saisies'){saisies();return}if(tab==='rappels'){rappels();return}if(tab==='proto'){protos();return}if(DB){if(f)list();else if(tab==='roulette')roulette();else if(tab==='recherche')recherche();else if(tab==='rapport')rapport();else regie()}}
+function show(){if(PLRET){const o=$('pl'),r=PLRET;PLRET=null;if(o){o.style.display='';setTimeout(()=>{plRender();o.scrollTop=r.st},0)}}pre();closeDD();document.querySelector('header').style.display=tab==='fiches'?'':'none';$('tabs').style.display='';$('m').style.paddingBottom='';inF=false;const f=tab==='fiches';$('bar').style.display=f?'':'none';if(tab==='reglages'){reglages();return}if(tab==='saisies'){saisies();return}if(tab==='rappels'){rappels();return}if(tab==='proto'){protos();return}if(DB){if(f)list();else if(tab==='roulette')roulette();else if(tab==='recherche')recherche();else if(tab==='rapport')rapport();else regie()}}
 
 /* ===== Réglages, nom, rappels, rapport ===== */
 const pad=n=>String(n).padStart(2,'0');
@@ -697,6 +697,7 @@ const pdKey=e=>e.it.id+'|'+e.s.d;
 let PCD={};try{PCD=JSON.parse(localStorage.getItem('dsa_pcd')||'{}')||{}}catch(e){}
 const savePCD=()=>{try{localStorage.setItem('dsa_pcd',JSON.stringify(PCD))}catch(e){}};
 let plKey=null;
+let PLRET=null;
 let CP=null;
 function cpOpen(toks,multi,cb,v0){const r=parseCows(toks);CP={sel:r.ok.map(c=>c.num),view:v0||'actives',q:'',multi,cb};
  let o=$('cp');if(!o){o=document.createElement('div');o.id='cp';o.style.cssText='position:fixed;inset:0;z-index:60;background:var(--bg);color:var(--tx);overflow-y:auto;padding-top:env(safe-area-inset-top,0px)';o.onclick=cpClick;o.oninput=cpInput;document.body.appendChild(o)}
@@ -721,6 +722,8 @@ function cpClick(e){const t=e.target;
   if(CP.sel.includes(n))CP.sel=CP.sel.filter(x=>x!==n);else CP.sel.push(n);cpList()}}
 let NLISTS=[];try{NLISTS=JSON.parse(localStorage.getItem('dsa_nlists')||'[]')||[]}catch(e){}
 const saveNL=()=>{try{localStorage.setItem('dsa_nlists',JSON.stringify(NLISTS))}catch(e){}};
+const isTaure=c=>{if(c.elim||c.vela)return false;const k=kind0(c);return k==='ges'||k==='sai'||(k==='gen'&&moisAge(c)>=13)};
+const plNum=c=>(isTaure(c)?'T ':'')+c.num;
 const plEv=()=>protoEvents().find(x=>pdKey(x)===plKey);
 const cowBox=e=>{const r=parseCows(e.it.cows),k=pdKey(e),n=r.ok.length,d=r.ok.filter(c=>PCD[k+'|'+c.num]).length;
  return `<div data-plist="${k}" style="border:2px solid var(--ln);border-radius:12px;padding:8px 10px;margin-top:8px;cursor:pointer;background:var(--bg)"><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800"><span>☑ Liste à cocher</span><span>${d}/${n} ›</span></div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${r.ok.map(c=>`<span style="padding:4px 10px;border:1px solid var(--ln);border-radius:999px;font-weight:700;background:var(--card);${PCD[k+'|'+c.num]?'text-decoration:line-through;opacity:.5':''}">${c.num}</span>`).join('')}${r.bad.map(t=>`<span class="tag w">${t} ?</span>`).join('')}</div></div>`};
@@ -730,15 +733,19 @@ function plInfo(){
 function plRender(){
  const I=plInfo(),o=$('pl');if(!I||!o){plClose();return}
  const r=parseCows(I.toks),L=r.ok,bad=r.bad,k=plKey,isD=c=>!!PCD[k+'|'+c.num],done=L.filter(isD).length,next=L.find(c=>!isD(c)),st=o.scrollTop;
- const rows=L.map(c=>{const d=isD(c),nx=next&&next.num===c.num;return `<div data-pc="${c.num}" style="display:flex;align-items:center;gap:14px;padding:12px 10px;margin-bottom:8px;border:3px solid ${nx?'var(--ac)':'var(--ln)'};border-radius:14px;background:var(--card);cursor:pointer;${d?'opacity:.5':''}"><span style="flex:none;width:46px;height:46px;border-radius:10px;border:3px solid ${d?'var(--gr)':'var(--mut)'};background:${d?'var(--gr)':'transparent'};color:var(--on);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900">${d?'✓':''}</span><span style="flex:1;min-width:0"><span style="display:block;font-size:34px;font-weight:800;line-height:1.1;${d?'text-decoration:line-through;text-decoration-thickness:4px':''}">${c.num}</span><span class="mut" style="display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nom}</span></span><button data-pfiche="${c.id}" style="padding:8px 10px">Fiche ›</button></div>`}).join('');
- o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln)"><div style="display:flex;align-items:center;gap:10px"><button data-plx style="font-size:13px;padding:4px 10px">← Retour</button><div style="flex:1;min-width:0"><b style="font-size:21px;line-height:1.2">${escH(I.title)}</b><div class="mut">${escH(I.sub)}</div></div></div>${L.length?`<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:24px;font-weight:800">${done} / ${L.length}</span>${next?`<span>Prochaine : <b style="font-size:28px">${next.num}</b></span>`:'<span style="font-size:20px;font-weight:800;color:var(--gr)">Terminé ✓</span>'}</div><div style="height:6px;background:var(--ln);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${done/L.length*100}%;background:var(--gr)"></div></div>`:''}</div><div style="padding:10px 12px 90px">${I.note?`<div style="white-space:pre-wrap;font-size:17px;padding:10px 12px;margin-bottom:10px;border:1px solid var(--ln);border-radius:12px;background:var(--card)">📝 ${escH(I.note)}</div>`:''}${rows}${bad.length?`<div class="mut">Introuvables : ${bad.join(', ')}</div>`:''}${L.length?'<div class="row" style="margin-top:12px"><button data-plreset>Tout décocher</button></div>':''}</div>`;
+ const rows=[...L.filter(c=>!isD(c)),...L.filter(isD)].map(c=>{const d=isD(c),nx=next&&next.num===c.num;return `<div data-pc="${c.num}" style="display:flex;align-items:center;gap:14px;padding:12px 10px;margin-bottom:8px;border:3px solid ${nx?'var(--ac)':'var(--ln)'};border-radius:14px;background:var(--card);cursor:pointer;${d?'opacity:.5':''}"><span style="flex:none;width:46px;height:46px;border-radius:10px;border:3px solid ${d?'var(--gr)':'var(--mut)'};background:${d?'var(--gr)':'transparent'};color:var(--on);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900">${d?'✓':''}</span><span style="flex:1;min-width:0"><span style="display:block;font-size:34px;font-weight:800;line-height:1.1;${d?'text-decoration:line-through;text-decoration-thickness:4px':''}">${plNum(c)}</span><span class="mut" style="display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nom}</span></span><button data-pfiche="${c.id}" style="padding:8px 10px">Fiche ›</button></div>`}).join('');
+ o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln)"><div style="display:flex;align-items:center;gap:10px"><button data-plx style="font-size:13px;padding:4px 10px">← Retour</button><div style="flex:1;min-width:0"><b style="font-size:21px;line-height:1.2">${escH(I.title)}</b><div class="mut">${escH(I.sub)}</div></div></div>${L.length?`<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:24px;font-weight:800">${done} / ${L.length}</span>${next?`<span>Prochaine : <b style="font-size:28px">${plNum(next)}</b></span>`:'<span style="font-size:20px;font-weight:800;color:var(--gr)">Terminé ✓</span>'}</div><div style="height:6px;background:var(--ln);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${done/L.length*100}%;background:var(--gr)"></div></div>`:''}</div><div style="padding:10px 12px 90px">${I.note?`<div style="white-space:pre-wrap;font-size:17px;padding:10px 12px;margin-bottom:10px;border:1px solid var(--ln);border-radius:12px;background:var(--card)">📝 ${escH(I.note)}</div>`:''}${rows}${bad.length?`<div class="mut">Introuvables : ${bad.join(', ')}</div>`:''}${L.length?'<div class="row" style="margin-top:12px"><button data-plreset>Tout décocher</button></div>':''}</div>`;
  o.scrollTop=st}
-function plOpen(k){plKey=k;let o=$('pl');if(!o){o=document.createElement('div');o.id='pl';o.style.cssText='position:fixed;inset:0;z-index:40;background:var(--bg);color:var(--tx);overflow-y:auto;padding-top:env(safe-area-inset-top,0px)';o.onclick=plClick;document.body.appendChild(o)}plRender()}
-function plClose(){const o=$('pl');if(o)o.remove();plKey=null;if(tab==='proto')protos();else if(tab==='regie')regie()}
+let WL=null;
+async function wakeOn(){try{if(navigator.wakeLock&&!WL){const w=await navigator.wakeLock.request('screen');if(!$('pl')){w.release();return}WL=w;w.addEventListener('release',()=>{if(WL===w)WL=null})}}catch(e){}}
+function wakeOff(){try{if(WL){WL.release();WL=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{const o=$('pl');if(document.visibilityState==='visible'&&o)wakeOn()});
+function plOpen(k){plKey=k;wakeOn();let o=$('pl');if(!o){o=document.createElement('div');o.id='pl';o.style.cssText='position:fixed;inset:0;z-index:40;background:var(--bg);color:var(--tx);overflow-y:auto;padding-top:env(safe-area-inset-top,0px)';o.onclick=plClick;document.body.appendChild(o)}plRender()}
+function plClose(){const o=$('pl');if(o)o.remove();plKey=null;PLRET=null;wakeOff();if(tab==='proto')protos();else if(tab==='regie')regie()}
 function plClick(ev){
  const t=ev.target,ev0=plKey&&!plKey.startsWith('L:');
  if(t.closest('[data-plx]')){plClose();return}
- let b=t.closest('[data-pfiche]');if(b){const id=b.dataset.pfiche,keepTab=tab;plClose();const h=document.createElement('button');h.dataset.open=id;$('m').appendChild(h);h.click();h.remove();return}
+ let b=t.closest('[data-pfiche]');if(b){const id=b.dataset.pfiche,o=$('pl');PLRET={st:o.scrollTop};o.style.display='none';fiche(id);return}
  if(t.closest('[data-plreset]')){const L=parseCows(plInfo().toks).ok;L.forEach(c=>delete PCD[plKey+'|'+c.num]);if(ev0)delete PDONE[plKey];savePCD();savePD();updPBadge();schedSoon();plRender();return}
  b=t.closest('[data-pc]');if(b){const L=parseCows(plInfo().toks).ok,k=plKey+'|'+b.dataset.pc,all=()=>L.every(c=>PCD[plKey+'|'+c.num]),was=all();
   if(PCD[k])delete PCD[k];else PCD[k]=1;
@@ -1517,6 +1524,8 @@ let inF=false,LASTLIST=[],CURID=null;const tabHist=[];
 const AppP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;
 function back(){if(!AppP&&history.state&&history.state.f)history.back();else show()}
 function appBack(){
+ if($('ccf')){ccClose();return}
+ if(inF&&PLRET){back();return}
  if($('actmod')){$('actmod').remove();return}
  if($('cp')){cpClose();return}
  if($('pl')){plClose();return}
@@ -1531,7 +1540,16 @@ function hlTab(){const id=Object.keys(TABMAP).find(k=>TABMAP[k]===tab);TABS.forE
 function pushNav(f){if(AppP)return;try{history.pushState({tab:tab,f:f||null},'')}catch(e){}}
 try{history.replaceState({tab:'fiches',f:null},'')}catch(e){}
 addEventListener('popstate',ev=>{const s=ev.state||{tab:'fiches',f:null};tab=s.tab||'fiches';hlTab();if(s.f&&DB)fiche(s.f,true);else show()});
-TABS.forEach(id=>$(id).onclick=()=>{if(tab!==TABMAP[id]){tabHist.push(tab);tab=TABMAP[id];pushNav()}tab=TABMAP[id];hlTab();show()});
+let lastTap={id:'',t:0};
+function tabReset(t){
+ if(t==='fiches'){view='actives';q='';$('q').value='';$('qrow').style.display='none';$('qb').classList.remove('on');FIL={jmin:'',jmax:'',smin:'',smax:'',pr:'all'};flOpen=false;$('flrow').style.display='none';selMode=false;SELS.clear();updFilBtn()}
+ else if(t==='roulette')rsub='wheel';
+ else if(t==='regie'){afsub='list';afForm=false}
+ else if(t==='proto')pSub='cal';
+ else if(t==='recherche')rq='';
+ else if(t==='rappels')rpSub='list'}
+TABS.forEach(id=>$(id).onclick=()=>{const now=Date.now(),dbl=lastTap.id===id&&now-lastTap.t<450;lastTap={id,t:dbl?0:now};if(dbl){tabReset(TABMAP[id]);setTimeout(()=>scrollTo(0,0),0)}
+ if(tab!==TABMAP[id]){tabHist.push(tab);tab=TABMAP[id];pushNav()}tab=TABMAP[id];hlTab();show()});
 $('actb').onclick=()=>{if(tab!=='saisies'){tabHist.push(tab);tab='saisies';pushNav()}TABS.forEach(x=>$(x).classList.remove('on'));show()};
 $('gear').onclick=()=>{if(tab!=='reglages'){tabHist.push(tab);tab='reglages';pushNav()}TABS.forEach(x=>$(x).classList.remove('on'));show()};
 /* ===== Pastilles déplaçables (appui long puis glisser) ===== */
@@ -1742,11 +1760,57 @@ const rgpanel=()=>`<div class="cow" style="display:block;cursor:default"><div cl
 <div style="margin:8px 0"><b>Vêlages à venir</b> : de ${rin('va')} <span class="mut">jours de retard</span> à ${rin('vb')} <span class="mut">jours avant le vêlage</span></div>
 <div style="margin:8px 0"><b>Tarissements</b> : de ${rin('ta')} à ${rin('tb')} <span class="mut">jours avant le vêlage prévu</span></div>
 <div style="margin:8px 0"><b>Veaux à écorner</b> : de ${rin('ecmin')} à ${rin('ecmax')} <span class="mut">jours après la naissance (maximum vide = aucune limite)</span></div>
-${aoHtml()}<button data-rg="reset">Remettre les valeurs par défaut</button></div>`;
+${aoHtml()}${ccHtml()}<button data-rg="reset">Remettre les valeurs par défaut</button></div>`;
 let DONE={};try{DONE=JSON.parse(localStorage.getItem('dsa_done')||'{}')||{}}catch(e){}
 (()=>{let ch=false;for(const k in DONE)if(DONE[k]<todayN-200){delete DONE[k];ch=true}if(ch)try{localStorage.setItem('dsa_done',JSON.stringify(DONE))}catch(e){}})();
 const saveDone=()=>{try{localStorage.setItem('dsa_done',JSON.stringify(DONE))}catch(e){}updBadge()};
 function updBadge(){const b=$('afbd');if(!b)return;let n=0;try{if(DB){const tk=tasks(todayN);for(const k of Object.keys(AFLBL)){if(AFON[k]===false||!tk[k])continue;n+=tk[k].filter(r=>!DONE[r.key]).length}}}catch(e){}b.textContent=n>99?'99+':n;b.style.display=n?'':'none'}
+let CCATS=[];try{CCATS=JSON.parse(localStorage.getItem('dsa_ccats')||'[]')||[]}catch(e){}
+const saveCC=()=>{try{localStorage.setItem('dsa_ccats',JSON.stringify(CCATS))}catch(e){}};
+const ccKey=cc=>'c_'+cc.id;
+const ccNum=x=>x!==''&&x!=null&&Number.isFinite(+x);
+function ccMatch(c,cc){
+ if(c.elim)return false;
+ if(cc.sts&&cc.sts.length&&!cc.sts.some(v=>VIEWS[v]&&VIEWS[v](c)))return false;
+ if(ccNum(cc.amin)||ccNum(cc.amax)){if(!c.naiss)return false;const m=Math.floor(moisAge(c));if(ccNum(cc.amin)&&m<+cc.amin)return false;if(ccNum(cc.amax)&&m>+cc.amax)return false}
+ if(ccNum(cc.jmin)||ccNum(cc.jmax)){const j=jelOf(c);if(j==null)return false;if(ccNum(cc.jmin)&&j<+cc.jmin)return false;if(ccNum(cc.jmax)&&j>+cc.jmax)return false}
+ if(ccNum(cc.smin)||ccNum(cc.smax)){const d=c.sail?todayN-c.sail.d:null;if(d==null)return false;if(ccNum(cc.smin)&&d<+cc.smin)return false;if(ccNum(cc.smax)&&d>+cc.smax)return false}
+ return true}
+function ccRows(cc,T){
+ return DB.cows.filter(c=>ccMatch(c,cc)).sort(numCmp).map((c,i)=>{const si=statusInfo(c),j=jelOf(c),d=c.sail?T-c.sail.d:null,p=[];
+  if(si)p.push(si.lab);if(c.naiss)p.push(Math.floor(moisAge(c))+' mois');if(j!=null)p.push(j+' JEL');if(d!=null)p.push(d+' JDS');
+  return {c,key:`cc|${cc.id}|${c.num}`,text:p.join(' · '),sort:i}})}
+function ccDesc(cc){
+ const rg=(a,b,u)=>ccNum(a)&&ccNum(b)?`${a} à ${b} ${u}`:ccNum(a)?`${a} ${u} et plus`:ccNum(b)?`jusqu’à ${b} ${u}`:'',p=[];
+ if(cc.sts&&cc.sts.length)p.push((cc.sts.map(v=>(VLBL.find(x=>x[0]===v)||[v,v])[1]).join(', ')));
+ const a=rg(cc.amin,cc.amax,'mois');if(a)p.push('âge : '+a);
+ const j=rg(cc.jmin,cc.jmax,'JEL');if(j)p.push(j);
+ const s2=rg(cc.smin,cc.smax,'JDS');if(s2)p.push(s2);
+ return escH(p.join(' · ')||'Toutes les actives')}
+function ccSync(){for(const k of Object.keys(AFLBL))if(k.startsWith('c_')){delete AFLBL[k];delete CATCOL[k]}for(const cc of CCATS){AFLBL[ccKey(cc)]=escH(cc.name);CATCOL[ccKey(cc)]='var(--ac)'}}
+const ccHtml=()=>`<div style="margin:10px 0 6px"><b>Mes catégories</b> <span class="mut">(filtre par statut, âge, JEL, JDS)</span></div>`+(CCATS.length?CCATS.map(cc=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span style="flex:1;min-width:0"><b>${escH(cc.name)}</b><div class="mut" style="font-size:12px">${ccDesc(cc)}</div></span><button data-ccedit="${cc.id}">✎</button><button data-ccdel="${cc.id}" style="color:var(--rd)">🗑</button></div>`).join(''):'<div class="mut">Aucune pour l’instant.</div>')+`<div style="margin:6px 0 10px"><button data-ccadd>＋ Ajouter une catégorie</button></div>`;
+let CCF=null;
+const ccInputStyle='width:70px;text-align:center';
+function ccPrev(){const el=$('ccprev');if(!el||!CCF)return;const r=DB.cows.filter(c=>ccMatch(c,CCF)).sort(numCmp);el.innerHTML=`<b>${r.length}</b> vache(s) correspondent`+(r.length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${r.slice(0,80).map(c=>`<span style="padding:3px 8px;border:1px solid var(--ln);border-radius:999px;font-weight:700;background:var(--card)">${c.num}</span>`).join('')}${r.length>80?'<span class="mut">…</span>':''}</div>`:'')}
+function ccRead(){if(!CCF||!$('ccn'))return;CCF.name=$('ccn').value;for(const [k,id] of [['amin','cca1'],['amax','cca2'],['jmin','ccj1'],['jmax','ccj2'],['smin','ccs1'],['smax','ccs2']])CCF[k]=$(id).value.trim()}
+function ccRender(){const o=$('ccf');if(!o||!CCF)return;const st=o.scrollTop,v=CCF;
+ const pair=(t,a,b,ia,ib,u)=>`<div style="margin:12px 0"><b>${t}</b> <span class="mut">${u}</span><div style="display:flex;align-items:center;gap:8px;margin-top:6px">de <input class="zi" id="${ia}" type="number" inputmode="numeric" min="0" value="${v[a]}" style="${ccInputStyle}"> à <input class="zi" id="${ib}" type="number" inputmode="numeric" min="0" value="${v[b]}" style="${ccInputStyle}"></div></div>`;
+ o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:10px"><button data-ccx style="font-size:13px;padding:4px 10px">← Annuler</button><b style="flex:1;font-size:19px">${v.isNew?'Nouvelle catégorie':'Modifier la catégorie'}</b><button class="on" data-ccsave style="padding:8px 16px">Enregistrer</button></div><div style="padding:12px 12px 90px"><b>Nom</b><input id="ccn" class="zi" style="width:100%;text-align:left;margin-top:6px;box-sizing:border-box" placeholder="Ex. : Taures à vérifier" value="${escH(v.name)}" autocomplete="off"><div style="margin:14px 0 6px"><b>Statut</b> <span class="mut">(aucun coché = toutes les actives)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${VLBL.filter(x=>x[0]!=='actives'&&x[0]!=='elim').map(x=>`<button data-ccst="${x[0]}" class="${v.sts.includes(x[0])?'on':''}">${x[1]}</button>`).join('')}</div>${pair('Âge','amin','amax','cca1','cca2','mois (vide = sans limite)')}${pair('JEL','jmin','jmax','ccj1','ccj2','jours en lait')}${pair('JDS','smin','smax','ccs1','ccs2','jours depuis la dernière saillie')}<div id="ccprev" style="margin-top:14px"></div></div>`;
+ ccPrev();o.scrollTop=st}
+function ccOpen(id){const cc=id?CCATS.find(x=>x.id===id):null;
+ CCF=cc?{amin:'',amax:'',jmin:'',jmax:'',smin:'',smax:'',...cc,sts:[...(cc.sts||[])]}:{id:'k'+Date.now().toString(36),name:'',sts:[],amin:'',amax:'',jmin:'',jmax:'',smin:'',smax:'',isNew:true};
+ let o=$('ccf');if(!o){o=document.createElement('div');o.id='ccf';o.style.cssText='position:fixed;inset:0;z-index:50;background:var(--bg);color:var(--tx);overflow-y:auto;padding-top:env(safe-area-inset-top,0px)';o.onclick=ccClick;o.oninput=()=>{ccRead();ccPrev()};document.body.appendChild(o)}
+ ccRender()}
+function ccClose(){const o=$('ccf');if(o)o.remove();CCF=null}
+function ccClick(e){const t=e.target;
+ if(t.closest('[data-ccx]')){ccClose();return}
+ const b=t.closest('[data-ccst]');if(b){ccRead();const k=b.dataset.ccst;CCF.sts=CCF.sts.includes(k)?CCF.sts.filter(x=>x!==k):[...CCF.sts,k];ccRender();return}
+ if(t.closest('[data-ccsave]')){ccRead();const v=CCF;
+  if(!v.name.trim()){toast('Donne un nom à la catégorie',2500);return}
+  if(!v.sts.length&&!['amin','amax','jmin','jmax','smin','smax'].some(k=>ccNum(v[k]))){toast('Choisis au moins un critère',2500);return}
+  const out={id:v.id,name:v.name.trim(),sts:v.sts};for(const k of ['amin','amax','jmin','jmax','smin','smax'])out[k]=ccNum(v[k])?+v[k]:'';
+  const i=CCATS.findIndex(x=>x.id===out.id);if(i>=0)CCATS[i]=out;else{CCATS.push(out);AFCOL[ccKey(out)]=false;saveAF()}
+  saveCC();ccSync();ccClose();updBadge();if(tab==='regie')regie();return}}
 let showDone=false;
 function tasks(T){
  const act=DB.cows.filter(c=>!c.elim),genMin=Math.round(RG.gm*30.44);
@@ -1767,9 +1831,10 @@ function tasks(T){
    if(c.vela&&dv>=RG.ta&&dv<=RG.tb&&!c.tarAfter)tar.push({c,key:`tar|${c.num}|${c.prevu}`,text:`Tarissement ~${fmt(c.prevu-60)} · vêlage prévu ${fmt(c.prevu)}`,dl:dd,sort:c.prevu});}
  }
  const eco=[];for(const c of act){if(!c.vela&&!c.lb&&c.naiss&&kind0(c)==='vo'){const ag=T-c.naiss;if(ag>=RG.ecmin&&(RG.ecmax==null||ag<=RG.ecmax))eco.push({c,key:`eco|${c.num}|${c.naiss}`,text:`Né le ${fmt(c.naiss)} · ${ag} j`,tag:`${ag} j`,sort:-ag})}}
- return {ret,tg,ins,vel,tar,eco};
+ const R={ret,tg,ins,vel,tar,eco};for(const cc of CCATS)R[ccKey(cc)]=ccRows(cc,T);return R;
 }
 const AFLBL={ret:'Retours de chaleur',tg:'Tests de gestation à faire',ins:'À inséminer',vel:'Vêlages à venir',tar:'Tarissements',eco:'Veaux à écorner'};
+ccSync();
 const afOrder=()=>ordBy(Object.keys(AFLBL),k=>k,AFORD);
 let AFCOL={},AFON={};try{AFCOL=JSON.parse(localStorage.getItem('dsa_afcol')||'{}')||{};AFON=JSON.parse(localStorage.getItem('dsa_afon')||'{}')||{}}catch(e){}
 const saveAF=()=>{try{localStorage.setItem('dsa_afcol',JSON.stringify(AFCOL));localStorage.setItem('dsa_afon',JSON.stringify(AFON))}catch(e){}};
@@ -1820,9 +1885,9 @@ function regie(){
   vel:()=>sc('vel',AFLBL.vel,`De ${RG.va} j de retard à ${RG.vb} j avant la date prévue (saillie fécondante + 280 j)`,tk.vel),
   tar:()=>sc('tar',AFLBL.tar,`De ${RG.ta} à ${RG.tb} jours avant le vêlage prévu (tarissement ~60 j avant)`,tk.tar),
   eco:()=>sc('eco',AFLBL.eco,`Veaux de moins de 6 mois, dès ${RG.ecmin} j après la naissance${RG.ecmax==null?' (aucune limite maximale)':', jusqu’à '+RG.ecmax+' j'}`,tk.eco)};
- const secs=vis.map(k=>defs[k]()).join('');
+ const secs=vis.map(k=>{if(defs[k])return defs[k]();const cc=CCATS.find(x=>ccKey(x)===k);return cc?sc(k,escH(cc.name),ccDesc(cc),tk[k]||[]):''}).join('');
  const dclosed=AFCOL.done!==false,done=doneRows.length?`<div class="sechead" style="border-left:8px solid var(--mut)"><span class="sectitle" data-sec="done" style="color:var(--mut)"><span class="chev">${dclosed?'▸':'▾'}</span> Actions complétées</span><span class="tag" style="font-size:14px">${doneRows.length}</span></div>`+(dclosed?'':`<div class="mut">Touche ↩ pour remettre une vache dans sa liste.</div>`+doneRows.map(r=>`<div class="cow" data-id="${r.c.id}" style="filter:grayscale(1);opacity:.65"><div><b>${r.c.num}</b> ${r.c.nom}<div class="mut">${r.cat} · ${r.text}</div></div><div><button class="dn" data-done="${r.key}" title="Remettre dans la liste">↩</button></div></div>`).join('')):'';
- $('m').innerHTML=afBar()+`<div class="row"><button data-rg="toggle">⚙ Réglages des jours</button></div>${rgOpen?rgpanel():''}`+(secs||'<div class="empty">Aucune section affichée : coche-les dans ⚙ Réglages des jours.</div>')+done;
+ $('m').innerHTML=afBar()+`<div class="row"><button data-rg="toggle">⚙ Réglages des jours</button><button data-ccadd>＋ Catégorie</button></div>${rgOpen?rgpanel():''}`+(secs||'<div class="empty">Aucune section affichée : coche-les dans ⚙ Réglages des jours.</div>')+done;
  $('info').textContent='Régie · '+act.length+' actives · fichier du '+DB.date;
 }
 $('m').onchange=e=>{
@@ -1877,6 +1942,9 @@ $('m').onclick=e=>{
  const vcl=e.target.closest('[data-vcol]');if(vcl){const k=vcl.dataset.vcol;VELCOL[k]=!VELCOL[k];velRows();return}
  const vsb=e.target.closest('[data-vsub]');if(vsb){rsub=vsb.dataset.vsub;roulette();return}
  const ao=e.target.closest('[data-ao]');if(ao){const [k,d]=ao.dataset.ao.split(':'),o=afOrder(),vs=o.filter(x=>AFON[x]!==false),vi=vs.indexOf(k),vj=d==='up'?vi-1:vi+1;if(vj>=0&&vj<vs.length){const a=o.indexOf(k),b=o.indexOf(vs[vj]);[o[a],o[b]]=[o[b],o[a]];AFORD=o;saveOrd('dsa_aford',o)}regie();return}
+ const cca=e.target.closest('[data-ccadd]');if(cca){ccOpen(null);return}
+ const cce=e.target.closest('[data-ccedit]');if(cce){ccOpen(cce.dataset.ccedit);return}
+ const ccd=e.target.closest('[data-ccdel]');if(ccd){if(ccd.dataset.arm){CCATS=CCATS.filter(x=>x.id!==ccd.dataset.ccdel);saveCC();ccSync();updBadge();regie()}else{ccd.dataset.arm='1';ccd.textContent='⚠ Sûr ?';setTimeout(()=>{if(ccd.isConnected){delete ccd.dataset.arm;ccd.textContent='🗑'}},3000)}return}
  const sec=e.target.closest('[data-sec]');if(sec){const k=sec.dataset.sec;AFCOL[k]=(AFCOL[k]===false);saveAF();regie();return}
  if(e.target.closest('[data-gdnow]')){driveUpdate(false);return}
  const gf=e.target.closest('[data-gdforce]');if(gf){if(gf.dataset.arm){delete gf.dataset.arm;gf.textContent='⚠ Forcer la mise à jour du cloud (même si plus ancien)';driveUpdate(false,true)}else{gf.dataset.arm='1';gf.textContent='⚠ Appuie encore : ça remplace les données de l’app';setTimeout(()=>{if(gf.dataset.arm){delete gf.dataset.arm;gf.textContent='⚠ Forcer la mise à jour du cloud (même si plus ancien)'}},4000)}return}
