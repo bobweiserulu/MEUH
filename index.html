@@ -732,7 +732,53 @@ const plToks=e=>{const x=PLX[pdKey(e)];return x&&x.extra&&x.extra.length?e.it.co
 const PLS=[['orig','Original'],['jel','JEL'],['jds','JDS'],['vel','Vêlage'],['age','Âge']];
 function plVal(c,m){if(m==='jel')return jelOf(c);if(m==='jds')return c.sail?todayN-c.sail.d:null;if(m==='vel')return c.gest&&c.prevu?c.prevu-todayN:null;if(m==='age')return c.naiss?todayN-c.naiss:null;return null}
 function plSub(c,m){const v=plVal(c,m);if(m==='orig')return'';if(v==null)return'—';return m==='jel'?v+' JEL':m==='jds'?v+' JDS':m==='vel'?(v<0?'retard '+(-v)+' j':'vêlage dans '+v+' j'):Math.floor(v/30.44)+' mois'}
-function plSort(L,SM){if(SM.m==='orig')return L.slice();return L.map((c,i)=>[c,i]).sort((a,b)=>{const x=plVal(a[0],SM.m),y=plVal(b[0],SM.m);if(x==null&&y==null)return a[1]-b[1];if(x==null)return 1;if(y==null)return -1;return (x-y)*SM.d||a[1]-b[1]}).map(p=>p[0])}
+function plSort(L,SM){if(SM.m==='orig')return L.slice();const v=it=>it.c?plVal(it.c,SM.m):null;return L.map((c,i)=>[c,i]).sort((a,b)=>{const x=v(a[0]),y=v(b[0]);if(x==null&&y==null)return a[1]-b[1];if(x==null)return 1;if(y==null)return -1;return (x-y)*SM.d||a[1]-b[1]}).map(p=>p[0])}
+function plStore(){if(plKey&&plKey.startsWith('L:'))return NLISTS.find(x=>x.id===plKey.slice(2))||{};return PLX[plKey]||(PLX[plKey]={})}
+const plSaveStore=()=>{if(plKey&&plKey.startsWith('L:'))saveNL();else savePLX()};
+function plItems(L){const st=plStore(),m=new Map();
+ L.forEach(c=>m.set('c|'+c.num,{k:'c|'+c.num,c}));(st.xs||[]).forEach(x=>m.set('x|'+x.id,{k:'x|'+x.id,x}));
+ const out=[],seen=new Set();for(const k of (st.ord||[]))if(m.has(k)&&!seen.has(k)){out.push(m.get(k));seen.add(k)}
+ for(const [k,v] of m)if(!seen.has(k))out.push(v);return out}
+function plxOpen(id){const st=plStore(),x=id?(st.xs||[]).find(y=>y.id===id):null;
+ let o=$('plxe');if(o)o.remove();o=document.createElement('div');o.id='plxe';o.dataset.id=id||'';
+ o.style.cssText='position:fixed;inset:0;z-index:55;background:var(--bg);color:var(--tx);padding:env(safe-area-inset-top,0px) 12px 12px';
+ o.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:10px 0"><button data-plxc style="font-size:13px;padding:4px 10px">← Annuler</button><b style="flex:1;font-size:19px">${x?'Modifier':'Nouvel élément'}</b><button class="on" data-plxs style="padding:8px 16px">Enregistrer</button></div><textarea id="plxt" rows="4" placeholder="Texte ou numéro…" style="width:100%;box-sizing:border-box;font:inherit;font-size:22px;padding:10px 12px;border:1px solid var(--ln);border-radius:12px;background:var(--card);color:var(--tx)">${escH(x?x.text:'')}</textarea>${x?'<div class="row" style="margin-top:14px"><button data-plxd style="color:var(--rd)">🗑 Supprimer</button></div>':''}`;
+ o.onclick=plxClick;document.body.appendChild(o);setTimeout(()=>{const t=$('plxt');if(t)t.focus()},60)}
+function plxClick(e){const t=e.target,o=$('plxe'),id=o.dataset.id;
+ if(t.closest('[data-plxc]')){o.remove();return}
+ if(t.closest('[data-plxs]')){const v=$('plxt').value.trim();if(!v){toast('Écris un texte ou un numéro',2500);return}
+  const st=plStore();st.xs=st.xs||[];if(id){const x=st.xs.find(y=>y.id===id);if(x)x.text=v}else st.xs.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),text:v});
+  plSaveStore();o.remove();plRender();return}
+ const d=t.closest('[data-plxd]');if(d){if(d.dataset.arm){const st=plStore();st.xs=(st.xs||[]).filter(y=>y.id!==id);st.ord=(st.ord||[]).filter(k=>k!=='x|'+id);delete PCD[plKey+'|#'+id];savePCD();plSaveStore();o.remove();plRender()}else{d.dataset.arm='1';d.textContent='⚠ Appuie encore pour supprimer';setTimeout(()=>{if(d.isConnected){delete d.dataset.arm;d.textContent='🗑 Supprimer'}},3000)}}}
+function plReorder(key,g,n){const L=parseCows(plInfo().toks).ok,items=plItems(L),dk=it=>!!PCD[plKey+'|'+(it.c?it.c.num:'#'+it.x.id)];
+ const S=items.map(i=>i.k),grp=items.filter(i=>(dk(i)?'1':'0')===g).map(i=>i.k),others=grp.filter(k=>k!==key);let S2=S.filter(k=>k!==key);
+ if(others.length){const at=n<others.length?S2.indexOf(others[n]):S2.indexOf(others[others.length-1])+1;S2.splice(at,0,key)}else S2=S;
+ const st=plStore();st.ord=S2;
+ if(plKey.startsWith('L:')){const bad=parseCows(st.nums).bad;st.nums=[...S2.filter(k=>k[0]==='c').map(k=>k.slice(2)),...bad].join(' ')}
+ plSaveStore();plRender()}
+let PLD=null,plNoClick=0,plRaf=0;
+function plDown(e){const row=e.target.closest('[data-pk]');if(!row||e.target.closest('button,textarea,input'))return;if(e.pointerType==='mouse'&&e.button!==0)return;
+ PLD={row,x:e.clientX,y:e.clientY,cy:e.clientY,on:false,t:setTimeout(plDragStart,380)}}
+function plDragStart(){const D=PLD,o=$('pl');if(!D||!o)return;
+ if((PLSORT[plKey]||{m:'orig'}).m!=='orig'){PLD=null;toast('Pour déplacer, mets le tri sur « Original »',3000);return}
+ const grp=[...o.querySelectorAll('[data-pk]')].filter(r=>r.dataset.pdg===D.row.dataset.pdg);
+ D.grp=grp;D.o=grp.indexOf(D.row);D.n=D.o;D.mids=grp.map(r=>{const b=r.getBoundingClientRect();return b.top+b.height/2});D.h=D.row.getBoundingClientRect().height+8;D.sc0=o.scrollTop;D.on=true;
+ D.row.style.position='relative';D.row.style.zIndex='5';D.row.style.boxShadow='0 8px 20px rgba(0,0,0,.35)';D.row.style.transform='scale(1.02)';
+ grp.forEach(r=>{if(r!==D.row)r.style.transition='transform .15s'});
+ try{navigator.vibrate&&navigator.vibrate(25)}catch(x){}
+ plDragLoop()}
+function plDragUpdate(){const D=PLD,o=$('pl');if(!D||!D.on||!o)return;
+ const dy=D.cy-D.y+(o.scrollTop-D.sc0);D.row.style.transform=`translateY(${dy}px) scale(1.02)`;
+ const c=D.mids[D.o]+dy;let n=0;D.mids.forEach((m,i)=>{if(i!==D.o&&m<c)n++});D.n=n;
+ D.grp.forEach((r,i)=>{if(i===D.o)return;let t=0;if(D.o<n&&i>D.o&&i<=n)t=-D.h;else if(D.o>n&&i>=n&&i<D.o)t=D.h;r.style.transform=t?`translateY(${t}px)`:''})}
+function plDragLoop(){const D=PLD,o=$('pl');if(!D||!D.on||!o)return;let v=0;const H=innerHeight;
+ if(D.cy<110)v=-Math.min(14,(110-D.cy)/6);else if(D.cy>H-90)v=Math.min(14,(D.cy-(H-90))/5);
+ if(v){o.scrollTop+=v;plDragUpdate()}plRaf=requestAnimationFrame(plDragLoop)}
+function plMoveEv(e){const D=PLD;if(!D)return;
+ if(!D.on){if(Math.abs(e.clientX-D.x)>10||Math.abs(e.clientY-D.y)>10){clearTimeout(D.t);PLD=null}return}
+ D.cy=e.clientY;plDragUpdate()}
+function plUp(){const D=PLD;if(!D)return;clearTimeout(D.t);PLD=null;cancelAnimationFrame(plRaf);if(!D.on)return;
+ plNoClick=Date.now()+400;if(D.n!==D.o)plReorder(D.row.dataset.pk,D.row.dataset.pdg,D.n);else plRender()}
 function plSetNote(v){if(plKey&&plKey.startsWith('L:')){const l=NLISTS.find(x=>x.id===plKey.slice(2));if(l){l.note=v;saveNL()}}else if(plKey){PLX[plKey]=Object.assign(PLX[plKey]||{},{note:v});savePLX()}}
 function plSetCows(k,sel){
  if(k!==plKey)return;
@@ -748,28 +794,42 @@ function plInfo(){
  const e=plEv();return e?{title:e.s.txt||'Étape',sub:e.t.name+' · '+fmt(e.D),toks:plToks(e),note:(PLX[plKey]||{}).note||'',list:false}:null}
 function plRender(){
  const I=plInfo(),o=$('pl');if(!I||!o){plClose();return}
- const r=parseCows(I.toks),L=r.ok,bad=r.bad,k=plKey,isD=c=>!!PCD[k+'|'+c.num],done=L.filter(isD).length,SM=PLSORT[k]||{m:'orig',d:1},OL=plSort(L,SM),ord=[...OL.filter(c=>!isD(c)),...OL.filter(isD)],next=ord.find(c=>!isD(c)),st=o.scrollTop;
- const sbar=L.length>1?`<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;align-items:center"><span class="mut" style="flex:none">Trier :</span>${PLS.map(([m,l])=>`<button data-plsort="${m}" class="${SM.m===m?'on':''}" style="flex:none;white-space:nowrap">${l}${SM.m===m&&m!=='orig'?(SM.d>0?' ▲':' ▼'):''}</button>`).join('')}</div>`:'';
- const rows=ord.map(c=>{const d=isD(c),nx=next&&next.num===c.num;return `<div data-pc="${c.num}" style="display:flex;align-items:center;gap:14px;padding:12px 10px;margin-bottom:8px;border:3px solid ${nx?'var(--ac)':'var(--ln)'};border-radius:14px;background:var(--card);cursor:pointer;${d?'opacity:.5':''}"><span style="flex:none;width:46px;height:46px;border-radius:10px;border:3px solid ${d?'var(--gr)':'var(--mut)'};background:${d?'var(--gr)':'transparent'};color:var(--on);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900">${d?'✓':''}</span><span style="flex:1;min-width:0"><span style="display:block;font-size:34px;font-weight:800;line-height:1.1;${d?'text-decoration:line-through;text-decoration-thickness:4px':''}">${plNum(c)}</span><span class="mut" style="display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nom}${SM.m!=='orig'?` · <b style="color:var(--tx)">${plSub(c,SM.m)}</b>`:''}</span></span><button data-pfiche="${c.id}" style="padding:8px 10px">Fiche ›</button></div>`}).join('');
- o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln)"><div style="display:flex;align-items:center;gap:10px"><button data-plx style="font-size:13px;padding:4px 10px">← Retour</button><div style="flex:1;min-width:0"><b style="font-size:21px;line-height:1.2">${escH(I.title)}</b><div class="mut">${escH(I.sub)}</div></div><button data-pladd style="flex:none;padding:6px 10px">＋ Vaches</button></div>${L.length?`<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:24px;font-weight:800">${done} / ${L.length}</span>${next?`<span>Prochaine : <b style="font-size:28px">${plNum(next)}</b></span>`:'<span style="font-size:20px;font-weight:800;color:var(--gr)">Terminé ✓</span>'}</div><div style="height:6px;background:var(--ln);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${done/L.length*100}%;background:var(--gr)"></div></div>`:''}</div><div style="padding:10px 12px 90px"><textarea id="plnote" rows="2" placeholder="📝 Écrire une note…" style="width:100%;box-sizing:border-box;font:inherit;font-size:17px;padding:10px 12px;margin-bottom:10px;border:1px solid var(--ln);border-radius:12px;background:var(--card);color:var(--tx)">${escH(I.note)}</textarea>${sbar}${rows}${bad.length?`<div class="mut">Introuvables : ${bad.join(', ')}</div>`:''}${L.length?'<div class="row" style="margin-top:12px"><button data-plreset>Tout décocher</button></div>':''}</div>`;
+ const r=parseCows(I.toks),L=r.ok,bad=r.bad,k=plKey,SM=PLSORT[k]||{m:'orig',d:1},
+  dk=it=>k+'|'+(it.c?it.c.num:'#'+it.x.id),isD=it=>!!PCD[dk(it)],
+  items=plItems(L),N=items.length,done=items.filter(isD).length,
+  OL=plSort(items,SM),ord=[...OL.filter(i=>!isD(i)),...OL.filter(isD)],next=ord.find(i=>!isD(i)),st=o.scrollTop;
+ const sbar=N>1?`<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:4px;align-items:center"><span class="mut" style="flex:none">Trier :</span>${PLS.map(([m,l])=>`<button data-plsort="${m}" class="${SM.m===m?'on':''}" style="flex:none;white-space:nowrap">${l}${SM.m===m&&m!=='orig'?(SM.d>0?' ▲':' ▼'):''}</button>`).join('')}</div>${SM.m==='orig'?'<div class="mut" style="font-size:12px;margin-bottom:8px">Maintiens une ligne appuyée pour la déplacer.</div>':'<div style="margin-bottom:8px"></div>'}`:'';
+ const rows=ord.map(it=>{const d=isD(it),nx=next&&next.k===it.k;
+  const cb=`<span style="flex:none;width:46px;height:46px;border-radius:10px;border:3px solid ${d?'var(--gr)':'var(--mut)'};background:${d?'var(--gr)':'transparent'};color:var(--on);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900">${d?'✓':''}</span>`;
+  const wrap=inner=>`<div data-pk="${it.k}" data-pdg="${d?1:0}" ${it.c?`data-pc="${it.c.num}"`:`data-px="${it.x.id}"`} style="display:flex;align-items:center;gap:14px;padding:12px 10px;margin-bottom:8px;border:3px solid ${nx?'var(--ac)':'var(--ln)'};border-radius:14px;background:var(--card);cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;${d?'opacity:.5':''}">${cb}${inner}</div>`;
+  if(it.x)return wrap(`<span style="flex:1;min-width:0;font-size:26px;font-weight:800;line-height:1.2;white-space:pre-wrap;word-break:break-word;${d?'text-decoration:line-through;text-decoration-thickness:3px':''}">${escH(it.x.text)}</span><button data-pxe="${it.x.id}" style="padding:8px 10px">✎</button>`);
+  const c=it.c,jel=jelOf(c),jds=c.sail?todayN-c.sail.d:null,ex=(SM.m==='vel'||SM.m==='age')?plSub(c,SM.m):'';
+  const meta=[jel!=null?jel+' JEL':'',jds!=null?jds+' JDS':'',ex].filter(Boolean).join(' · ');
+  return wrap(`<span style="flex:1;min-width:0"><span style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px"><span style="font-size:34px;font-weight:800;line-height:1.1;${d?'text-decoration:line-through;text-decoration-thickness:4px':''}">${plNum(c)}</span>${meta?`<b style="font-size:14px">${meta}</b>`:''}</span><span class="mut" style="display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.nom}</span></span><button data-pfiche="${c.id}" style="padding:8px 10px">Fiche ›</button>`)}).join('');
+ const nxt=next?(next.c?`<b style="font-size:28px">${plNum(next.c)}</b>`:`<b style="font-size:20px">${escH(next.x.text.length>16?next.x.text.slice(0,15)+'…':next.x.text)}</b>`):'';
+ o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln)"><div style="display:flex;align-items:center;gap:10px"><button data-plx style="font-size:13px;padding:4px 10px">← Retour</button><div style="flex:1;min-width:0"><b style="font-size:21px;line-height:1.2">${escH(I.title)}</b><div class="mut">${escH(I.sub)}</div></div></div>${N?`<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:24px;font-weight:800">${done} / ${N}</span>${next?`<span>Prochaine : ${nxt}</span>`:'<span style="font-size:20px;font-weight:800;color:var(--gr)">Terminé ✓</span>'}</div><div style="height:6px;background:var(--ln);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${done/N*100}%;background:var(--gr)"></div></div>`:''}</div><div style="padding:10px 12px 90px"><textarea id="plnote" rows="2" placeholder="📝 Écrire une note…" style="width:100%;box-sizing:border-box;font:inherit;font-size:20px;padding:10px 12px;margin-bottom:10px;border:1px solid var(--ln);border-radius:12px;background:var(--card);color:var(--tx)">${escH(I.note)}</textarea><div class="row" style="margin-bottom:10px"><button data-pladd>＋ Vaches</button><button data-pladdx>＋ Texte / numéro</button></div>${sbar}${rows}${bad.length?`<div class="mut">Introuvables : ${bad.join(', ')}</div>`:''}${N?'<div class="row" style="margin-top:12px"><button data-plreset>Tout décocher</button></div>':''}</div>`;
  o.scrollTop=st}
 let WL=null;
 async function wakeOn(){try{if(navigator.wakeLock&&!WL){const w=await navigator.wakeLock.request('screen');if(!$('pl')){w.release();return}WL=w;w.addEventListener('release',()=>{if(WL===w)WL=null})}}catch(e){}}
 function wakeOff(){try{if(WL){WL.release();WL=null}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{const o=$('pl');if(document.visibilityState==='visible'&&o)wakeOn()});
-function plOpen(k){plKey=k;wakeOn();let o=$('pl');if(!o){o=document.createElement('div');o.id='pl';o.style.cssText='position:fixed;inset:0;z-index:40;background:var(--bg);color:var(--tx);overflow-y:auto;padding-top:env(safe-area-inset-top,0px)';o.onclick=plClick;o.oninput=e=>{if(e.target.id==='plnote')plSetNote(e.target.value)};document.body.appendChild(o)}plRender()}
+function plOpen(k){plKey=k;wakeOn();let o=$('pl');if(!o){o=document.createElement('div');o.id='pl';o.style.cssText='position:fixed;inset:0;z-index:40;background:var(--bg);color:var(--tx);overflow-y:auto;padding-top:env(safe-area-inset-top,0px)';o.onclick=plClick;o.oninput=e=>{if(e.target.id==='plnote')plSetNote(e.target.value)};o.onpointerdown=plDown;o.onpointermove=plMoveEv;o.onpointerup=plUp;o.onpointercancel=plUp;o.oncontextmenu=e=>e.preventDefault();o.addEventListener('touchmove',e=>{if(PLD&&PLD.on&&e.cancelable)e.preventDefault()},{passive:false});document.body.appendChild(o)}plRender()}
 function plClose(){const o=$('pl');if(o)o.remove();plKey=null;PLRET=null;wakeOff();schedSoon();if(tab==='proto')protos();else if(tab==='regie')regie()}
 function plClick(ev){
+ if(Date.now()<plNoClick)return;
  const t=ev.target,ev0=plKey&&!plKey.startsWith('L:');
  if(t.closest('[data-plx]')){plClose();return}
+ if(t.closest('[data-pladdx]')){plxOpen(null);return}
+ {const xe=t.closest('[data-pxe]');if(xe){plxOpen(xe.dataset.pxe);return}}
  if(t.closest('[data-pladd]')){const k=plKey;cpOpen(parseCows(plInfo().toks).ok.map(c=>c.num).join(' '),true,sel=>plSetCows(k,sel),'actives');return}
  {const sb=t.closest('[data-plsort]');if(sb){const m=sb.dataset.plsort,cur=PLSORT[plKey]||{m:'orig',d:1};PLSORT[plKey]=m==='orig'?{m:'orig',d:1}:cur.m===m?{m,d:-cur.d}:{m,d:1};savePLS();plRender();return}}
  let b=t.closest('[data-pfiche]');if(b){const id=b.dataset.pfiche,o=$('pl');PLRET={st:o.scrollTop};o.style.display='none';fiche(id);return}
- if(t.closest('[data-plreset]')){const L=parseCows(plInfo().toks).ok;L.forEach(c=>delete PCD[plKey+'|'+c.num]);if(ev0)delete PDONE[plKey];savePCD();savePD();updPBadge();schedSoon();plRender();return}
+ if(t.closest('[data-plreset]')){const L=parseCows(plInfo().toks).ok;L.forEach(c=>delete PCD[plKey+'|'+c.num]);(plStore().xs||[]).forEach(x=>delete PCD[plKey+'|#'+x.id]);if(ev0)delete PDONE[plKey];savePCD();savePD();updPBadge();schedSoon();plRender();return}
  b=t.closest('[data-pc]');if(b){const L=parseCows(plInfo().toks).ok,k=plKey+'|'+b.dataset.pc,all=()=>L.every(c=>PCD[plKey+'|'+c.num]),was=all();
   if(PCD[k])delete PCD[k];else PCD[k]=1;
   const now=all();if(ev0){if(!was&&now)PDONE[plKey]=todayN;if(was&&!now)delete PDONE[plKey]}
-  savePCD();savePD();updPBadge();schedSoon();plRender();try{navigator.vibrate&&navigator.vibrate(10)}catch(x){}}}
+  savePCD();savePD();updPBadge();schedSoon();plRender();try{navigator.vibrate&&navigator.vibrate(10)}catch(x){}return}
+ b=t.closest('[data-px]');if(b){const key=plKey+'|#'+b.dataset.px;if(PCD[key])delete PCD[key];else PCD[key]=1;savePCD();plRender();try{navigator.vibrate&&navigator.vibrate(10)}catch(x){}}}
 function updPBadge(){const b=$('pbd');if(!b)return;let n=0;try{n=protoEvents().filter(e=>e.D===todayN&&!PDONE[pdKey(e)]).length}catch(x){}b.style.display=n?'':'none'}
 function parseCows(text){
  const toks=(Array.isArray(text)?text:String(text||'').split(/[\s,;]+/)).map(x=>String(x).trim()).filter(Boolean);
@@ -1543,6 +1603,7 @@ let inF=false,LASTLIST=[],CURID=null;const tabHist=[];
 const AppP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;
 function back(){if(!AppP&&history.state&&history.state.f)history.back();else show()}
 function appBack(){
+ if($('plxe')){$('plxe').remove();return}
  if($('ccf')){ccClose();return}
  if(inF&&PLRET){back();return}
  if($('actmod')){$('actmod').remove();return}
