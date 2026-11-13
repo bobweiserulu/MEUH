@@ -60,7 +60,7 @@ header h1{margin-bottom:6px}#gear,#upd,#actb{padding:5px 12px!important}
 </style>
 </head><body>
 <header><h1><span style="display:flex;align-items:baseline;gap:8px;min-width:0;flex:1"><span id="ttl" style="white-space:nowrap">🐄 MEUH</span><span class="sub" id="info" style="font-weight:400;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">Aucun fichier chargé</span></span><span style="display:flex;gap:6px;flex:none"><button id="upd" class="on" type="button" aria-label="Mettre à jour" title="Mettre à jour" style="font-weight:700;padding:8px 14px;font-size:15px">⟳</button><button id="actb" type="button" aria-label="Actions à entrer dans DSA" title="Actions à entrer dans DSA" style="position:relative">✍<span class="bdgn" id="actbd" style="display:none"></span></button><button id="gear" type="button" aria-label="Réglages" title="Réglages">⚙</button></span><input id="f" type="file" style="display:none"></h1>
-<div id="bar"><div style="display:flex;gap:6px;align-items:center"><button id="vwb" type="button" class="ddb" style="flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis">Actives ▾</button><button id="srtb" type="button" class="ddb">Numéro ↑</button><button id="qb" type="button" class="ddb" aria-label="Rechercher">🔍</button><button id="flb" type="button" class="ddb" aria-label="Filtres" style="flex:none">🎛</button><button id="selb" type="button" class="ddb" aria-label="Sélectionner" style="flex:none">☑</button></div><div id="flrow" style="display:none;margin-top:6px"></div><div id="qrow" style="display:none;margin-top:6px"><input id="q" type="search" placeholder="Nom ou numéro" autocomplete="off" style="padding:7px 10px;font-size:15px;border-radius:8px"></div><div class="row" id="vw"></div><div class="row" id="srt"></div></div></header>
+<div id="bar"><div style="display:flex;gap:6px;align-items:center"><button id="vwb" type="button" class="ddb" style="flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis">Actives ▾</button><button id="srtb" type="button" class="ddb">Numéro ↑</button><button id="qb" type="button" class="ddb" aria-label="Rechercher">🔍</button><button id="prb" type="button" class="ddb" aria-label="Avec ou sans protocole" style="flex:none">📋</button><button id="flb" type="button" class="ddb" aria-label="Filtres" style="flex:none">🎛</button><button id="selb" type="button" class="ddb" aria-label="Sélectionner" style="flex:none">☑</button></div><div id="flrow" style="display:none;margin-top:6px"></div><div id="qrow" style="display:none;margin-top:6px"><input id="q" type="search" placeholder="Nom ou numéro" autocomplete="off" style="padding:7px 10px;font-size:15px;border-radius:8px"></div><div class="row" id="vw"></div><div class="row" id="srt"></div></div></header>
 <main id="m"><div class="empty">Va dans <b>⚙ Réglages</b> et touche <b>Importer un fichier local</b> (fichier <b>Synchro_OUT…zip</b> exporté de DSA), ou configure la mise à jour Google Drive.</div></main>
 <nav id="tabs"><button id="t1" class="on"><span class="ic">🐄</span><span>Fiches</span></button><button id="t2"><span class="ic">🎯</span><span>Roulette</span></button><button id="t3" style="position:relative"><span class="ic">✅</span><span>À faire</span><span class="bdgn" id="afbd" style="display:none"></span></button><button id="t4"><span class="ic">🔍</span><span>Recherche</span></button><button id="t5"><span class="ic">📊</span><span>Rapport</span></button><button id="t6" style="display:none"><span class="ic">🔔</span><span>Rappels</span></button><button id="t7" style="position:relative"><span class="ic">📋</span><span>Protocoles</span><span class="bdgn" id="pbd" style="display:none">!</span></button></nav>
 <script>window.addEventListener('error',function(e){try{var d=document.getElementById('errbar');if(!d){d=document.createElement('div');d.id='errbar';d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99;background:#b71c1c;color:#fff;padding:8px 12px;font:13px system-ui,sans-serif';document.body.appendChild(d)}d.textContent='\u26a0 '+(e.message||'Erreur')+' ';var b=document.createElement('button');b.textContent='R\u00e9parer';b.style.cssText='margin-left:8px;padding:4px 10px';b.onclick=function(){['dsa_lang','dsa_theme','dsa_dfmt'].forEach(function(k){try{localStorage.removeItem(k)}catch(x){}});location.reload()};d.appendChild(b)}catch(x){}});</script>
@@ -197,7 +197,7 @@ function applyFil(a){const f=FIL;
   if(f.pr!=='all'){const k=PMEMB.get(c.id)||'';if(f.pr==='any'&&!k)return false;if(f.pr==='act'&&k!=='act')return false;if(f.pr==='plan'&&k!=='plan')return false;if(f.pr==='none'&&k)return false}
   return true})}
 function filCount(){const f=FIL;return (f.jmin!==''||f.jmax!==''?1:0)+(f.smin!==''||f.smax!==''?1:0)+(f.pr!=='all'?1:0)}
-function updFilBtn(){const n=filCount(),b=$('flb');if(b){b.textContent='🎛'+(n?' '+n:'');b.classList.toggle('on',n>0||flOpen)}const sb=$('selb');if(sb)sb.classList.toggle('on',selMode)}
+function updFilBtn(){const pb=$('prb');if(pb){const L={all:'📋',any:'📋 Avec',none:'📋 Sans',act:'📋 Actif',plan:'📋 Prévu'};pb.textContent=L[FIL.pr]||'📋';pb.classList.toggle('on',FIL.pr!=='all')}const n=filCount(),b=$('flb');if(b){b.textContent='🎛'+(n?' '+n:'');b.classList.toggle('on',n>0||flOpen)}const sb=$('selb');if(sb)sb.classList.toggle('on',selMode)}
 function renderFil(){const r=$('flrow');if(!r)return;const f=FIL,ip=(id,v,ph)=>`<input id="${id}" type="number" inputmode="numeric" class="zi" style="width:100%;box-sizing:border-box" placeholder="${ph}" value="${v}">`;
  r.innerHTML=`<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center"><b>JEL</b>${ip('fjmin',f.jmin,'min')}${ip('fjmax',f.jmax,'max')}<b>JDS</b>${ip('fsmin',f.smin,'min')}${ip('fsmax',f.smax,'max')}<b>Protocole</b><select id="fpr" class="zi" style="grid-column:span 2;text-align:left;width:100%;box-sizing:border-box"><option value="all">Peu importe</option><option value="any">🗒️ Dans un protocole (actif ou prévu)</option><option value="act">Protocole actif</option><option value="plan">Protocole prévu</option><option value="none">Dans aucun protocole</option></select></div><div class="row" style="margin-top:6px"><button id="fclr">Effacer les filtres</button></div>`;
  $('fpr').value=f.pr}
@@ -407,7 +407,7 @@ const evsHtml=(c,t)=>{const pend=ACT.filter(a=>a.st==='p'&&actHas(a,c));return c
 function fiche(id,fromPop){
  const c=DB.cows.find(x=>x.id===id);if(!c){show();return}
  CURID=id;if(!fromPop)pushNav(id);setTimeout(()=>holLookup(c),0);
- $('bar').style.display='none';document.querySelector('header').style.display='none';$('tabs').style.display='none';$('m').style.paddingBottom='12px';inF=true;{const lb=$('lbar');if(lb)lb.remove()}
+ $('bar').style.display='none';document.querySelector('header').style.display='none';$('tabs').style.display='';$('m').style.paddingBottom='';inF=true;{const lb=$('lbar');if(lb)lb.remove()}
  EVF='';const pm=$('evpanel');if(pm)pm.remove();
  $('m').innerHTML=ficheMarkup(c,'');
  scrollTo(0,0);sizeEvs();$('evs').innerHTML=evsHtml(c,'');toBottom();
@@ -454,6 +454,7 @@ function openDD(id){const o=$(id).classList.contains('open');closeDD();if(!o)$(i
 $('vwb').onclick=()=>openDD('vw');$('srtb').onclick=()=>openDD('srt');
 $('qb').onclick=()=>{const r=$('qrow'),o=r.style.display!=='none';closeDD();if(o){r.style.display='none';$('q').value='';if(q){q='';list()}}else{r.style.display='';$('q').focus()}$('qb').classList.toggle('on',!o)};
 addEventListener('click',e=>{if(!e.target.closest('#vw,#srt,#vwb,#srtb'))closeDD()});
+$('prb').onclick=()=>{FIL.pr=({all:'any',any:'none',none:'all'})[FIL.pr]||'any';if(flOpen)renderFil();updFilBtn();list()};
 $('flb').onclick=()=>{flOpen=!flOpen;$('flrow').style.display=flOpen?'block':'none';if(flOpen)renderFil();updFilBtn()};
 $('selb').onclick=()=>{selMode=!selMode;if(!selMode)SELS.clear();if(tab==='fiches'&&!inF)list();else updFilBtn()};
 $('flrow').addEventListener('input',e=>{const i=e.target.id;if(i==='fjmin')FIL.jmin=e.target.value;else if(i==='fjmax')FIL.jmax=e.target.value;else if(i==='fsmin')FIL.smin=e.target.value;else if(i==='fsmax')FIL.smax=e.target.value;else if(i==='fpr')FIL.pr=e.target.value;else return;list()});
@@ -728,7 +729,7 @@ let PLX={};try{PLX=JSON.parse(localStorage.getItem('dsa_plx')||'{}')||{}}catch(e
 const savePLX=()=>{try{localStorage.setItem('dsa_plx',JSON.stringify(PLX))}catch(e){}};
 let PLSORT={};try{PLSORT=JSON.parse(localStorage.getItem('dsa_plsort')||'{}')||{}}catch(e){}
 const savePLS=()=>{try{localStorage.setItem('dsa_plsort',JSON.stringify(PLSORT))}catch(e){}};
-const plToks=e=>{const x=PLX[pdKey(e)];return x&&x.extra&&x.extra.length?e.it.cows.concat(x.extra):e.it.cows};
+const plToks=e=>{const b=effToks(e.it,e.s),x=PLX[pdKey(e)];return x&&x.extra&&x.extra.length?b.concat(x.extra):b};
 const PLS=[['orig','Original'],['jel','JEL'],['jds','JDS'],['vel','Vêlage'],['age','Âge']];
 function plVal(c,m){if(m==='jel')return jelOf(c);if(m==='jds')return c.sail?todayN-c.sail.d:null;if(m==='vel')return c.gest&&c.prevu?c.prevu-todayN:null;if(m==='age')return c.naiss?todayN-c.naiss:null;return null}
 function plSub(c,m){const v=plVal(c,m);if(m==='orig')return'';if(v==null)return'—';return m==='jel'?v+' JEL':m==='jds'?v+' JDS':m==='vel'?(v<0?'retard '+(-v)+' j':'vêlage dans '+v+' j'):Math.floor(v/30.44)+' mois'}
@@ -784,7 +785,7 @@ function plSetCows(k,sel){
  if(k!==plKey)return;
  if(k.startsWith('L:')){const l=NLISTS.find(x=>x.id===k.slice(2));if(!l)return;const r=parseCows(l.nums),ex=r.ok.map(c=>c.num);
   l.nums=[...ex.filter(n=>sel.includes(n)),...sel.filter(n=>!ex.includes(n)),...r.bad].join(' ');saveNL()}
- else{const e=plEv();if(!e)return;const base=parseCows(e.it.cows).ok.map(c=>c.num);PLX[k]=Object.assign(PLX[k]||{},{extra:sel.filter(n=>!base.includes(n))});savePLX()}
+ else{const e=plEv();if(!e)return;const bad=parseCows(effToks(e.it,e.s)).bad;setDayCows(e.it,e.s.d,[...sel,...bad]);if(PLX[k]&&PLX[k].extra){PLX[k].extra=[];savePLX()}}
  schedSoon();updPBadge();plRender()}
 const plEv=()=>protoEvents().find(x=>pdKey(x)===plKey);
 const cowBox=e=>{const r=parseCows(plToks(e)),k=pdKey(e),n=r.ok.length,d=r.ok.filter(c=>PCD[k+'|'+c.num]).length;
@@ -840,10 +841,13 @@ function parseCows(text){
  return{toks:uniq,ok,bad};
 }
 const cowChips=toks=>{const r=parseCows(toks);return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${r.ok.map(c=>`<button class="chip" data-open="${c.id}">${c.num}</button>`).join('')}${r.bad.map(t=>`<span class="tag w" title="Introuvable parmi les vaches actives">${t} ?</span>`).join('')}</div>`};
+const stepD=(it,s)=>{const o=it.ov&&it.ov[s.d];return o&&o.date!=null?o.date:it.start+s.d-1};
+const effToks=(it,s)=>{const o=it.ov&&it.ov[s.d];if(!o||(!(o.add||[]).length&&!(o.rm||[]).length))return it.cows;const rm=new Set(o.rm||[]);return [...it.cows.filter(n=>!rm.has(n)),...(o.add||[]).filter(n=>!it.cows.includes(n))]};
+function setDayCows(it,d,toks){const rm=it.cows.filter(n=>!toks.includes(n)),add=toks.filter(n=>!it.cows.includes(n));it.ov=it.ov||{};const o=it.ov[d]||(it.ov[d]={});o.add=add;o.rm=rm;if(o.date==null&&!add.length&&!rm.length)delete it.ov[d];savePT()}
 function protoEvents(){
  const ev=[];
  for(const it of PT.act){const t=tplOf(it.tpl);if(!t||!t.steps.length)continue;const n=Math.max(...t.steps.map(s=>s.d));
-  for(const s of t.steps)ev.push({D:it.start+s.d-1,it,t,s,n})}
+  for(const s of t.steps)ev.push({D:stepD(it,s),it,t,s,n})}
  return ev;
 }
 const beforeTxt=b=>b==0?'le jour même':b==1?'la veille':b+' jours avant';
@@ -853,16 +857,16 @@ function protoPlan(){
  for(const e of protoEvents()){
   if(!e.s.on||PDONE[pdKey(e)])continue;
   const D=e.D-(+e.s.before||0),dt=toDate(D),[hh,mm]=String(e.s.time||'07:00').split(':').map(Number);
-  const r=parseCows(e.it.cows),nums=r.ok.map(c=>c.num).concat(r.bad);
+  const r=parseCows(effToks(e.it,e.s)),nums=r.ok.map(c=>c.num).concat(r.bad);
   out.push({D,at:new Date(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate(),hh||0,mm||0,0),title:`${e.t.name} · ${tr('Jour '+e.s.d)}`,body:`${e.s.txt||tr('Étape')}${nums.length?'\n'+tr('Vaches :')+' '+(nums.length>14?nums.slice(0,14).join(', ')+' +'+(nums.length-14):nums.join(', ')):''}`});
  }
  return out.filter(p=>p.D>=todayN-1&&p.D<=todayN+90).sort((a,b)=>a.at-b.at);
 }
 function protos(){
  $('info').textContent='Protocoles';
- const tabs=[['cal','Calendrier'],['act','Démarrer protocoles'],['mod','Modèles']];
- $('m').innerHTML=`<div class="row" style="margin:0 0 10px">${tabs.map(([k,l])=>`<button data-ptab="${k}" class="${pSub===k?'on':''}">${l}</button>`).join('')}</div>`+(pSub==='cal'?pCalHtml():pSub==='act'?pActHtml():pModHtml());
- if(PK.open&&pSub==='act')pkList();
+ const tabs=[['cal','Calendrier'],['run','Protocoles actifs'],['act','Démarrer protocoles'],['mod','Modèles']];
+ $('m').innerHTML=`<div class="row" style="margin:0 0 10px">${tabs.map(([k,l])=>`<button data-ptab="${k}" class="${pSub===k?'on':''}">${l}</button>`).join('')}</div>`+(PK.open?pickerHtml():pSub==='cal'?pCalHtml():pSub==='run'?pRunHtml():pSub==='act'?pActHtml():pModHtml());
+ if(PK.open)pkList();
 }
 function pCalHtml(){
  const ev=protoEvents(),byD={};ev.forEach(e=>(byD[e.D]=byD[e.D]||[]).push(e));
@@ -883,6 +887,19 @@ function pCalHtml(){
  <div class="calg" style="margin-bottom:4px">${WK().map(x=>`<span class="mut" style="text-align:center;font-size:12px">${x}</span>`).join('')}</div><div class="calg">${cells}</div>
  <div class="mut" style="font-size:12px;margin-top:8px">${lg}</div>${det}`;
 }
+let PRUN={};try{PRUN=JSON.parse(localStorage.getItem('dsa_prun')||'{}')||{}}catch(e){}
+const savePRUN=()=>{try{localStorage.setItem('dsa_prun',JSON.stringify(PRUN))}catch(e){}};
+function pRunHtml(){
+ if(!DB)return '<div class="empty">Importe d’abord ton fichier.</div>';
+ const evs=protoEvents();
+ const cards=PT.act.map(it=>{const t=tplOf(it.tpl);if(!t||!t.steps.length)return '';const n=Math.max(...t.steps.map(s=>s.d)),j=todayN-it.start+1,
+  st=j<1?`commence dans ${1-j} j`:j>n?'dernier jour passé':`jour ${j} sur ${n}`,
+  es=evs.filter(e=>e.it===it).sort((a,b)=>a.D-b.D||a.s.d-b.s.d),nd=es.filter(e=>PDONE[pdKey(e)]).length;
+  const rows=es.map(e=>{const k=pdKey(e),dn=!!PDONE[k],col=(KIND[e.s.kind]||KIND.aut)[1],o=it.ov&&it.ov[e.s.d],moved=o&&o.date!=null,mod=o&&((o.add||[]).length||(o.rm||[]).length),
+   late=!dn&&e.D<todayN,today=e.D===todayN,cnt=parseCows(effToks(it,e.s)).ok.length;
+   return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--ln)${dn?';opacity:.55':''}"><input type="checkbox" data-pdone="${k}" ${dn?'checked':''} style="width:28px;height:28px;flex:none;margin-top:2px"><div style="flex:1;min-width:0"><div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><b style="color:${col}">J${e.s.d}</b><input type="date" class="zi" style="width:auto" data-pf="ovd" data-pi="${it.id}" data-psd="${e.s.d}" value="${iso(e.D)}">${moved?`<button data-ovreset="${it.id}|${e.s.d}" title="Remettre la date prévue">↺</button>`:''}${today?'<span class="tag w">aujourd’hui</span>':late?'<span class="tag w">en retard</span>':''}</div><div style="font-weight:700;margin-top:4px${dn?';text-decoration:line-through':''}">${escH(e.s.txt||'(étape sans texte)')}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button data-pkopen="${it.id}|${e.s.d}">👥 ${cnt} vache${cnt>1?'s':''}${mod?' ✎':''}</button><button data-plist="${k}">📋 Liste</button></div></div></div>`}).join('');
+  const cl=!!PRUN[it.id];return `<div class="pcard"><div data-prun="${it.id}" style="cursor:pointer"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${cl?'▸':'▾'} ${escH(t.name)}</b><span class="tag">${nd} / ${es.length} faits</span></div><div class="mut">Jour 1 : ${fmt(it.start)} · ${st}</div></div><div style="margin-top:6px"><b>${parseCows(it.cows).ok.length} vaches</b> <button data-pkopen="${it.id}" style="margin-left:6px">＋ / − Vaches</button></div>${cowChips(it.cows)}${cl?'':`<div style="margin-top:8px">${rows}</div>`}</div>`}).join('');
+ return `<div class="mut" style="margin-bottom:8px">Touche le titre d’un protocole pour ouvrir ou fermer ses journées. Coche chaque journée quand les injections sont faites. Tu peux changer la date d’une journée et ajuster les vaches de cette seule journée (👥). « ＋ / − Vaches » change les vaches de tout le protocole.</div>`+(cards||'<div class="mut">Aucun protocole en cours. Va dans <b>Démarrer protocoles</b>.</div>')}
 function pActHtml(){
  if(PK.open)return pickerHtml();
  const nat=NATIVE(),pf=PF.cows?parseCows(PF.cows):null;
@@ -901,7 +918,7 @@ function pActHtml(){
   <div class="mut">Jour 1 : ${fmt(it.start)} · ${st}</div>
   <div style="margin:6px 0">Jour 1 : <input type="date" class="zi" style="width:auto" data-pf="start" data-pi="${it.id}" value="${iso(it.start)}"></div>
   <textarea class="zi" rows="2" style="width:100%;text-align:left" data-pf="cows" data-pi="${it.id}">${it.cows.join(' ')}</textarea><div style="margin-top:6px"><button data-pkopen="${it.id}">☰ Choisir dans la liste</button></div>${cowChips(it.cows)}
-  <div style="margin-top:8px;font-size:14px">${t.steps.map(s=>{const D=it.start+s.d-1,past=D<todayN;return `<div style="${past?'opacity:.5':''}"><b style="color:${(KIND[s.kind]||KIND.aut)[1]}">J${s.d}</b> · ${fmt(D)} · ${s.txt}</div>`}).join('')}</div></div>`}).join(''):'<div class="mut">Aucun protocole en cours.</div>';
+  <div style="margin-top:8px;font-size:14px">${t.steps.map(s=>{const D=stepD(it,s),past=D<todayN;return `<div style="${past?'opacity:.5':''}"><b style="color:${(KIND[s.kind]||KIND.aut)[1]}">J${s.d}</b> · ${fmt(D)} · ${s.txt}</div>`}).join('')}</div></div>`}).join(''):'<div class="mut">Aucun protocole en cours.</div>';
  return `<label style="display:block;margin:6px 0 10px"><input type="checkbox" data-pf="on" ${PT.on?'checked':''}> <b>Activer les alertes des protocoles</b><div class="mut" style="margin-left:24px">Chaque étape a son heure d’alerte (onglet Modèles). ${nat?'':'Les notifications arrivent seulement dans l’application installée (APK).'}</div></label>
  <div class="mut" id="ntst" style="margin-bottom:6px">${NTSTATUS}</div>${nat?'<div class="row" style="margin-bottom:6px"><button data-ntb="apply">Reprogrammer maintenant</button><button data-ntb="test">Envoyer un test</button></div>':''}
  ${form}<h3>Protocoles en cours <span class="tag">${PT.act.length}</span></h3>${act}`;
@@ -928,6 +945,7 @@ function protoChange(el){
  if(f==='newstart'){PF.start=dayN(el.value)||todayN;return}
  if(f==='newcows'){PF.cows=el.value;protos();return}
  if(pi){const it=PT.act.find(x=>x.id===pi);if(!it)return;
+  if(f==='ovd'){const d=el.dataset.psd,nd=dayN(el.value);if(Number.isFinite(nd)){it.ov=it.ov||{};const o=it.ov[d]||(it.ov[d]={});if(nd===it.start+(+d)-1)delete o.date;else o.date=nd;if(o.date==null&&!(o.add||[]).length&&!(o.rm||[]).length)delete it.ov[d];savePT();schedSoon()}protos();return}
   if(f==='start')it.start=dayN(el.value)||it.start;else if(f==='cows')it.cows=parseCows(el.value).toks;
   savePT();schedSoon();protos();return}
  const t=tplOf(pt);if(!t)return;
@@ -945,11 +963,13 @@ function protoClick(e){
  if(b=e.target.closest('[data-plist]')){plOpen(b.dataset.plist);return true}
  if(b=e.target.closest('input[data-pdone]')){const k=b.dataset.pdone;if(PDONE[k])delete PDONE[k];else PDONE[k]=todayN;savePD();updPBadge();schedSoon();protos();return true}
  if(b=e.target.closest('[data-pkopen]')){pkOpen(b.dataset.pkopen);return true}
+ if(b=e.target.closest('[data-prun]')){const id=b.dataset.prun;if(PRUN[id])delete PRUN[id];else PRUN[id]=1;savePRUN();protos();return true}
+ if(b=e.target.closest('[data-ovreset]')){const [id,d]=b.dataset.ovreset.split('|'),it=PT.act.find(x=>x.id===id);if(it&&it.ov&&it.ov[d]){delete it.ov[d].date;if(!(it.ov[d].add||[]).length&&!(it.ov[d].rm||[]).length)delete it.ov[d];savePT();schedSoon();protos()}return true}
  if(b=e.target.closest('[data-pkv]')){PK.view=b.dataset.pkv;protos();return true}
  if(b=e.target.closest('[data-pkall]')){pkRows().forEach(c=>{if(!PK.sel.includes(c.num))PK.sel.push(c.num)});pkList();return true}
  if(b=e.target.closest('[data-pknone]')){const S=new Set(pkRows().map(c=>c.num));PK.sel=PK.sel.filter(n=>!S.has(n));pkList();return true}
  if(b=e.target.closest('[data-pkcancel]')){PK.open=false;protos();return true}
- if(b=e.target.closest('[data-pkok]')){const toks=PK.sel.concat(PK.extra);if(PK.target==='new')PF.cows=toks.join(' ');else{const it=PT.act.find(x=>x.id===PK.target);if(it){it.cows=toks;savePT();schedSoon();bkUse(PK.sel)}}PK.open=false;protos();return true}
+ if(b=e.target.closest('[data-pkok]')){const toks=PK.sel.concat(PK.extra);if(PK.target==='new')PF.cows=toks.join(' ');else if(PK.target.includes('|')){const [id,d]=PK.target.split('|'),it=PT.act.find(x=>x.id===id);if(it){setDayCows(it,d,toks);schedSoon();bkUse(PK.sel)}}else{const it=PT.act.find(x=>x.id===PK.target);if(it){it.cows=toks;savePT();schedSoon();bkUse(PK.sel)}}PK.open=false;protos();return true}
  if(b=e.target.closest('[data-ptab]')){pSub=b.dataset.ptab;PK.open=false;protos();return true}
  if(b=e.target.closest('[data-pm]')){pCal.m+=+b.dataset.pm;if(pCal.m<0){pCal.m=11;pCal.y--}if(pCal.m>11){pCal.m=0;pCal.y++}protos();return true}
  if(b=e.target.closest('[data-pd]')){pSel=+b.dataset.pd;protos();return true}
@@ -969,13 +989,16 @@ function protoClick(e){
 }
 let PK={open:false,target:'new',sel:[],extra:[],q:'',view:'actives'};
 const PKV=['actives','basket','ges','tges','tar','vel','ouv','taur','sai','tsai','gen','veau'];
-function pkOpen(target){const toks=target==='new'?parseCows(PF.cows).toks:((PT.act.find(x=>x.id===target)||{cows:[]}).cows);
+function pkOpen(target){let toks;if(target==='new')toks=parseCows(PF.cows).toks;else if(target.includes('|')){const [id,d]=target.split('|'),it=PT.act.find(x=>x.id===id),t=it&&tplOf(it.tpl),st=t&&t.steps.find(x=>String(x.d)===d);toks=it&&st?effToks(it,st):[]}else toks=(PT.act.find(x=>x.id===target)||{cows:[]}).cows;
  const r=parseCows(toks);PK={open:true,target,sel:r.ok.map(c=>c.num),extra:r.bad,q:'',view:'actives'};protos()}
 function pkRows(){const q=nz(PK.q.trim()),f=VIEWS[PK.view]||VIEWS.actives;
  return DB.cows.filter(c=>!c.elim&&f(c)&&(!q||nz(c.num).includes(q)||nz(c.nom).includes(q))).sort((a,b)=>numCmp(a,b))}
 function pkCount(){const el=$('pkcount');if(el)el.textContent=PK.sel.length+' vache(s) choisie(s)'}
 function pkList(){const el=$('pklist');if(!el)return;const rows=pkRows(),S=new Set(PK.sel);
- el.innerHTML=rows.map(c=>{const si=statusInfo(c);return `<label class="cow" style="cursor:pointer;gap:8px;align-items:center;padding:6px 10px"><input type="checkbox" data-pkrow="${c.num}" ${S.has(c.num)?'checked':''}><span style="flex:1"><b>${c.num}</b> ${c.nom}</span>${si?`<span class="pill" style="background:${si.col}">${si.lab}</span>`:''}</label>`}).join('')||'<div class="mut">Aucune vache.</div>';
+ const avail=(el.clientWidth||innerWidth-24)-44;
+ el.innerHTML=rows.map(c=>{const si=statusInfo(c),j=jelOf(c),d=c.sail?todayN-c.sail.d:null,meta=[j!=null?j+' JEL':'',d!=null?d+' JDS':''].filter(Boolean).join(' · ');
+  const need=c.num.length*9.5+String(c.nom).length*8+meta.length*7.2+(si?si.lab.length*6.5+22:0)+8*(2+(meta?1:0)+(si?1:0)),showName=need<avail;
+  return `<label class="cow" style="cursor:pointer;gap:8px;align-items:center;padding:6px 10px"><input type="checkbox" data-pkrow="${c.num}" ${S.has(c.num)?'checked':''} style="flex:none"><span style="flex:1;min-width:0;white-space:nowrap"><b>${c.num}</b>${showName?' '+c.nom:''}</span>${meta?`<b style="flex:none;font-size:13px;white-space:nowrap">${meta}</b>`:''}${si?`<span class="pill" style="background:${si.col};flex:none;white-space:nowrap">${si.lab}</span>`:''}</label>`}).join('')||'<div class="mut">Aucune vache.</div>';
  pkCount()}
 function pickerHtml(){
  if(!DB)return '<div class="empty">Importe d’abord ton fichier.</div>';
@@ -1001,8 +1024,8 @@ function delaisOf(c){
  for(const t of treatsOf(c))add(t.d,t.prod,t.rl,t.rv);
  for(const a of ACT)if(a.st==='p'&&(a.rl>0||a.rv>0)&&actHas(a,c))add(a.d,a.txt||actLbl(a.ty),a.rl,a.rv);
  const nl=c.num.toLowerCase();
- for(const it of PT.act){if(!it.cows.some(tk=>{const x=String(tk).toLowerCase();return nl===x||nl.startsWith(x+'-')}))continue;const t=tplOf(it.tpl);if(!t)continue;
-  for(const s of t.steps){const D=it.start+s.d-1;if(D<=T&&(s.rl>0||s.rv>0))add(D,s.txt||t.name,+s.rl||0,+s.rv||0)}}
+ for(const it of PT.act){const t=tplOf(it.tpl);if(!t)continue;
+  for(const s of t.steps){if(!effToks(it,s).some(tk=>{const x=String(tk).toLowerCase();return nl===x||nl.startsWith(x+'-')}))continue;const D=stepD(it,s);if(D<=T&&(s.rl>0||s.rv>0))add(D,s.txt||t.name,+s.rl||0,+s.rv||0)}}
  if(!L.length&&!V.length)return null;
  const mx=a=>Math.max(...a.map(x=>x.end));
  return {lait:L.length?{end:mx(L),prods:[...new Set(L.map(x=>x.prod))]}:null,viande:V.length?{end:mx(V),prods:[...new Set(V.map(x=>x.prod))]}:null};
@@ -1382,7 +1405,7 @@ jours|days|días
 j|d|d
 jour(s)|day(s)|día(s)
 Rappels proposés|Suggested reminders|Recordatorios propuestos
-(coche ceux que tu veux voir ; les flèches ▲ ▼ sont à côté de chaque titre)|(tick the ones you want to see; the ▲ ▼ arrows are next to each title)|(marca los que quieras ver; las flechas ▲ ▼ están junto a cada título)
+(coche ceux que tu veux voir ; appuie longtemps sur un titre pour le déplacer)|(tick the ones you want to see; press and hold a title to move it)|(marca los que quieras ver; mantén pulsado un título para moverlo)
 Remettre les valeurs par défaut|Reset to defaults|Restablecer valores por defecto
 Retour|Back|Volver
 Supprimer|Delete|Eliminar
@@ -1626,9 +1649,9 @@ function tabReset(t){
  else if(t==='roulette')rsub='wheel';
  else if(t==='regie'){afsub='list';afForm=false}
  else if(t==='proto')pSub='cal';
- else if(t==='recherche')rq='';
+ else if(t==='recherche'){rq='';rpr='all'}
  else if(t==='rappels')rpSub='list'}
-TABS.forEach(id=>$(id).onclick=()=>{const now=Date.now(),dbl=lastTap.id===id&&now-lastTap.t<450;lastTap={id,t:dbl?0:now};if(dbl){tabReset(TABMAP[id]);setTimeout(()=>scrollTo(0,0),0)}
+TABS.forEach(id=>$(id).onclick=()=>{if(PLRET&&$('pl'))plClose();const now=Date.now(),dbl=lastTap.id===id&&now-lastTap.t<450;lastTap={id,t:dbl?0:now};if(dbl){tabReset(TABMAP[id]);setTimeout(()=>scrollTo(0,0),0)}
  if(tab!==TABMAP[id]){tabHist.push(tab);tab=TABMAP[id];pushNav()}tab=TABMAP[id];hlTab();show()});
 $('actb').onclick=()=>{if(tab!=='saisies'){tabHist.push(tab);tab='saisies';pushNav()}TABS.forEach(x=>$(x).classList.remove('on'));show()};
 $('gear').onclick=()=>{if(tab!=='reglages'){tabHist.push(tab);tab='reglages';pushNav()}TABS.forEach(x=>$(x).classList.remove('on'));show()};
@@ -1766,7 +1789,7 @@ function roulette(){
  g+=`<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy-R}" stroke="#d32f2f" stroke-width="1.5"/>`;
  const bar=(a,col)=>{const [x,y]=pt(a,R);return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${col}" stroke-width="2"/><rect x="${x-3.5}" y="${y-3.5}" width="7" height="7" fill="${col}"/>`};
  g+=bar(360-DG(ZONES.s1),'var(--gr)')+bar(360-DG(ZONES.s1+ZONES.dx1),'var(--bl)')+bar(DG(ZONES.t),'var(--pu)');
- const P=dots.filter(([c,st])=>RSHOW[st[0]]!==false).map(([c,st])=>{const k=CL[st[0]],j=((+c.id*37)%100)/100-.5;let ring=k[2];if(!c.vela&&(st[0]==='sai'||st[0]==='ges'))ring-=0.05;const [x,y]=pt(ang(st[1]),(ring+j*.06)*R);return{c,st,k,x:+x,y:+y}});
+ const P=dots.filter(([c,st])=>RSHOW[st[0]]!==false&&!(c.vela&&RSHOW.va===false)&&!(!c.vela&&st[0]==='sai'&&RSHOW.ts===false)).map(([c,st])=>{const k=CL[st[0]],j=((+c.id*37)%100)/100-.5;let ring=k[2];if(!c.vela&&(st[0]==='sai'||st[0]==='ges'))ring-=0.05;const [x,y]=pt(ang(st[1]),(ring+j*.06)*R);return{c,st,k,x:+x,y:+y}});
  grp=[];
  if(sc){const s=P.find(q=>q.c.id===sc.id);grp=s?P.filter(q=>(q.st[0]===s.st[0]&&q.st[1]===s.st[1])||Math.hypot(q.x-s.x,q.y-s.y)<9).map(q=>q.c):[sc];grp.sort((a,b)=>a.num.localeCompare(b.num,'fr',{numeric:true}))}
  const gi=new Set(grp.map(c=>c.id));
@@ -1793,10 +1816,11 @@ let selBox='',extraH=0;
  const parts=[];if(c.vela)parts.push('vêlée '+fmt(c.vela)+' · '+B((T-c.vela)+' JEL'));if(c.lb)parts.push('saillie '+fmt(c.lb.d)+' · '+B((T-c.lb.d)+' JDS'));if(c.gest)parts.push('vêlage prévu '+fmt(c.prevu));
  return `<div class="cow" data-open="${c.id}"${sty}><div><b>${c.num}</b> ${c.nom}<div class="mut">${parts.join(' · ')}</div></div><div>${right}</div></div>`};
  if(sc)det=grp.length>1?`<div class="mut" style="margin:6px 0"><b>${grp.length} animaux à cet endroit</b> — touche-en un pour ouvrir sa fiche</div>`+grp.map(row).join(''):row(sc);
- $('m').innerHTML=rsubBar()+`<div class="lg">${lg}</div><div style="display:flex;gap:8px;align-items:center;margin:6px 0"><input id="rsq" type="search" class="zi" style="flex:1;width:auto;min-width:0;text-align:left;padding:6px 10px;font-size:15px" placeholder="Chercher une vache (numéro ou nom)" autocomplete="off"><button data-z="toggle">⚙ Zones</button></div><div id="rsug"></div><div style="font-size:14px;margin:4px 0">Afficher : <label><input type="checkbox" data-rs="gen" ${RSHOW.gen===false?'':'checked'}> Génisses</label> &nbsp; <label><input type="checkbox" data-rs="vo" ${RSHOW.vo===false?'':'checked'}> Veaux</label> &nbsp; <label><input type="checkbox" data-rs="ref" ${RSHOW.ref===false?'':'checked'}> Réformées</label></div>${optOpen?zpanel():''}<svg class="wheel" viewBox="-15 -15 430 ${430+extraH}">${g}${selBox}</svg><div class="mut" style="text-align:center;font-size:12px">Barres : <b style="color:var(--gr)">verte</b> = début des saillies · <b style="color:var(--bl)">bleue</b> = début du Dx gestation · <b style="color:var(--pu)">mauve</b> = tarir (${ZONES.t} j avant le vêlage)</div>${det}`;
+ $('m').innerHTML=rsubBar()+`<div class="lg">${lg}</div><div style="display:flex;gap:8px;align-items:center;margin:6px 0"><input id="rsq" type="search" class="zi" style="flex:1;width:auto;min-width:0;text-align:left;padding:6px 10px;font-size:15px" placeholder="Chercher une vache (numéro ou nom)" autocomplete="off"><button data-z="toggle">⚙ Zones</button></div><div id="rsug"></div><div style="font-size:14px;margin:4px 0">Afficher : <label><input type="checkbox" data-rs="va" ${RSHOW.va===false?'':'checked'}> Vaches</label> &nbsp; <label><input type="checkbox" data-rs="ts" ${RSHOW.ts===false?'':'checked'}> Taures saillies</label> &nbsp; <label><input type="checkbox" data-rs="gen" ${RSHOW.gen===false?'':'checked'}> Génisses</label> &nbsp; <label><input type="checkbox" data-rs="vo" ${RSHOW.vo===false?'':'checked'}> Veaux</label> &nbsp; <label><input type="checkbox" data-rs="ref" ${RSHOW.ref===false?'':'checked'}> Réformées</label></div>${optOpen?zpanel():''}<svg class="wheel" viewBox="-15 -15 430 ${430+extraH}">${g}${selBox}</svg><div class="mut" style="text-align:center;font-size:12px">Barres : <b style="color:var(--gr)">verte</b> = début des saillies · <b style="color:var(--bl)">bleue</b> = début du Dx gestation · <b style="color:var(--pu)">mauve</b> = tarir (${ZONES.t} j avant le vêlage)</div>${det}`;
  $('info').textContent='Roulette · '+tot+' animaux actifs · fichier du '+DB.date;
 }
 
+let rpr='all';
 const nz=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const REC_EC={VELA:'var(--ye)',SAILF:'var(--bl)',GST:'var(--bl)',TAR:'var(--pu)',REF:'var(--og)',ELIM:'var(--og)'};
 function recherche(){
@@ -1804,7 +1828,7 @@ function recherche(){
  const all=[...new Set(DB.cows.flatMap(c=>c.ev.map(e=>e.t)))];
  const pref=['VELA','SAIL','SAILF','GST','TAR','NAIS','VACC','TX','CHIN','POUB','REF','ELIM'];
  const codes=pref.filter(t=>all.includes(t));
- $('m').innerHTML=`<input id="rq" type="search" class="zi" style="width:100%;text-align:left" placeholder="Ex. : vêlage, vel, gst, vaccin, un produit…" value="${rq.replace(/"/g,'&quot;')}" autocomplete="off"><div class="row" id="rchips" style="margin-top:8px">${codes.map(t=>`<button data-t="${t}" data-rq="${t}">${LBL[t]||t} <small>${t}</small></button>`).join('')}</div><div class="row" id="rper" style="margin:8px 0 0">${[['all','Toutes dates'],['7','7 j'],['30','30 j'],['90','90 j'],['c','Dates…']].map(([v,l])=>`<button data-rp="${v}" class="${rper===v?'on':''}">${l}</button>`).join('')}</div><div id="rdates" style="display:${rper==='c'?'flex':'none'};gap:6px;align-items:center;margin:6px 0">du <input type="date" id="rfrom" class="zi" style="width:auto" value="${rfrom}"> au <input type="date" id="rto" class="zi" style="width:auto" value="${rto}"></div><label style="display:block;margin:8px 0;font-size:14px"><input type="checkbox" id="ract" ${ract?'checked':''}> Actives seulement (sans les éliminées)</label><div id="rres"></div>`;
+ $('m').innerHTML=`<input id="rq" type="search" class="zi" style="width:100%;text-align:left" placeholder="Ex. : vêlage, vel, gst, vaccin, un produit…" value="${rq.replace(/"/g,'&quot;')}" autocomplete="off"><div class="row" id="rchips" style="margin-top:8px">${codes.map(t=>`<button data-t="${t}" data-rq="${t}">${LBL[t]||t} <small>${t}</small></button>`).join('')}</div><div class="row" style="margin-top:8px"><button data-rpr="any" class="${rpr==='any'?'on':''}">📋 Avec protocole</button><button data-rpr="none" class="${rpr==='none'?'on':''}">📋 Sans protocole</button></div><div class="row" id="rper" style="margin:8px 0 0">${[['all','Toutes dates'],['7','7 j'],['30','30 j'],['90','90 j'],['c','Dates…']].map(([v,l])=>`<button data-rp="${v}" class="${rper===v?'on':''}">${l}</button>`).join('')}</div><div id="rdates" style="display:${rper==='c'?'flex':'none'};gap:6px;align-items:center;margin:6px 0">du <input type="date" id="rfrom" class="zi" style="width:auto" value="${rfrom}"> au <input type="date" id="rto" class="zi" style="width:auto" value="${rto}"></div><label style="display:block;margin:8px 0;font-size:14px"><input type="checkbox" id="ract" ${ract?'checked':''}> Actives seulement (sans les éliminées)</label><div id="rres"></div>`;
  rupdate();
 }
 const dayN=s=>{const [y,m,d]=s.split('-').map(Number);return Math.round((Date.UTC(y,m-1,d)-D0)/DAY)};
@@ -1820,8 +1844,8 @@ function rupdate(){
  if(!types.length)types=codes.filter(t=>nz(t).startsWith(nq));
  if(!types.length)types=codes.filter(t=>nz(LBL[t]||t).includes(nq));
  const ok0=types.length?e=>types.includes(e.t):e=>nz((LBL[e.t]||e.t)+' '+pretty(e)).includes(nq);const [rf,rt]=rrange(),ok=e=>ok0(e)&&e.d>=rf&&e.d<=rt;
- const out=[];
- for(const c of DB.cows){if(ract&&c.elim)continue;let l=null;for(const e of c.ev)if(ok(e)&&(!l||e.d>=l.d))l=e;if(l)out.push([c,l])}
+ const out=[],pm=rpr==='all'?null:protoMemb();
+ for(const c of DB.cows){if(ract&&c.elim)continue;if(pm&&(rpr==='any')!==!!pm.get(c.id))continue;let l=null;for(const e of c.ev)if(ok(e)&&(!l||e.d>=l.d))l=e;if(l)out.push([c,l])}
  out.sort((a,b)=>b[1].d-a[1].d||a[0].num.localeCompare(b[0].num,'fr',{numeric:true}));
  const what=types.length?'dernier événement « '+types.map(t=>LBL[t]||t).join(' / ')+' »':'texte « '+rq.trim()+' »';
  res.innerHTML=`<div class="mut" style="margin:6px 0"><b>${out.length}</b> vache(s) — ${what}${rper==='all'?'':' · '+rperLabel()}</div>`+out.slice(0,300).map(([c,e])=>{const n=todayN-e.d,p=pretty(e);
@@ -1849,46 +1873,49 @@ let CCATS=[];try{CCATS=JSON.parse(localStorage.getItem('dsa_ccats')||'[]')||[]}c
 const saveCC=()=>{try{localStorage.setItem('dsa_ccats',JSON.stringify(CCATS))}catch(e){}};
 const ccKey=cc=>'c_'+cc.id;
 const ccNum=x=>x!==''&&x!=null&&Number.isFinite(+x);
-function ccMatch(c,cc){
+function ccMatch(c,cc,pm){
  if(c.elim)return false;
+ if(pm&&(cc.pr==='any')!==!!pm.get(c.id))return false;
  if(cc.sts&&cc.sts.length&&!cc.sts.some(v=>VIEWS[v]&&VIEWS[v](c)))return false;
  if(ccNum(cc.amin)||ccNum(cc.amax)){if(!c.naiss)return false;const m=Math.floor(moisAge(c));if(ccNum(cc.amin)&&m<+cc.amin)return false;if(ccNum(cc.amax)&&m>+cc.amax)return false}
  if(ccNum(cc.jmin)||ccNum(cc.jmax)){const j=jelOf(c);if(j==null)return false;if(ccNum(cc.jmin)&&j<+cc.jmin)return false;if(ccNum(cc.jmax)&&j>+cc.jmax)return false}
  if(ccNum(cc.smin)||ccNum(cc.smax)){const d=c.sail?todayN-c.sail.d:null;if(d==null)return false;if(ccNum(cc.smin)&&d<+cc.smin)return false;if(ccNum(cc.smax)&&d>+cc.smax)return false}
  return true}
 function ccRows(cc,T){
- return DB.cows.filter(c=>ccMatch(c,cc)).sort(numCmp).map((c,i)=>{const si=statusInfo(c),j=jelOf(c),d=c.sail?T-c.sail.d:null,p=[];
+ const pm=cc.pr==='any'||cc.pr==='none'?protoMemb():null;return DB.cows.filter(c=>ccMatch(c,cc,pm)).sort(numCmp).map((c,i)=>{const si=statusInfo(c),j=jelOf(c),d=c.sail?T-c.sail.d:null,p=[];
   if(si)p.push(si.lab);if(c.naiss)p.push(Math.floor(moisAge(c))+' mois');if(j!=null)p.push(j+' JEL');if(d!=null)p.push(d+' JDS');
   return {c,key:`cc|${cc.id}|${c.num}`,text:p.join(' · '),sort:i}})}
 function ccDesc(cc){
  const rg=(a,b,u)=>ccNum(a)&&ccNum(b)?`${a} à ${b} ${u}`:ccNum(a)?`${a} ${u} et plus`:ccNum(b)?`jusqu’à ${b} ${u}`:'',p=[];
  if(cc.sts&&cc.sts.length)p.push((cc.sts.map(v=>(VLBL.find(x=>x[0]===v)||[v,v])[1]).join(', ')));
+ if(cc.pr==='any')p.push('avec protocole');else if(cc.pr==='none')p.push('sans protocole');
  const a=rg(cc.amin,cc.amax,'mois');if(a)p.push('âge : '+a);
  const j=rg(cc.jmin,cc.jmax,'JEL');if(j)p.push(j);
  const s2=rg(cc.smin,cc.smax,'JDS');if(s2)p.push(s2);
  return escH(p.join(' · ')||'Toutes les actives')}
 function ccSync(){for(const k of Object.keys(AFLBL))if(k.startsWith('c_')){delete AFLBL[k];delete CATCOL[k]}for(const cc of CCATS){AFLBL[ccKey(cc)]=escH(cc.name);CATCOL[ccKey(cc)]='var(--ac)'}}
-const ccHtml=()=>`<div style="margin:10px 0 6px"><b>Mes catégories</b> <span class="mut">(filtre par statut, âge, JEL, JDS)</span></div>`+(CCATS.length?CCATS.map(cc=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span style="flex:1;min-width:0"><b>${escH(cc.name)}</b><div class="mut" style="font-size:12px">${ccDesc(cc)}</div></span><button data-ccedit="${cc.id}">✎</button><button data-ccdel="${cc.id}" style="color:var(--rd)">🗑</button></div>`).join(''):'<div class="mut">Aucune pour l’instant.</div>')+`<div style="margin:6px 0 10px"><button data-ccadd>＋ Ajouter une catégorie</button></div>`;
+const ccHtml=()=>`<div style="margin:10px 0 6px"><b>Mes catégories</b> <span class="mut">(filtre par statut, protocole, âge, JEL, JDS)</span></div>`+(CCATS.length?CCATS.map(cc=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span style="flex:1;min-width:0"><b>${escH(cc.name)}</b><div class="mut" style="font-size:12px">${ccDesc(cc)}</div></span><button data-ccedit="${cc.id}">✎</button><button data-ccdel="${cc.id}" style="color:var(--rd)">🗑</button></div>`).join(''):'<div class="mut">Aucune pour l’instant.</div>')+`<div style="margin:6px 0 10px"><button data-ccadd>＋ Ajouter une catégorie</button></div>`;
 let CCF=null;
 const ccInputStyle='width:70px;text-align:center';
-function ccPrev(){const el=$('ccprev');if(!el||!CCF)return;const r=DB.cows.filter(c=>ccMatch(c,CCF)).sort(numCmp);el.innerHTML=`<b>${r.length}</b> vache(s) correspondent`+(r.length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${r.slice(0,80).map(c=>`<span style="padding:3px 8px;border:1px solid var(--ln);border-radius:999px;font-weight:700;background:var(--card)">${c.num}</span>`).join('')}${r.length>80?'<span class="mut">…</span>':''}</div>`:'')}
+function ccPrev(){const el=$('ccprev');if(!el||!CCF)return;const pm=CCF.pr==='any'||CCF.pr==='none'?protoMemb():null,r=DB.cows.filter(c=>ccMatch(c,CCF,pm)).sort(numCmp);el.innerHTML=`<b>${r.length}</b> vache(s) correspondent`+(r.length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${r.slice(0,80).map(c=>`<span style="padding:3px 8px;border:1px solid var(--ln);border-radius:999px;font-weight:700;background:var(--card)">${c.num}</span>`).join('')}${r.length>80?'<span class="mut">…</span>':''}</div>`:'')}
 function ccRead(){if(!CCF||!$('ccn'))return;CCF.name=$('ccn').value;for(const [k,id] of [['amin','cca1'],['amax','cca2'],['jmin','ccj1'],['jmax','ccj2'],['smin','ccs1'],['smax','ccs2']])CCF[k]=$(id).value.trim()}
 function ccRender(){const o=$('ccf');if(!o||!CCF)return;const st=o.scrollTop,v=CCF;
  const pair=(t,a,b,ia,ib,u)=>`<div style="margin:12px 0"><b>${t}</b> <span class="mut">${u}</span><div style="display:flex;align-items:center;gap:8px;margin-top:6px">de <input class="zi" id="${ia}" type="number" inputmode="numeric" min="0" value="${v[a]}" style="${ccInputStyle}"> à <input class="zi" id="${ib}" type="number" inputmode="numeric" min="0" value="${v[b]}" style="${ccInputStyle}"></div></div>`;
- o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:10px"><button data-ccx style="font-size:13px;padding:4px 10px">← Annuler</button><b style="flex:1;font-size:19px">${v.isNew?'Nouvelle catégorie':'Modifier la catégorie'}</b><button class="on" data-ccsave style="padding:8px 16px">Enregistrer</button></div><div style="padding:12px 12px 90px"><b>Nom</b><input id="ccn" class="zi" style="width:100%;text-align:left;margin-top:6px;box-sizing:border-box" placeholder="Ex. : Taures à vérifier" value="${escH(v.name)}" autocomplete="off"><div style="margin:14px 0 6px"><b>Statut</b> <span class="mut">(aucun coché = toutes les actives)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${VLBL.filter(x=>x[0]!=='actives'&&x[0]!=='elim').map(x=>`<button data-ccst="${x[0]}" class="${v.sts.includes(x[0])?'on':''}">${x[1]}</button>`).join('')}</div>${pair('Âge','amin','amax','cca1','cca2','mois (vide = sans limite)')}${pair('JEL','jmin','jmax','ccj1','ccj2','jours en lait')}${pair('JDS','smin','smax','ccs1','ccs2','jours depuis la dernière saillie')}<div id="ccprev" style="margin-top:14px"></div></div>`;
+ o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:10px"><button data-ccx style="font-size:13px;padding:4px 10px">← Annuler</button><b style="flex:1;font-size:19px">${v.isNew?'Nouvelle catégorie':'Modifier la catégorie'}</b><button class="on" data-ccsave style="padding:8px 16px">Enregistrer</button></div><div style="padding:12px 12px 90px"><b>Nom</b><input id="ccn" class="zi" style="width:100%;text-align:left;margin-top:6px;box-sizing:border-box" placeholder="Ex. : Taures à vérifier" value="${escH(v.name)}" autocomplete="off"><div style="margin:14px 0 6px"><b>Statut</b> <span class="mut">(aucun coché = toutes les actives)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${VLBL.filter(x=>x[0]!=='actives'&&x[0]!=='elim').map(x=>`<button data-ccst="${x[0]}" class="${v.sts.includes(x[0])?'on':''}">${x[1]}</button>`).join('')}</div><div style="margin:14px 0 6px"><b>Protocole</b> <span class="mut">(touche pour choisir, retouche pour enlever)</span></div><div style="display:flex;gap:6px"><button data-ccpr="any" class="${v.pr==='any'?'on':''}">📋 Avec protocole</button><button data-ccpr="none" class="${v.pr==='none'?'on':''}">📋 Sans protocole</button></div>${pair('Âge','amin','amax','cca1','cca2','mois (vide = sans limite)')}${pair('JEL','jmin','jmax','ccj1','ccj2','jours en lait')}${pair('JDS','smin','smax','ccs1','ccs2','jours depuis la dernière saillie')}<div id="ccprev" style="margin-top:14px"></div></div>`;
  ccPrev();o.scrollTop=st}
 function ccOpen(id){const cc=id?CCATS.find(x=>x.id===id):null;
- CCF=cc?{amin:'',amax:'',jmin:'',jmax:'',smin:'',smax:'',...cc,sts:[...(cc.sts||[])]}:{id:'k'+Date.now().toString(36),name:'',sts:[],amin:'',amax:'',jmin:'',jmax:'',smin:'',smax:'',isNew:true};
+ CCF=cc?{pr:'all',amin:'',amax:'',jmin:'',jmax:'',smin:'',smax:'',...cc,sts:[...(cc.sts||[])]}:{id:'k'+Date.now().toString(36),name:'',sts:[],pr:'all',amin:'',amax:'',jmin:'',jmax:'',smin:'',smax:'',isNew:true};
  let o=$('ccf');if(!o){o=document.createElement('div');o.id='ccf';o.style.cssText='position:fixed;inset:0;z-index:50;background:var(--bg);color:var(--tx);overflow-y:auto;padding-top:env(safe-area-inset-top,0px)';o.onclick=ccClick;o.oninput=()=>{ccRead();ccPrev()};document.body.appendChild(o)}
  ccRender()}
 function ccClose(){const o=$('ccf');if(o)o.remove();CCF=null}
 function ccClick(e){const t=e.target;
  if(t.closest('[data-ccx]')){ccClose();return}
+ const pb=t.closest('[data-ccpr]');if(pb){ccRead();CCF.pr=CCF.pr===pb.dataset.ccpr?'all':pb.dataset.ccpr;ccRender();return}
  const b=t.closest('[data-ccst]');if(b){ccRead();const k=b.dataset.ccst;CCF.sts=CCF.sts.includes(k)?CCF.sts.filter(x=>x!==k):[...CCF.sts,k];ccRender();return}
  if(t.closest('[data-ccsave]')){ccRead();const v=CCF;
   if(!v.name.trim()){toast('Donne un nom à la catégorie',2500);return}
-  if(!v.sts.length&&!['amin','amax','jmin','jmax','smin','smax'].some(k=>ccNum(v[k]))){toast('Choisis au moins un critère',2500);return}
-  const out={id:v.id,name:v.name.trim(),sts:v.sts};for(const k of ['amin','amax','jmin','jmax','smin','smax'])out[k]=ccNum(v[k])?+v[k]:'';
+  if(!v.sts.length&&v.pr==='all'&&!['amin','amax','jmin','jmax','smin','smax'].some(k=>ccNum(v[k]))){toast('Choisis au moins un critère',2500);return}
+  const out={id:v.id,name:v.name.trim(),sts:v.sts,pr:v.pr||'all'};for(const k of ['amin','amax','jmin','jmax','smin','smax'])out[k]=ccNum(v[k])?+v[k]:'';
   const i=CCATS.findIndex(x=>x.id===out.id);if(i>=0)CCATS[i]=out;else{CCATS.push(out);AFCOL[ccKey(out)]=false;saveAF()}
   saveCC();ccSync();ccClose();updBadge();if(tab==='regie')regie();return}}
 let showDone=false;
@@ -1918,7 +1945,7 @@ ccSync();
 const afOrder=()=>ordBy(Object.keys(AFLBL),k=>k,AFORD);
 let AFCOL={},AFON={};try{AFCOL=JSON.parse(localStorage.getItem('dsa_afcol')||'{}')||{};AFON=JSON.parse(localStorage.getItem('dsa_afon')||'{}')||{}}catch(e){}
 const saveAF=()=>{try{localStorage.setItem('dsa_afcol',JSON.stringify(AFCOL));localStorage.setItem('dsa_afon',JSON.stringify(AFON))}catch(e){}};
-const aoHtml=()=>`<div style="margin:10px 0 6px"><b>Rappels proposés</b> <span class="mut">(coche ceux que tu veux voir ; les flèches ▲ ▼ sont à côté de chaque titre)</span></div>`+Object.keys(AFLBL).map(k=>`<label style="display:block;margin:4px 0"><input type="checkbox" data-afon="${k}" ${AFON[k]===false?'':'checked'}> ${AFLBL[k]}</label>`).join('')+'<div style="height:8px"></div>';
+const aoHtml=()=>`<div style="margin:10px 0 6px"><b>Rappels proposés</b> <span class="mut">(coche ceux que tu veux voir ; appuie longtemps sur un titre pour le déplacer)</span></div>`+Object.keys(AFLBL).map(k=>`<label style="display:block;margin:4px 0"><input type="checkbox" data-afon="${k}" ${AFON[k]===false?'':'checked'}> ${AFLBL[k]}</label>`).join('')+'<div style="height:8px"></div>';
 const relRet=d=>d<0?`<span class="tag w">il y a ${-d} j</span>`:d===0?'<span class="tag w">aujourd’hui</span>':`<span class="tag">dans ${d} j</span>`;
 let afsub='list',afForm=false;
 const afBar=()=>`<div class="row" style="margin:0 0 10px"><button data-afsub="list" class="${afsub==='list'?'on':''}">✅ À faire</button><button data-afsub="notif" class="${afsub==='notif'?'on':''}">🔔 Notifications</button><button data-afsub="notes" class="${afsub==='notes'?'on':''}">📝 Notes</button></div>`;
@@ -1927,7 +1954,7 @@ function notifItems(){
  const out=[];
  for(const e of protoEvents()){if(!e.s.on)continue;
   const D=e.D-(+e.s.before||0),dt=toDate(D),[hh,mm]=String(e.s.time||'07:00').split(':').map(Number);
-  const r=parseCows(e.it.cows),nums=r.ok.map(c=>c.num).concat(r.bad);
+  const r=parseCows(effToks(e.it,e.s)),nums=r.ok.map(c=>c.num).concat(r.bad);
   out.push({kind:'p',at:new Date(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate(),hh||0,mm||0,0),ico:'📋',title:e.t.name+' · Jour '+e.s.d,body:(e.s.txt||'Étape')+(nums.length?' — '+(nums.length>10?nums.slice(0,10).join(', ')+' +'+(nums.length-10):nums.join(', ')):''),done:!!PDONE[pdKey(e)],off:!PT.on})}
  for(const a of alarmPlan())out.push(a.list?{kind:'l',at:a.at,ico:'☑',title:a.list.title,body:a.body,lid:a.list.id}:a.rem?{kind:'r',at:a.at,ico:'⏰',title:a.c?a.c.num+' '+a.c.nom:'Rappel',body:a.body,c:a.c,rid:a.rem.id}:{kind:'n',at:a.at,ico:'📝',title:a.c?a.c.num+' '+a.c.nom:'Note',body:a.body,c:a.c});
  return out;
@@ -1957,7 +1984,7 @@ function regie(){
  const sc=(key,t,sub,rows,relf)=>{rows.filter(r=>DONE[r.key]).forEach(r=>doneRows.push({...r,cat:t}));
   const pend=rows.filter(r=>!DONE[r.key]).sort((a,b)=>a.sort-b.sort),col=CATCOL[key]||'var(--tx)',closed=AFCOL[key]!==false,vi=vis.indexOf(key);
   const list=closed?'':(pend.length?pend.map(r=>`<div class="cow" data-id="${r.c.id}"><div><b>${r.c.num}</b> ${r.c.nom}<div class="mut">${r.text}</div></div><div style="display:flex;gap:6px;align-items:center">${r.dl!==undefined?(relf||rel)(r.dl):r.tag?`<span class="tag">${r.tag}</span>`:''}<button class="dn" data-done="${r.key}" title="Marquer comme fait">✓</button></div></div>`).join(''):'<div class="mut" style="padding:6px 0 12px">Rien à signaler</div>');
-  return `<div class="sechead" style="border-left:8px solid ${col}"><span class="sectitle" data-sec="${key}" style="color:${col}"><span class="chev">${closed?'▸':'▾'}</span> ${t}</span><span class="tag" style="font-size:14px">${pend.length}</span><span class="secarr"><button data-ao="${key}:up" ${vi<=0?'disabled':''}>▲</button><button data-ao="${key}:down" ${vi>=vis.length-1?'disabled':''}>▼</button></span></div>`+(closed?'':`<div class="mut">${sub}</div>`)+list};
+  return `<div class="sechead" style="border-left:8px solid ${col};user-select:none;-webkit-user-select:none;-webkit-touch-callout:none"><span class="sectitle" data-sec="${key}" style="color:${col}"><span class="chev">${closed?'▸':'▾'}</span> ${t}</span><span class="tag" style="font-size:14px">${pend.length}</span></div>`+(closed?'':`<div class="mut">${sub}</div>`)+list};
  const defs={
   ret:()=>sc('ret',AFLBL.ret,`Saillie non confirmée · 1er cycle : ${RG.r1a} à ${RG.r1b} JDS · 2e cycle : ${RG.r2a} à ${RG.r2b} JDS`,tk.ret,relRet),
   tg:()=>sc('tg',AFLBL.tg,`Saillie de ${RG.ga} à ${RG.gb} JDS, sans test depuis`,tk.tg),
@@ -1970,6 +1997,31 @@ function regie(){
  $('m').innerHTML=afBar()+`<div class="row"><button data-rg="toggle">⚙ Réglages des jours</button><button data-ccadd>＋ Catégorie</button></div>${rgOpen?rgpanel():''}`+(secs||'<div class="empty">Aucune section affichée : coche-les dans ⚙ Réglages des jours.</div>')+done;
  $('info').textContent='Régie · '+act.length+' actives · fichier du '+DB.date;
 }
+let SD=null,sdNoClick=0,sdRaf=0;
+function sdDown(e){if(tab!=='regie'||afsub!=='list')return;const h=e.target.closest('.sechead'),ts=h&&h.querySelector('[data-sec]');if(!ts||ts.dataset.sec==='done'||e.target.closest('button,input,a'))return;if(e.pointerType==='mouse'&&e.button!==0)return;SD={h,x:e.clientX,y:e.clientY,cy:e.clientY,on:false,t:setTimeout(sdStart,380)}}
+function sdStart(){const D=SD,m=$('m');if(!D)return;
+ let after=false;[...m.children].forEach(el=>{if(el.classList.contains('sechead'))after=true;else if(after)el.style.display='none'});
+ const heads=[...m.querySelectorAll('.sechead')].filter(h=>{const t=h.querySelector('[data-sec]');return t&&t.dataset.sec!=='done'});
+ D.heads=heads;D.o=heads.indexOf(D.h);if(D.o<0){SD=null;regie();return}D.n=D.o;
+ D.mids=heads.map(h=>{const b=h.getBoundingClientRect();return b.top+b.height/2});
+ D.step=heads.length>1?Math.abs(D.mids[1]-D.mids[0]):D.h.getBoundingClientRect().height+8;D.sc0=scrollY;D.on=true;
+ D.h.style.position='relative';D.h.style.zIndex='5';D.h.style.boxShadow='0 8px 20px rgba(0,0,0,.35)';D.h.style.background='var(--card)';
+ heads.forEach(h=>{if(h!==D.h)h.style.transition='transform .15s'});
+ try{navigator.vibrate&&navigator.vibrate(25)}catch(x){}
+ sdUpdate();sdLoop()}
+function sdUpdate(){const D=SD;if(!D||!D.on)return;const dy=D.cy-D.mids[D.o]+(scrollY-D.sc0);D.h.style.transform=`translateY(${dy}px)`;
+ const c=D.mids[D.o]+dy;let n=0;D.mids.forEach((mm,i)=>{if(i!==D.o&&mm<c)n++});D.n=n;
+ D.heads.forEach((h,i)=>{if(i===D.o)return;let t=0;if(D.o<n&&i>D.o&&i<=n)t=-D.step;else if(D.o>n&&i>=n&&i<D.o)t=D.step;h.style.transform=t?`translateY(${t}px)`:''})}
+function sdLoop(){const D=SD;if(!D||!D.on)return;let v=0;if(D.cy<120)v=-Math.min(14,(120-D.cy)/6);else if(D.cy>innerHeight-100)v=Math.min(14,(D.cy-(innerHeight-100))/5);
+ if(v){scrollBy(0,v);sdUpdate()}sdRaf=requestAnimationFrame(sdLoop)}
+function sdMove(e){const D=SD;if(!D)return;if(!D.on){if(Math.abs(e.clientX-D.x)>10||Math.abs(e.clientY-D.y)>10){clearTimeout(D.t);SD=null}return}D.cy=e.clientY;sdUpdate()}
+function sdUp(){const D=SD;if(!D)return;clearTimeout(D.t);SD=null;cancelAnimationFrame(sdRaf);if(!D.on)return;sdNoClick=Date.now()+400;
+ if(D.n!==D.o){const keys=D.heads.map(h=>h.querySelector('[data-sec]').dataset.sec),k=keys.splice(D.o,1)[0];keys.splice(D.n,0,k);
+  const o=afOrder(),slots=o.filter(x=>AFON[x]!==false).map(x=>o.indexOf(x));keys.forEach((kk,i)=>{o[slots[i]]=kk});AFORD=o;saveOrd('dsa_aford',o)}
+ regie()}
+$('m').addEventListener('pointerdown',sdDown);$('m').addEventListener('pointermove',sdMove);$('m').addEventListener('pointerup',sdUp);$('m').addEventListener('pointercancel',sdUp);
+$('m').addEventListener('contextmenu',e=>{if(e.target.closest('.sechead'))e.preventDefault()});
+document.addEventListener('touchmove',e=>{if(SD&&SD.on&&e.cancelable)e.preventDefault()},{passive:false});
 $('m').onchange=e=>{
  if(e.target.id==='thsel'){THEME=e.target.value;try{localStorage.setItem('dsa_theme',THEME)}catch(x){}applyTheme();return}
  if(e.target.id==='lgsel'){setLang(e.target.value);return}
@@ -1992,6 +2044,7 @@ if(e.target.id==='ract'){ract=e.target.checked;rupdate();return}const i=e.target
  saveZ();roulette()};
 $('m').oninput=e=>{if(e.target.id==='pkq'){PK.q=e.target.value;pkList();return}if(e.target.id==='rsq'){rsSuggest(e.target.value);return}if(e.target.id==='nm'){APPNAME=e.target.value||'MEUH';setTitle()}if(e.target.id==='rq'){rq=e.target.value;rupdate()}};
 $('m').onclick=e=>{
+ if(Date.now()<sdNoClick)return;
  if(selMode&&tab==='fiches'&&!inF){const r=e.target.closest('.cow[data-id]');if(r){const id=r.dataset.id;if(SELS.has(id))SELS.delete(id);else SELS.add(id);selDecorate();lbarRender();return}}
  if(protoClick(e))return;
  const bkb=e.target.closest('[data-bk]');if(bkb){const n=bkb.dataset.bk;if(inBK(n))BK=BK.filter(x=>x!==n);else BK.push(n);saveBK();bkb.textContent=inBK(n)?'🧺✓':'🧺';toast(inBK(n)?'Ajoutée au panier · '+BK.length:'Retirée du panier · '+BK.length,1600);return}
@@ -2071,7 +2124,7 @@ $('m').onclick=e=>{
  const cm=e.target.closest('[data-cm]');if(cm){cal.m+=+cm.dataset.cm;if(cal.m<0){cal.m=11;cal.y--}if(cal.m>11){cal.m=0;cal.y++}rappels();return}
  const cd=e.target.closest('[data-cd]');if(cd){calSel=+cd.dataset.cd;rappels();return}
  const rsb=e.target.closest('[data-rsub]');if(rsb){rpSub=rsb.dataset.rsub;rappels();return}
-const rz=e.target.closest('[data-rg]');if(rz){if(rz.dataset.rg==='reset'){RG={...RGDEF};saveRG();schedSoon()}else rgOpen=!rgOpen;regie();return}const rc=e.target.closest('[data-rq]');if(rc){rq=rc.dataset.rq;const i=$('rq');if(i)i.value=rq;rupdate();return}const z=e.target.closest('[data-z]');if(z){if(z.dataset.z==='reset'){ZONES={...ZDEF};saveZ()}else optOpen=!optOpen;roulette();return}const o=e.target.closest('[data-open]');if(o){fiche(o.dataset.open);return}const d=e.target.closest('[data-c]');if(d){sel=d.dataset.c;roulette();return}const w=e.target.closest('[data-w]');if(w){rwin=+w.dataset.w;regie();return}const c=e.target.closest('.cow');if(c&&c.dataset.id)fiche(c.dataset.id)};
+const rz=e.target.closest('[data-rg]');if(rz){if(rz.dataset.rg==='reset'){RG={...RGDEF};saveRG();schedSoon()}else rgOpen=!rgOpen;regie();return}const rpb=e.target.closest('[data-rpr]');if(rpb){rpr=rpr===rpb.dataset.rpr?'all':rpb.dataset.rpr;recherche();return}const rc=e.target.closest('[data-rq]');if(rc){rq=rc.dataset.rq;const i=$('rq');if(i)i.value=rq;rupdate();return}const z=e.target.closest('[data-z]');if(z){if(z.dataset.z==='reset'){ZONES={...ZDEF};saveZ()}else optOpen=!optOpen;roulette();return}const o=e.target.closest('[data-open]');if(o){fiche(o.dataset.open);return}const d=e.target.closest('[data-c]');if(d){sel=d.dataset.c;roulette();return}const w=e.target.closest('[data-w]');if(w){rwin=+w.dataset.w;regie();return}const c=e.target.closest('.cow');if(c&&c.dataset.id)fiche(c.dataset.id)};
 $('q').oninput=e=>{q=e.target.value.trim();list()};
 $('vw').onclick=e=>{const b=e.target.closest('button');if(!b)return;view=b.dataset.v;list();closeDD()};
 async function unzipTxt(buf){
