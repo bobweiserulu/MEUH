@@ -841,6 +841,7 @@ function parseCows(text){
  return{toks:uniq,ok,bad};
 }
 const cowChips=toks=>{const r=parseCows(toks);return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${r.ok.map(c=>`<button class="chip" data-open="${c.id}">${c.num}</button>`).join('')}${r.bad.map(t=>`<span class="tag w" title="Introuvable parmi les vaches actives">${t} ?</span>`).join('')}</div>`};
+const dayNo=(it,s)=>stepD(it,s)-it.start+1;
 const stepD=(it,s)=>{const o=it.ov&&it.ov[s.d];return o&&o.date!=null?o.date:it.start+s.d-1};
 const effToks=(it,s)=>{const o=it.ov&&it.ov[s.d];if(!o||(!(o.add||[]).length&&!(o.rm||[]).length))return it.cows;const rm=new Set(o.rm||[]);return [...it.cows.filter(n=>!rm.has(n)),...(o.add||[]).filter(n=>!it.cows.includes(n))]};
 function setDayCows(it,d,toks){const rm=it.cows.filter(n=>!toks.includes(n)),add=toks.filter(n=>!it.cows.includes(n));it.ov=it.ov||{};const o=it.ov[d]||(it.ov[d]={});o.add=add;o.rm=rm;if(o.date==null&&!add.length&&!rm.length)delete it.ov[d];savePT()}
@@ -858,7 +859,7 @@ function protoPlan(){
   if(!e.s.on||PDONE[pdKey(e)])continue;
   const D=e.D-(+e.s.before||0),dt=toDate(D),[hh,mm]=String(e.s.time||'07:00').split(':').map(Number);
   const r=parseCows(effToks(e.it,e.s)),nums=r.ok.map(c=>c.num).concat(r.bad);
-  out.push({D,at:new Date(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate(),hh||0,mm||0,0),title:`${e.t.name} · ${tr('Jour '+e.s.d)}`,body:`${e.s.txt||tr('Étape')}${nums.length?'\n'+tr('Vaches :')+' '+(nums.length>14?nums.slice(0,14).join(', ')+' +'+(nums.length-14):nums.join(', ')):''}`});
+  out.push({D,at:new Date(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate(),hh||0,mm||0,0),title:`${e.t.name} · ${tr('Jour '+dayNo(e.it,e.s))}`,body:`${e.s.txt||tr('Étape')}${nums.length?'\n'+tr('Vaches :')+' '+(nums.length>14?nums.slice(0,14).join(', ')+' +'+(nums.length-14):nums.join(', ')):''}`});
  }
  return out.filter(p=>p.D>=todayN-1&&p.D<=todayN+90).sort((a,b)=>a.at-b.at);
 }
@@ -879,7 +880,7 @@ function pCalHtml(){
  const lsD=NLISTS.filter(l=>l.cal&&l.d&&dayFromIso(l.d)===pSel);
  const es=(byD[pSel]||[]).sort((a,b)=>a.t.name.localeCompare(b.t.name)||a.s.d-b.s.d);
  let det=`<h3 style="margin:14px 0 4px">${dateLong(pSel)}</h3>`;
- if(es.length)det+=es.map(e=>{const col=(KIND[e.s.kind]||KIND.aut)[1];const dn=!!PDONE[pdKey(e)];return `<div class="pcard" style="border-left:5px solid ${col}${dn?';opacity:.55':''}"><div><b>${e.t.name}</b> · <b>jour ${e.s.d} sur ${e.n}</b> <span class="mut">· début ${fmt(e.it.start)}</span></div><div style="font-weight:700;font-size:17px;color:${col}">${e.s.txt||'(étape sans texte)'}</div><div class="mut">${alertTxt(e)}</div>${cowBox(e)}<label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;cursor:pointer"><input type="checkbox" data-pdone="${pdKey(e)}" ${dn?'checked':''} style="width:24px;height:24px"> Fait${dn?' ✓':''}</label></div>`}).join('');
+ if(es.length)det+=es.map(e=>{const col=(KIND[e.s.kind]||KIND.aut)[1];const dn=!!PDONE[pdKey(e)];return `<div class="pcard" style="border-left:5px solid ${col}${dn?';opacity:.55':''}"><div><b>${e.t.name}</b> · <b>jour ${dayNo(e.it,e.s)} sur ${Math.max(e.n,dayNo(e.it,e.s))}</b> <span class="mut">· début ${fmt(e.it.start)}</span></div><div style="font-weight:700;font-size:17px;color:${col}">${e.s.txt||'(étape sans texte)'}</div><div class="mut">${alertTxt(e)}</div>${cowBox(e)}<label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;cursor:pointer"><input type="checkbox" data-pdone="${pdKey(e)}" ${dn?'checked':''} style="width:24px;height:24px"> Fait${dn?' ✓':''}</label></div>`}).join('');
  else if(!lsD.length)det+=`<div class="mut">Aucune étape de protocole ce jour-là.${PT.act.length?'':' Va dans <b>Démarrer protocoles</b> pour en démarrer un.'}</div>`;
  det+=lsD.map(nlCalCard).join('');
  const lg=Object.values(KIND).map(([l,c])=>`<span style="white-space:nowrap"><i style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${c}"></i> ${l}</span>`).join(' &nbsp; ');
@@ -887,8 +888,17 @@ function pCalHtml(){
  <div class="calg" style="margin-bottom:4px">${WK().map(x=>`<span class="mut" style="text-align:center;font-size:12px">${x}</span>`).join('')}</div><div class="calg">${cells}</div>
  <div class="mut" style="font-size:12px;margin-top:8px">${lg}</div>${det}`;
 }
+let PMOD={};
 let PRUN={};try{PRUN=JSON.parse(localStorage.getItem('dsa_prun')||'{}')||{}}catch(e){}
 const savePRUN=()=>{try{localStorage.setItem('dsa_prun',JSON.stringify(PRUN))}catch(e){}};
+function pChgHtml(it,es){
+ const L=[];
+ for(const e of es){const o=it.ov&&it.ov[e.s.d];if(!o)continue;const lbl=`J${dayNo(it,e.s)} · ${escH(e.s.txt||'étape')}`;
+  if(o.date!=null)L.push(`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--ln)"><span style="flex:1;min-width:0">📅 <b>Changement de date</b> · J${e.s.d} → J${dayNo(it,e.s)}<div class="mut" style="font-size:13px">${fmt(it.start+e.s.d-1)} → ${fmt(o.date)} · ${escH(e.s.txt||'étape')}</div></span><button data-ovreset="${it.id}|${e.s.d}">Annuler</button></div>`);
+  for(const n of (o.add||[]))L.push(`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--ln)"><span style="flex:1;min-width:0">➕ <b>${escH(String(n))}</b> ajoutée<div class="mut" style="font-size:13px">${lbl}</div></span><button data-ovundo="${it.id}|${e.s.d}|add|${escH(String(n))}">Annuler</button></div>`);
+  for(const n of (o.rm||[]))L.push(`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--ln)"><span style="flex:1;min-width:0">➖ <b>${escH(String(n))}</b> retirée<div class="mut" style="font-size:13px">${lbl}</div></span><button data-ovundo="${it.id}|${e.s.d}|rm|${escH(String(n))}">Annuler</button></div>`)}
+ if(!L.length)return '';
+ return `<div style="margin-top:8px"><button data-pmod="${it.id}">${PMOD[it.id]?'▾':'▸'} 📝 Voir les modifications (${L.length})</button>${PMOD[it.id]?`<div style="margin-top:6px">${L.join('')}</div>`:''}</div>`}
 function pRunHtml(){
  if(!DB)return '<div class="empty">Importe d’abord ton fichier.</div>';
  const evs=protoEvents();
@@ -897,8 +907,8 @@ function pRunHtml(){
   es=evs.filter(e=>e.it===it).sort((a,b)=>a.D-b.D||a.s.d-b.s.d),nd=es.filter(e=>PDONE[pdKey(e)]).length;
   const rows=es.map(e=>{const k=pdKey(e),dn=!!PDONE[k],col=(KIND[e.s.kind]||KIND.aut)[1],o=it.ov&&it.ov[e.s.d],moved=o&&o.date!=null,mod=o&&((o.add||[]).length||(o.rm||[]).length),
    late=!dn&&e.D<todayN,today=e.D===todayN,cnt=parseCows(effToks(it,e.s)).ok.length;
-   return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--ln)${dn?';opacity:.55':''}"><input type="checkbox" data-pdone="${k}" ${dn?'checked':''} style="width:28px;height:28px;flex:none;margin-top:2px"><div style="flex:1;min-width:0"><div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><b style="color:${col}">J${e.s.d}</b><input type="date" class="zi" style="width:auto" data-pf="ovd" data-pi="${it.id}" data-psd="${e.s.d}" value="${iso(e.D)}">${moved?`<button data-ovreset="${it.id}|${e.s.d}" title="Remettre la date prévue">↺</button>`:''}${today?'<span class="tag w">aujourd’hui</span>':late?'<span class="tag w">en retard</span>':''}</div><div style="font-weight:700;margin-top:4px${dn?';text-decoration:line-through':''}">${escH(e.s.txt||'(étape sans texte)')}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button data-pkopen="${it.id}|${e.s.d}">👥 ${cnt} vache${cnt>1?'s':''}${mod?' ✎':''}</button><button data-plist="${k}">📋 Liste</button></div></div></div>`}).join('');
-  const cl=!!PRUN[it.id];return `<div class="pcard"><div data-prun="${it.id}" style="cursor:pointer"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${cl?'▸':'▾'} ${escH(t.name)}</b><span class="tag">${nd} / ${es.length} faits</span></div><div class="mut">Jour 1 : ${fmt(it.start)} · ${st}</div></div><div style="margin-top:6px"><b>${parseCows(it.cows).ok.length} vaches</b> <button data-pkopen="${it.id}" style="margin-left:6px">＋ / − Vaches</button></div>${cowChips(it.cows)}${cl?'':`<div style="margin-top:8px">${rows}</div>`}</div>`}).join('');
+   return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--ln)${dn?';opacity:.55':''}"><input type="checkbox" data-pdone="${k}" ${dn?'checked':''} style="width:28px;height:28px;flex:none;margin-top:2px"><div style="flex:1;min-width:0"><div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><b style="color:${col}">J${dayNo(it,e.s)}</b><input type="date" class="zi" style="width:auto" data-pf="ovd" data-pi="${it.id}" data-psd="${e.s.d}" value="${iso(e.D)}">${moved?`<button data-ovreset="${it.id}|${e.s.d}" title="Remettre la date prévue">↺</button>`:''}${today?'<span class="tag w">aujourd’hui</span>':late?'<span class="tag w">en retard</span>':''}</div><div style="font-weight:700;margin-top:4px${dn?';text-decoration:line-through':''}">${escH(e.s.txt||'(étape sans texte)')}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button data-pkopen="${it.id}|${e.s.d}">👥 ${cnt} vache${cnt>1?'s':''}${mod?' ✎':''}</button><button data-plist="${k}">📋 Liste</button></div></div></div>`}).join('');
+  const cl=!!PRUN[it.id];return `<div class="pcard"><div data-prun="${it.id}" style="cursor:pointer"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${cl?'▸':'▾'} ${escH(t.name)}</b><span class="tag">${nd} / ${es.length} faits</span></div><div class="mut">Jour 1 : ${fmt(it.start)} · ${st}</div></div><div style="margin-top:6px"><b>${parseCows(it.cows).ok.length} vaches</b> <button data-pkopen="${it.id}" style="margin-left:6px">＋ / − Vaches</button></div>${cowChips(it.cows)}${cl?'':`<div style="margin-top:8px">${rows}</div>`}${pChgHtml(it,es)}</div>`}).join('');
  return `<div class="mut" style="margin-bottom:8px">Touche le titre d’un protocole pour ouvrir ou fermer ses journées. Coche chaque journée quand les injections sont faites. Tu peux changer la date d’une journée et ajuster les vaches de cette seule journée (👥). « ＋ / − Vaches » change les vaches de tout le protocole.</div>`+(cards||'<div class="mut">Aucun protocole en cours. Va dans <b>Démarrer protocoles</b>.</div>')}
 function pActHtml(){
  if(PK.open)return pickerHtml();
@@ -918,7 +928,7 @@ function pActHtml(){
   <div class="mut">Jour 1 : ${fmt(it.start)} · ${st}</div>
   <div style="margin:6px 0">Jour 1 : <input type="date" class="zi" style="width:auto" data-pf="start" data-pi="${it.id}" value="${iso(it.start)}"></div>
   <textarea class="zi" rows="2" style="width:100%;text-align:left" data-pf="cows" data-pi="${it.id}">${it.cows.join(' ')}</textarea><div style="margin-top:6px"><button data-pkopen="${it.id}">☰ Choisir dans la liste</button></div>${cowChips(it.cows)}
-  <div style="margin-top:8px;font-size:14px">${t.steps.map(s=>{const D=stepD(it,s),past=D<todayN;return `<div style="${past?'opacity:.5':''}"><b style="color:${(KIND[s.kind]||KIND.aut)[1]}">J${s.d}</b> · ${fmt(D)} · ${s.txt}</div>`}).join('')}</div></div>`}).join(''):'<div class="mut">Aucun protocole en cours.</div>';
+  <div style="margin-top:8px;font-size:14px">${t.steps.map(s=>{const D=stepD(it,s),past=D<todayN;return `<div style="${past?'opacity:.5':''}"><b style="color:${(KIND[s.kind]||KIND.aut)[1]}">J${dayNo(it,s)}</b> · ${fmt(D)} · ${s.txt}</div>`}).join('')}</div></div>`}).join(''):'<div class="mut">Aucun protocole en cours.</div>';
  return `<label style="display:block;margin:6px 0 10px"><input type="checkbox" data-pf="on" ${PT.on?'checked':''}> <b>Activer les alertes des protocoles</b><div class="mut" style="margin-left:24px">Chaque étape a son heure d’alerte (onglet Modèles). ${nat?'':'Les notifications arrivent seulement dans l’application installée (APK).'}</div></label>
  <div class="mut" id="ntst" style="margin-bottom:6px">${NTSTATUS}</div>${nat?'<div class="row" style="margin-bottom:6px"><button data-ntb="apply">Reprogrammer maintenant</button><button data-ntb="test">Envoyer un test</button></div>':''}
  ${form}<h3>Protocoles en cours <span class="tag">${PT.act.length}</span></h3>${act}`;
@@ -963,6 +973,8 @@ function protoClick(e){
  if(b=e.target.closest('[data-plist]')){plOpen(b.dataset.plist);return true}
  if(b=e.target.closest('input[data-pdone]')){const k=b.dataset.pdone;if(PDONE[k])delete PDONE[k];else PDONE[k]=todayN;savePD();updPBadge();schedSoon();protos();return true}
  if(b=e.target.closest('[data-pkopen]')){pkOpen(b.dataset.pkopen);return true}
+ if(b=e.target.closest('[data-pmod]')){const id=b.dataset.pmod;PMOD[id]=!PMOD[id];protos();return true}
+ if(b=e.target.closest('[data-ovundo]')){const [id,d,kind,num]=b.dataset.ovundo.split('|'),it=PT.act.find(x=>x.id===id),o=it&&it.ov&&it.ov[d];if(o){o[kind]=(o[kind]||[]).filter(x=>String(x)!==num);if(o.date==null&&!(o.add||[]).length&&!(o.rm||[]).length)delete it.ov[d];savePT();schedSoon();protos()}return true}
  if(b=e.target.closest('[data-prun]')){const id=b.dataset.prun;if(PRUN[id])delete PRUN[id];else PRUN[id]=1;savePRUN();protos();return true}
  if(b=e.target.closest('[data-ovreset]')){const [id,d]=b.dataset.ovreset.split('|'),it=PT.act.find(x=>x.id===id);if(it&&it.ov&&it.ov[d]){delete it.ov[d].date;if(!(it.ov[d].add||[]).length&&!(it.ov[d].rm||[]).length)delete it.ov[d];savePT();schedSoon();protos()}return true}
  if(b=e.target.closest('[data-pkv]')){PK.view=b.dataset.pkv;protos();return true}
@@ -1875,20 +1887,20 @@ const ccKey=cc=>'c_'+cc.id;
 const ccNum=x=>x!==''&&x!=null&&Number.isFinite(+x);
 function ccMatch(c,cc,pm){
  if(c.elim)return false;
- if(pm&&(cc.pr==='any')!==!!pm.get(c.id))return false;
+ if(pm){const m=pm.get(c.id);if(cc.pr==='any'&&!m)return false;if(cc.pr==='act'&&m!=='act')return false;if(cc.pr==='plan'&&m!=='plan')return false;if(cc.pr==='none'&&m)return false}
  if(cc.sts&&cc.sts.length&&!cc.sts.some(v=>VIEWS[v]&&VIEWS[v](c)))return false;
  if(ccNum(cc.amin)||ccNum(cc.amax)){if(!c.naiss)return false;const m=Math.floor(moisAge(c));if(ccNum(cc.amin)&&m<+cc.amin)return false;if(ccNum(cc.amax)&&m>+cc.amax)return false}
  if(ccNum(cc.jmin)||ccNum(cc.jmax)){const j=jelOf(c);if(j==null)return false;if(ccNum(cc.jmin)&&j<+cc.jmin)return false;if(ccNum(cc.jmax)&&j>+cc.jmax)return false}
  if(ccNum(cc.smin)||ccNum(cc.smax)){const d=c.sail?todayN-c.sail.d:null;if(d==null)return false;if(ccNum(cc.smin)&&d<+cc.smin)return false;if(ccNum(cc.smax)&&d>+cc.smax)return false}
  return true}
 function ccRows(cc,T){
- const pm=cc.pr==='any'||cc.pr==='none'?protoMemb():null;return DB.cows.filter(c=>ccMatch(c,cc,pm)).sort(numCmp).map((c,i)=>{const si=statusInfo(c),j=jelOf(c),d=c.sail?T-c.sail.d:null,p=[];
+ const pm=cc.pr&&cc.pr!=='all'?protoMemb():null;return DB.cows.filter(c=>ccMatch(c,cc,pm)).sort(numCmp).map((c,i)=>{const si=statusInfo(c),j=jelOf(c),d=c.sail?T-c.sail.d:null,p=[];
   if(si)p.push(si.lab);if(c.naiss)p.push(Math.floor(moisAge(c))+' mois');if(j!=null)p.push(j+' JEL');if(d!=null)p.push(d+' JDS');
   return {c,key:`cc|${cc.id}|${c.num}`,text:p.join(' · '),sort:i}})}
 function ccDesc(cc){
  const rg=(a,b,u)=>ccNum(a)&&ccNum(b)?`${a} à ${b} ${u}`:ccNum(a)?`${a} ${u} et plus`:ccNum(b)?`jusqu’à ${b} ${u}`:'',p=[];
  if(cc.sts&&cc.sts.length)p.push((cc.sts.map(v=>(VLBL.find(x=>x[0]===v)||[v,v])[1]).join(', ')));
- if(cc.pr==='any')p.push('avec protocole');else if(cc.pr==='none')p.push('sans protocole');
+ {const PL={any:'dans un protocole',act:'protocole actif',plan:'protocole prévu',none:'sans protocole'};if(PL[cc.pr])p.push(PL[cc.pr])}
  const a=rg(cc.amin,cc.amax,'mois');if(a)p.push('âge : '+a);
  const j=rg(cc.jmin,cc.jmax,'JEL');if(j)p.push(j);
  const s2=rg(cc.smin,cc.smax,'JDS');if(s2)p.push(s2);
@@ -1897,11 +1909,13 @@ function ccSync(){for(const k of Object.keys(AFLBL))if(k.startsWith('c_')){delet
 const ccHtml=()=>`<div style="margin:10px 0 6px"><b>Mes catégories</b> <span class="mut">(filtre par statut, protocole, âge, JEL, JDS)</span></div>`+(CCATS.length?CCATS.map(cc=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span style="flex:1;min-width:0"><b>${escH(cc.name)}</b><div class="mut" style="font-size:12px">${ccDesc(cc)}</div></span><button data-ccedit="${cc.id}">✎</button><button data-ccdel="${cc.id}" style="color:var(--rd)">🗑</button></div>`).join(''):'<div class="mut">Aucune pour l’instant.</div>')+`<div style="margin:6px 0 10px"><button data-ccadd>＋ Ajouter une catégorie</button></div>`;
 let CCF=null;
 const ccInputStyle='width:70px;text-align:center';
-function ccPrev(){const el=$('ccprev');if(!el||!CCF)return;const pm=CCF.pr==='any'||CCF.pr==='none'?protoMemb():null,r=DB.cows.filter(c=>ccMatch(c,CCF,pm)).sort(numCmp);el.innerHTML=`<b>${r.length}</b> vache(s) correspondent`+(r.length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${r.slice(0,80).map(c=>`<span style="padding:3px 8px;border:1px solid var(--ln);border-radius:999px;font-weight:700;background:var(--card)">${c.num}</span>`).join('')}${r.length>80?'<span class="mut">…</span>':''}</div>`:'')}
-function ccRead(){if(!CCF||!$('ccn'))return;CCF.name=$('ccn').value;for(const [k,id] of [['amin','cca1'],['amax','cca2'],['jmin','ccj1'],['jmax','ccj2'],['smin','ccs1'],['smax','ccs2']])CCF[k]=$(id).value.trim()}
+function ccPrev(){const el=$('ccprev');if(!el||!CCF)return;const pm=CCF.pr&&CCF.pr!=='all'?protoMemb():null,r=DB.cows.filter(c=>ccMatch(c,CCF,pm)).sort(numCmp);
+ el.innerHTML=`<b>${r.length}</b> vache(s) correspondent`+(r.length?`<div class="mut" style="margin-top:6px;line-height:1.6;word-spacing:4px">${r.slice(0,120).map(c=>c.num).join(' · ')}${r.length>120?' …':''}</div>`:'')}
+function ccRead(){if(!CCF||!$('ccn'))return;CCF.name=$('ccn').value;for(const [k,id] of [['amin','cca1'],['amax','cca2'],['jmin','ccj1'],['jmax','ccj2'],['smin','ccs1'],['smax','ccs2']])CCF[k]=$(id).value.trim();CCF.pr=$('ccpr').value;CCF.sts=[...document.querySelectorAll('#ccf [data-ccst]:checked')].map(x=>x.dataset.ccst)}
 function ccRender(){const o=$('ccf');if(!o||!CCF)return;const st=o.scrollTop,v=CCF;
- const pair=(t,a,b,ia,ib,u)=>`<div style="margin:12px 0"><b>${t}</b> <span class="mut">${u}</span><div style="display:flex;align-items:center;gap:8px;margin-top:6px">de <input class="zi" id="${ia}" type="number" inputmode="numeric" min="0" value="${v[a]}" style="${ccInputStyle}"> à <input class="zi" id="${ib}" type="number" inputmode="numeric" min="0" value="${v[b]}" style="${ccInputStyle}"></div></div>`;
- o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:10px"><button data-ccx style="font-size:13px;padding:4px 10px">← Annuler</button><b style="flex:1;font-size:19px">${v.isNew?'Nouvelle catégorie':'Modifier la catégorie'}</b><button class="on" data-ccsave style="padding:8px 16px">Enregistrer</button></div><div style="padding:12px 12px 90px"><b>Nom</b><input id="ccn" class="zi" style="width:100%;text-align:left;margin-top:6px;box-sizing:border-box" placeholder="Ex. : Taures à vérifier" value="${escH(v.name)}" autocomplete="off"><div style="margin:14px 0 6px"><b>Statut</b> <span class="mut">(aucun coché = toutes les actives)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${VLBL.filter(x=>x[0]!=='actives'&&x[0]!=='elim').map(x=>`<button data-ccst="${x[0]}" class="${v.sts.includes(x[0])?'on':''}">${x[1]}</button>`).join('')}</div><div style="margin:14px 0 6px"><b>Protocole</b> <span class="mut">(touche pour choisir, retouche pour enlever)</span></div><div style="display:flex;gap:6px"><button data-ccpr="any" class="${v.pr==='any'?'on':''}">📋 Avec protocole</button><button data-ccpr="none" class="${v.pr==='none'?'on':''}">📋 Sans protocole</button></div>${pair('Âge','amin','amax','cca1','cca2','mois (vide = sans limite)')}${pair('JEL','jmin','jmax','ccj1','ccj2','jours en lait')}${pair('JDS','smin','smax','ccs1','ccs2','jours depuis la dernière saillie')}<div id="ccprev" style="margin-top:14px"></div></div>`;
+ const ip=(id,val)=>`<input class="zi" id="${id}" type="number" inputmode="numeric" min="0" placeholder="${id.endsWith('1')?'min':'max'}" value="${val}" style="width:100%;box-sizing:border-box">`;
+ const PRO=[['all','Peu importe'],['any','🗒️ Dans un protocole (actif ou prévu)'],['act','Protocole actif'],['plan','Protocole prévu'],['none','Dans aucun protocole']];
+ o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:10px"><button data-ccx style="font-size:13px;padding:4px 10px">← Annuler</button><b style="flex:1;font-size:19px">${v.isNew?'Nouvelle catégorie':'Modifier la catégorie'}</b><button class="on" data-ccsave style="padding:8px 16px">Enregistrer</button></div><div style="padding:12px 12px 90px"><div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:10px 8px;align-items:center;padding:12px;border:1px solid var(--ln);border-radius:12px;background:var(--card)"><b>Nom</b><input id="ccn" class="zi" style="grid-column:span 2;text-align:left;width:100%;box-sizing:border-box" placeholder="Ex. : Taures à vérifier" value="${escH(v.name)}" autocomplete="off"><b>Protocole</b><select id="ccpr" class="zi" style="grid-column:span 2;text-align:left;width:100%;box-sizing:border-box">${PRO.map(([k,l])=>`<option value="${k}" ${v.pr===k?'selected':''}>${l}</option>`).join('')}</select><b>Âge</b>${ip('cca1',v.amin)}${ip('cca2',v.amax)}<b>JEL</b>${ip('ccj1',v.jmin)}${ip('ccj2',v.jmax)}<b>JDS</b>${ip('ccs1',v.smin)}${ip('ccs2',v.smax)}</div><div class="mut" style="margin:6px 4px 0;font-size:13px">Âge en mois · champ vide = sans limite</div><div style="margin:16px 4px 6px"><b>Statut</b> <span class="mut">(aucun coché = toutes les actives)</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;padding:8px 12px;border:1px solid var(--ln);border-radius:12px;background:var(--card)">${VLBL.filter(x=>x[0]!=='actives'&&x[0]!=='elim').map(x=>`<label style="display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer"><input type="checkbox" data-ccst="${x[0]}" ${v.sts.includes(x[0])?'checked':''} style="width:20px;height:20px;flex:none"><span>${x[1]}</span></label>`).join('')}</div><div id="ccprev" style="margin:16px 4px 0"></div></div>`;
  ccPrev();o.scrollTop=st}
 function ccOpen(id){const cc=id?CCATS.find(x=>x.id===id):null;
  CCF=cc?{pr:'all',amin:'',amax:'',jmin:'',jmax:'',smin:'',smax:'',...cc,sts:[...(cc.sts||[])]}:{id:'k'+Date.now().toString(36),name:'',sts:[],pr:'all',amin:'',amax:'',jmin:'',jmax:'',smin:'',smax:'',isNew:true};
@@ -1910,8 +1924,6 @@ function ccOpen(id){const cc=id?CCATS.find(x=>x.id===id):null;
 function ccClose(){const o=$('ccf');if(o)o.remove();CCF=null}
 function ccClick(e){const t=e.target;
  if(t.closest('[data-ccx]')){ccClose();return}
- const pb=t.closest('[data-ccpr]');if(pb){ccRead();CCF.pr=CCF.pr===pb.dataset.ccpr?'all':pb.dataset.ccpr;ccRender();return}
- const b=t.closest('[data-ccst]');if(b){ccRead();const k=b.dataset.ccst;CCF.sts=CCF.sts.includes(k)?CCF.sts.filter(x=>x!==k):[...CCF.sts,k];ccRender();return}
  if(t.closest('[data-ccsave]')){ccRead();const v=CCF;
   if(!v.name.trim()){toast('Donne un nom à la catégorie',2500);return}
   if(!v.sts.length&&v.pr==='all'&&!['amin','amax','jmin','jmax','smin','smax'].some(k=>ccNum(v[k]))){toast('Choisis au moins un critère',2500);return}
@@ -1955,7 +1967,7 @@ function notifItems(){
  for(const e of protoEvents()){if(!e.s.on)continue;
   const D=e.D-(+e.s.before||0),dt=toDate(D),[hh,mm]=String(e.s.time||'07:00').split(':').map(Number);
   const r=parseCows(effToks(e.it,e.s)),nums=r.ok.map(c=>c.num).concat(r.bad);
-  out.push({kind:'p',at:new Date(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate(),hh||0,mm||0,0),ico:'📋',title:e.t.name+' · Jour '+e.s.d,body:(e.s.txt||'Étape')+(nums.length?' — '+(nums.length>10?nums.slice(0,10).join(', ')+' +'+(nums.length-10):nums.join(', ')):''),done:!!PDONE[pdKey(e)],off:!PT.on})}
+  out.push({kind:'p',at:new Date(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate(),hh||0,mm||0,0),ico:'📋',title:e.t.name+' · Jour '+dayNo(e.it,e.s),body:(e.s.txt||'Étape')+(nums.length?' — '+(nums.length>10?nums.slice(0,10).join(', ')+' +'+(nums.length-10):nums.join(', ')):''),done:!!PDONE[pdKey(e)],off:!PT.on})}
  for(const a of alarmPlan())out.push(a.list?{kind:'l',at:a.at,ico:'☑',title:a.list.title,body:a.body,lid:a.list.id}:a.rem?{kind:'r',at:a.at,ico:'⏰',title:a.c?a.c.num+' '+a.c.nom:'Rappel',body:a.body,c:a.c,rid:a.rem.id}:{kind:'n',at:a.at,ico:'📝',title:a.c?a.c.num+' '+a.c.nom:'Note',body:a.body,c:a.c});
  return out;
 }
