@@ -289,14 +289,27 @@ function findCows(s){const A=DB.cows.filter(c=>!c.elim),ok=[],bad=[];
   const c=A.find(c=>c.num.toLowerCase()===l)||A.find(c=>c.num.toLowerCase().replace(/^0+/,'')===z)||A.find(c=>c.num.toLowerCase().startsWith(l+'-'));
   if(c){if(!ok.includes(c))ok.push(c)}else bad.push(x)}
  return {ok,bad}}
-function actForm(a,preset,pty,ptxt){
+function cowPicker(){
+ const inp=$('ac-c');if(!inp)return;const old=$('cpmod');if(old)old.remove();
+ const sel=new Set(findCows(inp.value).ok.map(c=>String(c.id)));
+ const L=DB.cows.filter(c=>!c.elim).sort((x,y)=>String(x.num).localeCompare(String(y.num),undefined,{numeric:true}));
+ const d=document.createElement('div');d.id='cpmod';d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center';
+ d.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));height:88vh;display:flex;flex-direction:column"><h3 style="margin:0 0 6px">Choisir les vaches <span class="tag" id="cp-n">0</span></h3><input id="cp-s" class="zi" style="width:100%;text-align:left;box-sizing:border-box" placeholder="Chercher (numéro ou nom)" autocomplete="off"><div id="cp-l" style="flex:1;overflow:auto;margin:8px 0">${L.map(c=>`<label data-s="${escH((c.num+' '+(c.nom||'')).toLowerCase())}" style="display:flex;align-items:center;gap:10px;min-height:44px;border-bottom:1px solid var(--ln)"><input type="checkbox" value="${escH(String(c.id))}"${sel.has(String(c.id))?' checked':''} style="width:22px;height:22px"><b>${escH(c.num)}</b><span class="mut">${escH(c.nom||'')}</span></label>`).join('')}</div><div class="row" style="justify-content:space-between"><button id="cp-c">Tout décocher</button><span><button id="cp-x">Annuler</button> <button id="cp-ok" class="on">Ajouter</button></span></div></div>`;
+ document.body.appendChild(d);
+ const boxes=()=>[...d.querySelectorAll('#cp-l input[type=checkbox]')],cnt=()=>{$('cp-n').textContent=boxes().filter(x=>x.checked).length};cnt();
+ $('cp-l').onchange=cnt;
+ $('cp-s').oninput=()=>{const q=$('cp-s').value.trim().toLowerCase();d.querySelectorAll('#cp-l label').forEach(l=>{l.style.display=!q||l.dataset.s.includes(q)?'flex':'none'})};
+ $('cp-c').onclick=()=>{boxes().forEach(x=>x.checked=false);cnt()};
+ d.onclick=e=>{if(e.target===d)d.remove()};$('cp-x').onclick=()=>d.remove();
+ $('cp-ok').onclick=()=>{const byId=new Map(L.map(c=>[String(c.id),c]));inp.value=boxes().filter(x=>x.checked).map(x=>byId.get(x.value).num).join(', ');inp.dispatchEvent(new Event('input'));d.remove()}}
+function actForm(a,preset,pty,ptxt,multi){
  const old=$('actmod');if(old)old.remove();
  const A=a||{ty:pty||'VACC',d:todayN,txt:ptxt||'',rl:'',rv:''},d=document.createElement('div');d.id='actmod';
  const zs='width:100%;text-align:left;box-sizing:border-box';
- d.innerHTML=`<div class="sheet"><h3 style="margin:0 0 6px">${a?'Modifier l’action':'Nouvelle action'}</h3>
+ d.innerHTML=`<div class="sheet"><h3 style="margin:0 0 6px">${a?'Modifier l’action':multi?'Action sur plusieurs vaches':'Nouvelle action'}</h3>
  <label class="mut">Type</label><select id="ac-ty" class="zi" style="${zs}">${actVis(A.ty).map(x=>`<option value="${x[0]}"${x[0]===A.ty?' selected':''}>${x[1]}</option>`).join('')}</select>
  <label class="mut">Date</label><input id="ac-d" type="date" class="zi" style="${zs}" value="${iso(A.d)}">
- <label class="mut">Vaches (numéros séparés par des virgules ou des espaces)</label><input id="ac-c" class="zi" style="${zs}" value="${escH(a?a.cows.map(x=>x.num).join(', '):(preset||''))}" autocomplete="off">
+ <label class="mut">Vaches (numéros séparés par des virgules ou des espaces)</label><input id="ac-c" class="zi" style="${zs}" value="${escH(a?a.cows.map(x=>x.num).join(', '):(preset||''))}" autocomplete="off"><div id="ac-cn" class="mut" style="margin:2px 0"></div><button type="button" id="ac-pk">🐄 Choisir dans la liste</button>
  <label class="mut" id="ac-tl"></label><input id="ac-t" class="zi" style="${zs}" value="${escH(A.txt)}" autocomplete="off">
  <div id="ac-qw"><label class="mut">Quartiers traités</label><div class="row" style="margin-top:2px">${[1,2,3,4].map(n=>`<button type="button" data-q="${n}" class="${(A.q||[]).includes(n)?'on':''}" style="min-width:50px;font-size:17px;font-weight:700">${n}</button>`).join('')}<button type="button" data-qall>Tous</button></div></div>
  <div id="ac-r" style="display:flex;gap:8px"><div style="flex:1"><label class="mut">Retrait lait (jours)</label><input id="ac-rl" type="number" min="0" class="zi" style="${zs}" value="${A.rl||''}"></div><div style="flex:1"><label class="mut">Retrait viande (jours)</label><input id="ac-rv" type="number" min="0" class="zi" style="${zs}" value="${A.rv||''}"></div></div>
@@ -305,12 +318,14 @@ function actForm(a,preset,pty,ptxt){
  const upd=()=>{const ty=$('ac-ty').value;$('ac-tl').textContent=tr(actTypes().find(x=>x[0]===ty)[2]);$('ac-r').style.display=RLTY.includes(ty)?'flex':'none';$('ac-qw').style.display=QTY.includes(ty)?'':'none'};
  $('ac-qw').onclick=e=>{const b=e.target.closest('button');if(!b)return;if('qall' in b.dataset){const all=[...d.querySelectorAll('[data-q]')],on=all.every(x=>x.classList.contains('on'));all.forEach(x=>x.classList.toggle('on',!on))}else b.classList.toggle('on')};
  $('ac-ty').onchange=upd;upd();
+ const cn=()=>{const {ok,bad}=findCows($('ac-c').value);$('ac-cn').innerHTML=ok.length?ok.length+' vache'+(ok.length>1?'s':'')+(bad.length?' · <span style="color:var(--rd)">introuvable : '+escH(bad.join(', '))+'</span>':''):(bad.length?'<span style="color:var(--rd)">introuvable : '+escH(bad.join(', '))+'</span>':'')};
+ $('ac-c').oninput=cn;cn();$('ac-pk').onclick=()=>cowPicker();if(multi)setTimeout(cowPicker,60);
  d.onclick=e=>{if(e.target===d)d.remove()};$('ac-x').onclick=()=>d.remove();
  $('ac-ok').onclick=()=>{
   const ty=$('ac-ty').value,ds=$('ac-d').value;if(!ds){toast('Choisis une date.');return}
   const {ok,bad}=findCows($('ac-c').value);
   if(bad.length||!ok.length){toast(bad.length?'Numéro introuvable : '+bad.join(', '):'Ajoute au moins une vache.',5000);return}
-  const o={id:a?a.id:Date.now().toString(36),ty,d:dayN(ds),txt:$('ac-t').value.trim(),rl:RLTY.includes(ty)?(+$('ac-rl').value||0):0,rv:RLTY.includes(ty)?(+$('ac-rv').value||0):0,q:QTY.includes(ty)?[...d.querySelectorAll('[data-q].on')].map(x=>+x.dataset.q):[],cows:ok.map(c=>({i:c.id,n:c.natl||'',num:c.num,nom:c.nom})),st:'p',ts:a?a.ts:Date.now()};
+  const o={id:a?a.id:Date.now().toString(36),ty,d:dayN(ds),txt:$('ac-t').value.trim(),rl:RLTY.includes(ty)?(+$('ac-rl').value||0):0,rv:RLTY.includes(ty)?(+$('ac-rv').value||0):0,q:QTY.includes(ty)?[...d.querySelectorAll('[data-q].on')].map(x=>+x.dataset.q):[],cows:ok.map(c=>({i:c.id,n:c.natl||'',num:c.num,nom:c.nom})),st:'p',ts:a?a.ts:Date.now(),by:a?(a.by||USER):USER};
   if(a)ACT[ACT.indexOf(a)]=o;else ACT.push(o);saveACT();d.remove();pcSync();toast('Action enregistrée ✓',2500);
   if(tab==='saisies')saisies();else if(inF){const c=DB.cows.find(x=>x.id===CURID);if(c)fiche(c.id,true)}}}
 let PC={addr:'',code:'',auto:true};try{PC=Object.assign(PC,JSON.parse(localStorage.getItem('dsa_pc')||'{}'))}catch(e){}
@@ -332,7 +347,7 @@ async function pcSync(manual){
  if(!PC.addr||!PC.code){if(manual)toast('Configure d’abord l’adresse du PC (💻).',3500);return}
  if(!manual&&!PC.auto)return;if(PCBUSY)return;
  const sendA=ACT.filter(a=>a.st==='p'&&a.pc!=='sent'),ents=[];
- sendA.forEach(a=>a.cows.forEach(c=>ents.push({id:a.id+'-'+c.i,type:a.ty,vache:c.num+(c.nom&&c.nom.trim()?' '+c.nom.trim():''),date:iso(a.d),details:[actLbl(a.ty),a.txt,a.q&&a.q.length?'quartiers '+a.q.join(','):'',a.rl>0?'retrait lait '+a.rl+' j':'',a.rv>0?'retrait viande '+a.rv+' j':''].filter(Boolean).join(' · ')})));
+ sendA.forEach(a=>a.cows.forEach(c=>ents.push({id:a.id+'-'+c.i,par:a.by||USER||'',type:a.ty,vache:c.num+(c.nom&&c.nom.trim()?' '+c.nom.trim():''),date:iso(a.d),details:[actLbl(a.ty),a.txt,a.q&&a.q.length?'quartiers '+a.q.join(','):'',a.rl>0?'retrait lait '+a.rl+' j':'',a.rv>0?'retrait viande '+a.rv+' j':''].filter(Boolean).join(' · ')})));
  const cx=PCQ.slice();cx.forEach(id=>ents.push({id,cancelled:true}));
  if(!ents.length){PCST='✓ À jour';if(manual)toast('Rien à envoyer.',2000);if(tab==='saisies')saisies();return}
  PCBUSY=true;
@@ -353,6 +368,16 @@ function pcForm(){
  $('pc-t').onclick=async()=>{rd();const o=$('pc-r');o.textContent='Test…';try{const r=await pcReq('/api/ping','GET');o.textContent=r.ok?'✓ Connecté au PC':(r.status===401?'Code refusé':'Erreur '+r.status)}catch(e){o.textContent='PC injoignable (même wifi ? MEUH PC lancé ?)'}}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pcSync()});
 setTimeout(()=>pcSync(),3000);
+let USER='';try{USER=localStorage.getItem('dsa_user')||''}catch(e){}
+const saveUser=v=>{USER=v.trim();try{localStorage.setItem('dsa_user',USER)}catch(e){}};
+function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.createElement('div');d.id='usrmod';
+ d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px';
+ d.innerHTML=`<div style="background:var(--bg);width:100%;max-width:420px;border-radius:16px;padding:16px"><h3 style="margin:0 0 6px">Bienvenue 👋</h3><div class="mut" style="margin-bottom:8px">Quel est ton nom ? Il sera inscrit sur les actions que tu entres, et le PC le recevra.</div><input id="usr-i" class="zi" style="width:100%;text-align:left;box-sizing:border-box" placeholder="Ton nom" value="${escH(USER)}" autocomplete="off"><div class="row" style="margin-top:12px;justify-content:flex-end"><button id="usr-x">Plus tard</button><button id="usr-ok" class="on">Enregistrer</button></div></div>`;
+ document.body.appendChild(d);const i=$('usr-i');setTimeout(()=>i.focus(),100);
+ const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
+ $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
+setTimeout(()=>{if(!USER)nameForm()},1200);
+const BUILD='2026-11-16c';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 const SANTE=['Oculaire','Respiratoire','Cutané','Acétonémie','Digestif','Mammaire','Nombril','Locomoteur','Reproduction','Fumier','Divers'];
 function quickHtml(c){
@@ -363,8 +388,8 @@ let ACTDEL=null,ACTDELT=0,ACTOPEN=false,ACTTOPEN=false;
 function saisies(){
  const dd=$('actdone'),dt=$('acttypes');if(dd)ACTOPEN=dd.open;if(dt)ACTTOPEN=dt.open;
  const P=ACT.filter(a=>a.st==='p').sort((x,y)=>x.d-y.d||x.ts-y.ts),D=ACT.filter(a=>a.st!=='p').sort((x,y)=>(y.dd||0)-(x.dd||0));
- const row=(a,pend)=>`<div class="cow" style="cursor:default"><div style="min-width:0"><b>${actLbl(a.ty)}</b>${a.txt?' · '+escH(a.txt):''}<div style="font-size:19px;font-weight:800;margin:2px 0;line-height:1.25">${a.cows.map(x=>x.num).join(', ')}</div><div class="mut">${fmt(a.d)}${a.cows.length>1?' · '+a.cows.length+' vaches':''}</div>${a.q&&a.q.length?`<div class="mut" style="font-weight:700">Quartiers : ${a.q.join(', ')}</div>`:''}${a.rl>0||a.rv>0?`<div class="mut" style="color:var(--rd)">Retrait${a.rl>0?' lait '+a.rl+' j':''}${a.rv>0?' · viande '+a.rv+' j':''}</div>`:''}${a.dsa&&!pend?'<div class="mut">✓ retrouvée dans le fichier DSA</div>':''}</div><div style="display:flex;gap:6px;flex:none;align-items:center">${pend?`<button data-actedit="${a.id}">✎</button><button class="dn" data-actok="${a.id}" title="Entrée dans DSA">✓</button>`:`<button data-actback="${a.id}">↩</button>`}<button data-actdel="${a.id}"${ACTDEL===a.id?' class="on" style="background:var(--rd);border-color:var(--rd)"':''}>${ACTDEL===a.id?'Supprimer ?':'🗑'}</button></div></div>`;
- $('m').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px"><h3 style="margin:0">Actions à entrer dans DSA <span class="tag">${P.length}</span></h3><button data-actnew="" class="on" style="white-space:nowrap;flex:none">➕ Nouvelle</button></div><div style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap"><button data-pcset>💻 PC</button><button data-pcsync>↻ Envoyer</button><span class="mut" style="font-size:13px">${pcStatus()}</span></div><div class="mut" style="margin:4px 0 8px">Elles restent ici jusqu’à ce que tu les marques comme entrées (✓) ou que le fichier de synchro les contienne : l’app les retire alors d’elle-même.</div>`
+ const row=(a,pend)=>`<div class="cow" style="cursor:default"><div style="min-width:0"><b>${actLbl(a.ty)}</b>${a.txt?' · '+escH(a.txt):''}<div style="font-size:19px;font-weight:800;margin:2px 0;line-height:1.25">${a.cows.map(x=>x.num).join(', ')}</div><div class="mut">${fmt(a.d)}${a.cows.length>1?' · '+a.cows.length+' vaches':''}${a.by?' · '+escH(a.by):''}</div>${a.q&&a.q.length?`<div class="mut" style="font-weight:700">Quartiers : ${a.q.join(', ')}</div>`:''}${a.rl>0||a.rv>0?`<div class="mut" style="color:var(--rd)">Retrait${a.rl>0?' lait '+a.rl+' j':''}${a.rv>0?' · viande '+a.rv+' j':''}</div>`:''}${a.dsa&&!pend?'<div class="mut">✓ retrouvée dans le fichier DSA</div>':''}</div><div style="display:flex;gap:6px;flex:none;align-items:center">${pend?`<button data-actedit="${a.id}">✎</button><button class="dn" data-actok="${a.id}" title="Entrée dans DSA">✓</button>`:`<button data-actback="${a.id}">↩</button>`}<button data-actdel="${a.id}"${ACTDEL===a.id?' class="on" style="background:var(--rd);border-color:var(--rd)"':''}>${ACTDEL===a.id?'Supprimer ?':'🗑'}</button></div></div>`;
+ $('m').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px"><h3 style="margin:0">Actions à entrer dans DSA <span class="tag">${P.length}</span></h3><button data-actnew="" class="on" style="white-space:nowrap;flex:none">➕ Nouvelle</button></div><div style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap"><button data-actmulti class="on">👥 Plusieurs vaches</button><button data-usrset>👤 ${USER?escH(USER):'Mon nom'}</button><button data-pcset>💻 PC</button><button data-pcsync>↻ Envoyer</button><span class="mut" style="font-size:13px">${pcStatus()}</span></div><div class="mut" style="margin:4px 0 8px">Elles restent ici jusqu’à ce que tu les marques comme entrées (✓) ou que le fichier de synchro les contienne : l’app les retire alors d’elle-même.</div>`
  +(P.length?P.map(a=>row(a,true)).join('')+'<div class="row"><button data-actcopy>📋 Copier la liste</button></div>':'<div class="empty">Rien à entrer 👍</div>')
  +(D.length?`<details id="actdone"${ACTOPEN?' open':''} style="margin-top:14px"><summary class="mut">Terminées (${D.length})</summary>${D.map(a=>row(a,false)).join('')}</details>`:'')
  +`<details id="acttypes"${ACTTOPEN?' open':''} style="margin-top:14px"><summary class="mut">⚙ Types d’actions</summary><div class="mut" style="margin:6px 0">Coche les types à garder dans le formulaire. Tu peux aussi en ajouter.</div>${actTypes().map(x=>{const cu=ACTP.custom.some(c=>c.k===x[0]);return `<label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="checkbox" data-actvis="${x[0]}"${ACTP.hide.includes(x[0])?'':' checked'}> <span style="flex:1">${x[1]} <span class="mut" style="font-size:12px">${actCodes(x[0]).join(', ')}</span></span>${cu?`<button data-acttdel="${x[0]}">🗑</button>`:''}</label>`}).join('')}<div class="row"><input id="ac-nt" class="zi" style="flex:1;min-width:0;text-align:left" placeholder="Nouveau type (ex. Parage)" autocomplete="off"><input id="ac-nc" class="zi" style="width:96px;text-align:left" placeholder="Code DSA" autocomplete="off" autocapitalize="characters"><button data-acttadd>Ajouter</button></div><div class="mut" style="margin-top:6px;font-size:12px">Le code DSA (ex. ECN) sert à retirer l’action toute seule quand le fichier de synchro la contient. Sans code, tu la marques avec ✓. Codes présents dans ton fichier : ${[...new Set(DB.cows.flatMap(c=>c.ev.map(e=>e.t)))].sort().join(', ')}.</div></details>`}
@@ -503,18 +528,18 @@ function fqStart(t){const sl=$('fsl'),a=$('finfo'),b=$('fqe');if(!sl||!a||!b)ret
  [cur,oth].forEach(x=>{x.style.display='';x.style.position='absolute';x.style.left='0';x.style.top='0';x.style.width='100%';x.style.willChange='transform'});
  t.sl=sl;t.cur=cur;t.oth=oth;t.drag=true;return true}
 function fqEnd(cancel){const t=FQT;FQT=null;if(!t||!t.drag)return;
- const W=t.w,v=t.dx/Math.max(1,Date.now()-t.t0),ok=FQ===0?t.dx>0:t.dx<0;
- const go=!cancel&&ok&&(Math.abs(t.eff)>W*0.33||(Math.abs(v)>0.5&&Math.abs(t.dx)>30)),dir=FQ===0?1:-1;
+ const W=t.w,sg=FQ===0?-1:1,v=t.dx/Math.max(1,Date.now()-t.t0),ok=t.dx*sg>0;
+ const go=!cancel&&ok&&(Math.abs(t.eff)>W*0.33||(Math.abs(v)>0.5&&Math.abs(t.dx)>30));
  [t.cur,t.oth].forEach(x=>x.style.transition='transform .22s ease');t.sl.style.transition='height .22s ease';
- t.cur.style.transform='translateX('+(go?dir*W:0)+'px)';t.oth.style.transform='translateX('+(go?0:-dir*W)+'px)';
+ t.cur.style.transform='translateX('+(go?sg*W:0)+'px)';t.oth.style.transform='translateX('+(go?0:-sg*W)+'px)';
  t.sl.style.height=(go?t.h1:t.h0)+'px';FQB=true;
  setTimeout(()=>{t.sl.style.cssText='';t.cur.style.cssText='';t.oth.style.cssText='';if(go){FQ=FQ?0:1;try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}}FQB=false;fqApply()},240)}
-document.addEventListener('touchstart',e=>{const q=e.touches[0];FQT=!FQB&&inF&&!PLRET&&tab==='fiches'&&e.touches.length===1&&q.clientY<innerHeight/2&&!e.target.closest('textarea,input,select,#chips,#pcmod,#actmod')?{x:q.clientX,y:q.clientY,t0:Date.now(),lock:false,drag:false,dx:0,eff:0}:null},{passive:true});
+document.addEventListener('touchstart',e=>{const q=e.touches[0];FQT=!FQB&&inF&&$('fzone')&&e.touches.length===1&&q.clientY<innerHeight/2&&!e.target.closest('textarea,input,select,#chips,#pcmod,#actmod,#cpmod,#usrmod')?{x:q.clientX,y:q.clientY,t0:Date.now(),lock:false,drag:false,dx:0,eff:0}:null},{passive:true});
 document.addEventListener('touchmove',e=>{const t=FQT;if(!t||FQB)return;const q=e.touches[0],dx=q.clientX-t.x,dy=q.clientY-t.y;
  if(!t.lock){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;t.lock=true;if(Math.abs(dx)<Math.abs(dy)*1.3||!fqStart(t)){FQT=null;return}}
  if(!t.drag)return;if(e.cancelable)e.preventDefault();
- t.dx=dx;const ok=FQ===0?dx>0:dx<0,W=t.w,eff=ok?Math.max(-W,Math.min(W,dx)):dx*0.2;t.eff=eff;
- t.cur.style.transform='translateX('+eff+'px)';t.oth.style.transform='translateX('+(FQ===0?eff-W:eff+W)+'px)';
+ const sg=FQ===0?-1:1,ok=dx*sg>0,W=t.w,eff=ok?Math.max(-W,Math.min(W,dx)):dx*0.2;t.dx=dx;t.eff=eff;
+ t.cur.style.transform='translateX('+eff+'px)';t.oth.style.transform='translateX('+(eff-sg*W)+'px)';
  t.sl.style.height=(t.h0+(t.h1-t.h0)*(ok?Math.min(1,Math.abs(eff)/W):0))+'px'},{passive:false});
 document.addEventListener('touchend',()=>fqEnd(false),{passive:true});
 document.addEventListener('touchcancel',()=>fqEnd(true),{passive:true});
@@ -606,7 +631,10 @@ async function ntAction(a){
 function reglages(){
  $('info').textContent='Réglages';
  const fo=[['dmy','jj/mm/aaaa'],['ymd','aaaa-mm-jj'],['mdy','mm/jj/aaaa'],['dmyd','jj-mm-aaaa'],['txt','jj mois aaaa']];
- $('m').innerHTML=`<h3>Apparence</h3>
+ $('m').innerHTML=`<h3>Mon nom</h3>
+ <div class="row" style="margin:6px 0"><input id="usr-n" class="zi" style="flex:1;min-width:0;text-align:left" value="${escH(USER)}" placeholder="Ton nom" autocomplete="off"><button data-usrsave class="on">Enregistrer</button></div>
+ <div class="mut" style="margin-bottom:4px">Inscrit sur les actions que tu entres et envoyé au PC.</div><div class="mut" style="margin-bottom:10px;font-size:12px">Version ${BUILD}</div>
+ <h3>Apparence</h3>
  <div style="margin:6px 0">Liste des vaches : <select id="lmsel" class="zi" style="width:auto;text-align:left"><option value="f" ${LISTMODEL==='f'?'selected':''}>Nouveau (bloc de couleur + JEL)</option><option value="old" ${LISTMODEL==='old'?'selected':''}>Ancien (bande de couleur)</option></select></div>
  <div style="margin:6px 0">Thème : <select id="thsel" class="zi" style="width:auto;text-align:left"><option value="auto" ${THEME==='auto'?'selected':''}>Automatique (comme le téléphone)</option><option value="light" ${THEME==='light'?'selected':''}>Clair</option><option value="dark" ${THEME==='dark'?'selected':''}>Sombre</option></select></div>
  <div style="margin:6px 0">Langue : <select id="lgsel" class="zi" style="width:auto;text-align:left"><option value="fr" ${LANG==='fr'?'selected':''}>Français</option><option value="en" ${LANG==='en'?'selected':''}>English</option><option value="es" ${LANG==='es'?'selected':''}>Español</option></select></div>
@@ -2178,6 +2206,9 @@ $('m').onclick=e=>{
   if(e.target.closest('[data-acttadd]')){const v=($('ac-nt').value||'').trim();if(!v){toast('Écris le nom du type.');return}
    if(actTypes().some(x=>x[1].toLowerCase()===v.toLowerCase())){toast('Ce type existe déjà.');return}
    ACTP.custom.push({k:'C'+Date.now().toString(36),l:v,code:($('ac-nc').value||'').trim().toUpperCase()});saveACTP();saisies();return}
+  if(e.target.closest('[data-actmulti]')){actForm(null,'','VACC','',true);return}
+  if(e.target.closest('[data-usrset]')){nameForm();return}
+  if(e.target.closest('[data-usrsave]')){const v=($('usr-n').value||'').trim();if(!v){toast('Entre ton nom.');return}saveUser(v);toast('Nom enregistré ✓',2000);return}
   const pcb=e.target.closest('[data-pcset],[data-pcsync]');if(pcb){if('pcset' in pcb.dataset)pcForm();else pcSync(true);return}
   const fq=e.target.closest('[data-fq],[data-qa],[data-qs]');if(fq){const D=fq.dataset;if('fq' in D){FQ=+D.fq;fqApply();return}const c=DB.cows.find(x=>x.id===CURID);if(c){if('qa' in D)actForm(null,c.num,D.qa,'');else actForm(null,c.num,'TX',D.qs)}return}
   const td=e.target.closest('[data-acttdel]');
