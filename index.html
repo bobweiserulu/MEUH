@@ -80,18 +80,11 @@ const todayN=Math.floor((Date.now()-D0)/DAY);
 const LBL={NAIS:'Naissance',SAIL:'Saillie',SAILF:'Saillie fécondante',GST:'Gestante',VELA:'Vêlage',TAR:'Tarissement',VACC:'Vaccin',ELIM:'Élimination',CHAL:'Chaleur',CHIN:'Hormone',TX:'Traitement',POUB:'Traitement',RP:'Rétention placentaire',OMA:'Mammite',MAMM:'Mammite',SX:'Symptômes',DYST:'Vêlage difficile',PLOC:'Pattes',REF:'Raison de réforme',SUPP:'Supplément',FV:'Fièvre du lait',EXM:'Examen',AVOR:'Avortement',PREP:'Préparation',DIAR:'Diarrhée',ECN:'Écornage',EXC:'Examen clinique'};
 const ELM={VABA:'vente abattoir',MORT:'morte',MAMM:'mammite',VLAI:'vente laitière',EUTH:'euthanasie'};
 const REF={REP:'reproduction',FPRO:'faible production',RLOC:'pattes',TDIF:'traite difficile',AGE:'âge',AUTR:'autre',MAMM:'mammite'};
-function parse(txt){
- const L=txt.split(/\r?\n/),cows={};
- const info=(L[0]||'').match(/(\d{4}-\d\d-\d\d)(?:\s+(\d\d)(\d\d)\d\d)?/);
- for(const l of L){
-  let m=l.match(/^\^va\((\d+)\)=(.*)$/);
-  if(m){const h=m[2].split('\\');cows[m[1]]={id:m[1],num:h[0],nom:(h[1]||'').trim(),natl:h[3]||'',flag:(h[5]||'').trim(),naiss:+h[4]||0,lact:+h[6]||0,ev:[]};continue}
-  m=l.match(/^\^va\((\d+),(\d+),"(\w+)"\)=(.*)$/);
-  if(m&&cows[m[1]])cows[m[1]].ev.push({d:+m[2],t:m[3],raw:m[4]});
- }
- const arr=Object.values(cows);
- for(const c of arr){
-  c.ev.sort((a,b)=>a.d-b.d);
+let HID={};try{HID=JSON.parse(localStorage.getItem('dsa_hid')||'{}')||{}}catch(e){}
+const saveHID=()=>{try{localStorage.setItem('dsa_hid',JSON.stringify(HID))}catch(e){}};
+function evCalc(c){
+ c.ev=c.evRaw.map(e=>{const h=HID[c.id+'|'+e.d+'|'+e.t];if(!h)return e;if(h.mode==='sail')return {d:e.d,t:'SAIL',raw:e.raw,o:e.t};return null}).filter(Boolean);
+ c.ev.sort((a,b)=>a.d-b.d);
   const last=t=>[...c.ev].reverse().find(e=>e.t===t);
   c.elim=c.flag==='E'?(last('ELIM')||{d:0,t:'ELIM',raw:''}):null;const v=last('VELA');c.vela=v&&v.d;
   const sf=c.ev.filter(e=>e.t==='SAILF'||e.t==='SAIL').pop();c.sail=sf;
@@ -100,7 +93,19 @@ function parse(txt){
   const lf=[...brs].reverse().find(e=>e.t==='SAILF')||null;c.lf=lf;
   c.gest=!!(lf&&!brs.some(e=>e.d>lf.d+3)&&!c.elim);
   c.prevu=c.gest?lf.d+280:0;c.nbVela=c.ev.filter(e=>e.t==='VELA').length;
+}
+function parse(txt){
+ const L=txt.split(/\r?\n/),cows={};
+ const info=(L[0]||'').match(/(\d{4}-\d\d-\d\d)(?:\s+(\d\d)(\d\d)\d\d)?/);
+ for(const l of L){
+  let m=l.match(/^\^va\((\d+)\)=(.*)$/);
+  if(m){const h=m[2].split('\\');cows[m[1]]={id:m[1],num:h[0],nom:(h[1]||'').trim(),natl:h[3]||'',flag:(h[5]||'').trim(),naiss:+h[4]||0,lact:+h[6]||0,ev:[],evRaw:[]};continue}
+  m=l.match(/^\^va\((\d+),(\d+),"(\w+)"\)=(.*)$/);
+  if(m&&cows[m[1]])cows[m[1]].evRaw.push({d:+m[2],t:m[3],raw:m[4]});
  }
+ const arr=Object.values(cows);
+ for(const c of arr){c.evRaw.sort((x,y)=>x.d-y.d);evCalc(c)}
+ let hc=false;for(const k of Object.keys(HID)){const h=HID[k],c=cows[h.c];if(c&&!c.evRaw.some(e=>c.id+'|'+e.d+'|'+e.t===k)){delete HID[k];hc=true}}if(hc)saveHID();
  const dn=info?Math.round((Date.UTC(+info[1].slice(0,4),+info[1].slice(5,7)-1,+info[1].slice(8,10))-D0)/DAY):null,tm=info&&info[2]?info[2]+':'+info[3]:'';
  return {cows:arr,get date(){return dn==null?'':fmt(dn)+(tm?' à '+tm:'')}};
 }
@@ -275,7 +280,7 @@ const actCodes=ty=>ACMAP[ty]||(((ACTP.custom.find(c=>c.k===ty)||{}).code||'').sp
 const actLbl=ty=>(actTypes().find(x=>x[0]===ty)||[0,ty])[1];
 const actHas=(a,c)=>a.cows.some(x=>x.n?x.n===c.natl:x.i===c.id);
 const saveACT=()=>{try{localStorage.setItem('dsa_act',JSON.stringify(ACT))}catch(e){}updActBadge()};
-function updActBadge(){const b=$('actbd');if(!b)return;const n=ACT.filter(a=>a.st==='p').length;b.textContent=n>99?'99+':n;b.style.display=n?'':'none'}
+function updActBadge(){const b=$('actbd');if(!b)return;const n=ACT.filter(a=>a.st==='p').length+Object.values(HID).filter(h=>!h.done).length;b.textContent=n>99?'99+':n;b.style.display=n?'':'none'}
 let ACTCHK='';
 function actSync(){if(!DB||ACTCHK===DB.date)return;ACTCHK=DB.date;let n=0;
  for(const a of ACT){const cd=actCodes(a.ty);if(a.st!=='p'||!cd.length)continue;
@@ -357,11 +362,14 @@ async function pcSync(manual){
  if(!manual&&!PC.auto)return;if(PCBUSY)return;
  const sendA=ACT.filter(a=>a.st==='p'&&a.pc!=='sent'),ents=[];
  sendA.forEach(a=>a.cows.forEach(c=>ents.push({id:a.id+'-'+c.i,par:a.by||USER||'',type:a.ty,vache:c.num+(c.nom&&c.nom.trim()?' '+c.nom.trim():''),date:iso(a.d),details:[actLbl(a.ty),a.txt,a.q&&a.q.length?'quartiers '+a.q.join(','):'',a.rl>0?'retrait lait '+a.rl+' j':'',a.rv>0?'retrait viande '+a.rv+' j':''].filter(Boolean).join(' · ')})));
+ const sendH=Object.keys(HID).filter(k=>HID[k].pc!=='sent'&&!HID[k].done);
+ sendH.forEach(k=>{const h=HID[k];ents.push({id:'HID-'+k.replace(/\|/g,'-'),par:h.by||USER||'',type:h.mode==='del'?'SUPPR':'MODIF',vache:h.n+(h.nm&&h.nm.trim()?' '+h.nm.trim():''),date:iso(todayN),
+  details:(h.mode==='del'?'🗑 SUPPRIMER la ligne « '+(LBL[h.t]||h.t)+' » du '+fmt(h.d):'✎ MODIFIER la ligne « '+(LBL[h.t]||h.t)+' » du '+fmt(h.d)+' → saillie simple (non gestante)')+(h.txt?' · '+h.txt:'')}) });
  const cx=PCQ.slice();cx.forEach(id=>ents.push({id,cancelled:true}));
  if(!ents.length){PCST='✓ À jour';if(manual)toast('Rien à envoyer.',2000);if(tab==='saisies')saisies();return}
  PCBUSY=true;
  try{const r=await pcReq('/api/entries','POST',{entries:ents});
-  if(r.ok){sendA.forEach(a=>a.pc='sent');PCQ=PCQ.filter(x=>!cx.includes(x));saveACT();savePCQ();PCST='✓ Envoyé '+new Date().toTimeString().slice(0,5)}
+  if(r.ok){sendA.forEach(a=>a.pc='sent');sendH.forEach(k=>{if(HID[k])HID[k].pc='sent'});saveHID();PCQ=PCQ.filter(x=>!cx.includes(x));saveACT();savePCQ();PCST='✓ Envoyé '+new Date().toTimeString().slice(0,5)}
   else PCST=r.status===401?'Code refusé':'Erreur '+r.status;
  }catch(e){PCST='PC injoignable'}
  PCBUSY=false;if(tab==='saisies')saisies();if(manual)toast(PCST,3000)}
@@ -386,7 +394,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-16c';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-21d';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 function menuOpen(){const old=$('menumod');if(old){old.remove();return}
@@ -414,7 +422,7 @@ function saisies(){
  const P=ACT.filter(a=>a.st==='p').sort((x,y)=>x.d-y.d||x.ts-y.ts),D=ACT.filter(a=>a.st!=='p').sort((x,y)=>(y.dd||0)-(x.dd||0));
  const row=(a,pend)=>`<div class="cow" style="cursor:default"><div style="min-width:0"><b>${actLbl(a.ty)}</b>${a.txt?' · '+escH(a.txt):''}<div style="font-size:19px;font-weight:800;margin:2px 0;line-height:1.25">${a.cows.map(x=>x.num).join(', ')}</div><div class="mut">${fmt(a.d)}${a.cows.length>1?' · '+a.cows.length+' vaches':''}${a.by?' · '+escH(a.by):''}</div>${a.q&&a.q.length?`<div class="mut" style="font-weight:700">Quartiers : ${a.q.join(', ')}</div>`:''}${a.rl>0||a.rv>0?`<div class="mut" style="color:var(--rd)">Retrait${a.rl>0?' lait '+a.rl+' j':''}${a.rv>0?' · viande '+a.rv+' j':''}</div>`:''}${a.dsa&&!pend?'<div class="mut">✓ retrouvée dans le fichier DSA</div>':''}</div><div style="display:flex;gap:6px;flex:none;align-items:center">${pend?`<button data-actedit="${a.id}">✎</button><button class="dn" data-actok="${a.id}" title="Entrée dans DSA">✓</button>`:`<button data-actback="${a.id}">↩</button>`}<button data-actdel="${a.id}"${ACTDEL===a.id?' class="on" style="background:var(--rd);border-color:var(--rd)"':''}>${ACTDEL===a.id?'Supprimer ?':'🗑'}</button></div></div>`;
  $('m').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px"><h3 style="margin:0">Actions à entrer dans DSA <span class="tag">${P.length}</span></h3><button data-actnew="" class="on" style="white-space:nowrap;flex:none">➕ Nouvelle</button></div><div style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap"><button data-usrset>👤 ${USER?escH(USER):'Mon nom'}</button><button data-pcset>💻 PC</button><button data-pcsync>↻ Envoyer</button><span class="mut" style="font-size:13px">${pcStatus()}</span></div><div class="mut" style="margin:4px 0 8px">Elles restent ici jusqu’à ce que tu les marques comme entrées (✓) ou que le fichier de synchro les contienne : l’app les retire alors d’elle-même.</div>`
- +(P.length?P.map(a=>row(a,true)).join('')+'<div class="row"><button data-actcopy>📋 Copier la liste</button></div>':'<div class="empty">Rien à entrer 👍</div>')
+ +(P.length?P.map(a=>row(a,true)).join('')+'<div class="row"><button data-actcopy>📋 Copier la liste</button></div>':(Object.values(HID).some(h=>!h.done)?'':'<div class="empty">Rien à entrer 👍</div>'))+hidSec()
  +(D.length?`<details id="actdone"${ACTOPEN?' open':''} style="margin-top:14px"><summary class="mut">Terminées (${D.length})</summary>${D.map(a=>row(a,false)).join('')}</details>`:'')
  +`<details id="acttypes"${ACTTOPEN?' open':''} style="margin-top:14px"><summary class="mut">⚙ Types d’actions</summary><div class="mut" style="margin:6px 0">Coche les types à garder dans le formulaire. Tu peux aussi en ajouter.</div>${actTypes().map(x=>{const cu=ACTP.custom.some(c=>c.k===x[0]);return `<label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="checkbox" data-actvis="${x[0]}"${ACTP.hide.includes(x[0])?'':' checked'}> <span style="flex:1">${x[1]} <span class="mut" style="font-size:12px">${actCodes(x[0]).join(', ')}</span></span>${cu?`<button data-acttdel="${x[0]}">🗑</button>`:''}</label>`}).join('')}<div class="row"><input id="ac-nt" class="zi" style="flex:1;min-width:0;text-align:left" placeholder="Nouveau type (ex. Parage)" autocomplete="off"><input id="ac-nc" class="zi" style="width:96px;text-align:left" placeholder="Code DSA" autocomplete="off" autocapitalize="characters"><button data-acttadd>Ajouter</button></div><div class="mut" style="margin-top:6px;font-size:12px">Le code DSA (ex. ECN) sert à retirer l’action toute seule quand le fichier de synchro la contient. Sans code, tu la marques avec ✓. Codes présents dans ton fichier : ${[...new Set(DB.cows.flatMap(c=>c.ev.map(e=>e.t)))].sort().join(', ')}.</div></details>`}
 let HOL={},HOLI={};try{HOL=JSON.parse(localStorage.getItem('dsa_hol')||'{}')||{};HOLI=JSON.parse(localStorage.getItem('dsa_holi')||'{}')||{}}catch(e){}
@@ -498,7 +506,48 @@ function ficheMarkup(c,ef){
  ${holBlock(c,ef||'')}<div id="notebox">${noteHtml(c,false)}</div>
  <div id="evs"></div>`;
 }
-const evsHtml=(c,t)=>{const pend=ACT.filter(a=>a.st==='p'&&actHas(a,c));return c.ev.filter(e=>!t||e.t===t).map(e=>`<div class="ev t-${e.t}"><time>${fmt(e.d)}</time><div><em>${LBL[e.t]||e.t}</em> <span class="mut">${pretty(e)}</span></div></div>`).join('')+pend.filter(a=>!t||a.ty===t).map(a=>`<div class="ev" style="border-left:3px dashed var(--og)"><time>${fmt(a.d)}</time><div><em>${actLbl(a.ty)}</em> <span class="mut">${escH(a.txt)}${a.q&&a.q.length?' · quartiers '+a.q.join(', '):''} · ⏳ à entrer dans DSA</span></div></div>`).join('')};
+const evKey=(c,e)=>c.id+'|'+e.d+'|'+e.t;
+const evBtn='flex:none;align-self:flex-start;padding:2px 12px;font-size:18px;line-height:1.3';
+const evsHtml=(c,t)=>{const pend=ACT.filter(a=>a.st==='p'&&actHas(a,c));return c.evRaw.map(e=>{const h=HID[evKey(c,e)],et=h&&h.mode==='sail'?'SAIL':e.t;if(t&&et!==t&&!(h&&h.mode==='del'&&e.t===t))return '';
+ const nt=h?`<div class="mut" style="font-size:12px;color:var(--og)">${h.mode==='del'?'🗑 supprimée ici':'✎ était « '+LBL[e.t]+' » · remise en saillie'} · ${h.pc==='sent'?'demande envoyée au PC':'à modifier dans DSA'}</div>`:'';
+ if(h&&h.mode==='del')return `<div class="ev t-${e.t}" style="opacity:.6"><time>${fmt(e.d)}</time><div style="flex:1;min-width:0"><em style="text-decoration:line-through">${LBL[e.t]||e.t}</em> <span class="mut">${pretty(e)}</span>${nt}</div><button data-evr="${e.d}|${e.t}" title="Remettre" style="${evBtn}">↩</button></div>`;
+ if(h)return `<div class="ev t-SAIL"><time>${fmt(e.d)}</time><div style="flex:1;min-width:0"><em>${LBL.SAIL}</em> <span class="mut">${pretty(e)}</span>${nt}</div><button data-evr="${e.d}|${e.t}" title="Remettre" style="${evBtn}">↩</button></div>`;
+ return `<div class="ev t-${e.t}"><time>${fmt(e.d)}</time><div style="flex:1;min-width:0"><em>${LBL[e.t]||e.t}</em> <span class="mut">${pretty(e)}</span></div><button data-evk="${e.d}|${e.t}" title="Modifier / supprimer" style="${evBtn}">⋯</button></div>`}).join('')+pend.filter(a=>!t||a.ty===t).map(a=>`<div class="ev" style="border-left:3px dashed var(--og)"><time>${fmt(a.d)}</time><div><em>${actLbl(a.ty)}</em> <span class="mut">${escH(a.txt)}${a.q&&a.q.length?' · quartiers '+a.q.join(', '):''} · ⏳ à entrer dans DSA</span></div></div>`).join('')};
+
+function evSheet(c,d,t){const old=$('evxmod');if(old)old.remove();
+ const e=c.evRaw.find(x=>x.d===+d&&x.t===t);if(!e)return;
+ const o=document.createElement('div');o.id='evxmod';
+ o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center';
+ const bs='display:block;width:100%;text-align:left;margin:6px 0;padding:12px 14px;font-size:16px';
+ o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px))"><div class="mut">${c.num} ${escH(c.nom)}</div><div style="font-size:17px;margin:4px 0 8px"><b>${fmt(e.d)}</b> · ${LBL[e.t]||e.t}<div class="mut" style="font-size:14px">${escH(pretty(e))}</div></div>
+ <button data-evdo="del" style="${bs}">🗑 Supprimer cette ligne</button>
+ ${t==='SAILF'?`<button data-evdo="sail" style="${bs}">↩ Remettre en saillie simple<div class="mut" style="font-size:13px">Fausse couche / pas gestante : la vache repasse à « Saillie ».</div></button>`:''}
+ ${t==='GST'?`<div class="mut" style="font-size:13px">Si c’est la dernière ligne « Gestante », la saillie fécondante repasse aussi en saillie simple (la vache redevient « Saillie »).</div>`:''}
+ <div class="mut" style="font-size:13px;margin:6px 0">Le changement se fait ici tout de suite, et une demande est envoyée au PC pour le faire dans DSA.</div>
+ <button data-evdo="x" style="${bs};text-align:center">Annuler</button></div>`;
+ document.body.appendChild(o);
+ o.onclick=ev=>{const b=ev.target.closest('[data-evdo]');if(ev.target===o||(b&&b.dataset.evdo==='x')){o.remove();return}if(b){o.remove();evHide(c.id,e.d,e.t,b.dataset.evdo)}}}
+
+function hidSec(){const L=Object.keys(HID).filter(k=>!HID[k].done).sort((a,b)=>HID[a].d-HID[b].d),F=Object.keys(HID).filter(k=>HID[k].done);
+ const row=(k,dn)=>{const h=HID[k];return `<div class="cow" style="cursor:default${dn?';opacity:.7':''}"><div style="min-width:0"><b>${h.mode==='del'?'🗑 Supprimer la ligne':'✎ Remettre en saillie simple'}</b> · ${LBL[h.t]||h.t}<div style="font-size:19px;font-weight:800;margin:2px 0;line-height:1.25">${escH(h.n)} <span class="mut" style="font-size:14px;font-weight:400">${escH(h.nm||'')}</span></div><div class="mut">Ligne du ${fmt(h.d)}${h.txt?' · '+escH(h.txt):''}${h.by?' · '+escH(h.by):''}</div><div class="mut" style="font-size:12px">${h.pc==='sent'?'✓ envoyée au PC':'⏳ pas encore envoyée au PC'}</div></div><div style="display:flex;gap:6px;flex:none;align-items:center">${dn?`<button data-hidre="${k}" title="À refaire">↩</button>`:`<button data-hidrs="${k}" title="Remettre la ligne dans MEUH">↩</button><button class="dn" data-hidok="${k}" title="Fait dans DSA">✓</button>`}</div></div>`};
+ return (L.length?`<h3 style="margin:16px 0 4px">Corrections à faire dans DSA <span class="tag">${L.length}</span></h3><div class="mut" style="margin-bottom:6px">✓ = fait dans DSA · ↩ = remettre la ligne dans MEUH. La correction disparaît toute seule quand tu importes un nouveau fichier DSA.</div>`+L.map(k=>row(k,false)).join(''):'')
+  +(F.length?`<details style="margin-top:14px"><summary class="mut">Corrections faites (${F.length})</summary>${F.map(k=>row(k,true)).join('')}</details>`:'')}
+function hidCopy(){return Object.keys(HID).filter(k=>!HID[k].done).sort((a,b)=>HID[a].d-HID[b].d).map(k=>{const h=HID[k];return (h.mode==='del'?'SUPPRIMER la ligne « ':'MODIFIER en saillie simple la ligne « ')+(LBL[h.t]||h.t)+' » du '+fmt(h.d)+' · '+h.n+(h.nm?' '+h.nm:'')}).join('\n')}
+function evRefresh(c){evCalc(c);schedSoon();updActBadge();if(inF&&CURID===c.id)fiche(c.id,true)}
+function evHide(id,d,t,mode){const c=DB.cows.find(x=>x.id===id);if(!c)return;const k=id+'|'+d+'|'+t,e=c.evRaw.find(x=>x.d===d&&x.t===t);if(!e)return;
+ HID[k]={c:id,n:c.num,nm:c.nom||'',d,t,mode,txt:pretty(e),by:USER||'',pc:''};
+ let lk=false;
+ if(t==='GST'&&mode==='del'){evCalc(c);const f=c.lf;
+  if(f&&!c.ev.some(x=>x.t==='GST'&&x.d>=f.d)){const fk=id+'|'+f.d+'|SAILF';if(!HID[fk]){HID[fk]={c:id,n:c.num,nm:c.nom||'',d:f.d,t:'SAILF',mode:'sail',txt:pretty(f),by:USER||'',pc:'',link:k};lk=true}}}
+ saveHID();evRefresh(c);
+ toast(mode==='del'?(lk?'Ligne supprimée · remise en saillie ✓':'Ligne supprimée ✓'):'Remise en saillie ✓',3000);pcSync()}
+function evRestore(id,d,t){const c=DB.cows.find(x=>x.id===id);if(!c)return;const k=id+'|'+d+'|'+t,h=HID[k];if(!h)return;
+ for(const x of [k].concat(Object.keys(HID).filter(y=>HID[y].link===k))){if(HID[x].pc==='sent'){PCQ.push('HID-'+x.replace(/\|/g,'-'))}delete HID[x]}
+ savePCQ();saveHID();evRefresh(c);toast('Ligne remise ✓',2000);pcSync()}
+document.addEventListener('click',ev=>{const b=ev.target.closest('#evs [data-evk],#evs [data-evr]');if(!b||!DB)return;ev.stopPropagation();ev.preventDefault();
+ const c=DB.cows.find(x=>x.id===CURID);if(!c)return;
+ if(b.dataset.evr){const [d,t]=b.dataset.evr.split('|');evRestore(c.id,+d,t)}else{const [d,t]=b.dataset.evk.split('|');evSheet(c,+d,t)}},true);
+
 function fiche(id,fromPop){
  const c=DB.cows.find(x=>x.id===id);if(!c){show();return}
  CURID=id;if(!fromPop)pushNav(id);setTimeout(()=>holLookup(c),0);
@@ -821,27 +870,56 @@ const savePCD=()=>{try{localStorage.setItem('dsa_pcd',JSON.stringify(PCD))}catch
 let plKey=null;
 let PLRET=null;
 let CP=null;
-function cpOpen(toks,multi,cb,v0){const r=parseCows(toks);CP={sel:r.ok.map(c=>c.num),view:v0||'actives',q:'',multi,cb};
+const CPPR=[['all','Peu importe'],['any','🗒️ Dans un protocole (actif ou prévu)'],['act','Protocole actif'],['plan','Protocole prévu'],['none','Dans aucun protocole']];
+function cpOpen(toks,multi,cb,v0){const r=parseCows(toks);try{PMEMB=protoMemb()}catch(e){}
+ CP={sel:r.ok.map(c=>c.num),view:v0||'actives',q:'',qo:false,pn:null,multi,cb,sort:{k:'num',d:1},fil:{jmin:'',jmax:'',smin:'',smax:'',pr:'all'}};
  let o=$('cp');if(!o){o=document.createElement('div');o.id='cp';o.style.cssText='position:fixed;inset:0;z-index:60;background:var(--bg);color:var(--tx);overflow-y:auto;padding-top:env(safe-area-inset-top,0px)';o.onclick=cpClick;o.oninput=cpInput;document.body.appendChild(o)}
  cpRender()}
 function cpClose(){const o=$('cp');if(o)o.remove();CP=null}
-function cpRows(){const q=nz(CP.q.trim()),f=VIEWS[CP.view]||VIEWS.actives;return DB.cows.filter(c=>!c.elim&&f(c)&&(!q||nz(c.num).includes(q)||nz(c.nom).includes(q))).sort(numCmp)}
-function cpList(){const el=$('cplist');if(!el)return;const rows=cpRows(),S=new Set(CP.sel);
- el.innerHTML=rows.map(c=>{const si=statusInfo(c),on=S.has(c.num);return `<div data-cprow="${c.num}" style="display:flex;align-items:center;gap:12px;padding:10px;margin-bottom:6px;border:2px solid ${on?'var(--ac)':'var(--ln)'};border-radius:12px;background:var(--card);cursor:pointer">${CP.multi?`<span style="flex:none;width:34px;height:34px;border-radius:8px;border:3px solid ${on?'var(--gr)':'var(--mut)'};background:${on?'var(--gr)':'transparent'};color:var(--on);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900">${on?'✓':''}</span>`:''}<span style="flex:1;min-width:0;font-size:22px;font-weight:800">${c.num} <span style="font-size:14px;font-weight:400" class="mut">${c.nom}</span></span>${si?`<span class="pill" style="background:${si.col}">${si.lab}</span>`:''}</div>`}).join('')||'<div class="mut">Aucune vache.</div>';
+function cpRows(){const q=nz(CP.q.trim()),f=VIEWS[CP.view]||VIEWS.actives;
+ let a=DB.cows.filter(c=>!c.elim&&f(c)&&(!q||nz(c.num).includes(q)||nz(c.nom).includes(q)));
+ const fo=FIL,so=SORT;FIL=CP.fil;SORT=CP.sort;try{a=sortCows(applyFil(a))}finally{FIL=fo;SORT=so}return a}
+function cpList(){const el=$('cplist');if(!el)return;const rows=cpRows(),S=new Set(CP.sel),avail=(el.clientWidth||innerWidth-24)-44;
+ el.innerHTML=rows.map(c=>{const si=statusInfo(c),j=jelOf(c),d=c.sail?todayN-c.sail.d:null,meta=[j!=null?j+' JEL':'',d!=null?d+' JDS':''].filter(Boolean).join(' · ');
+  const need=c.num.length*9.5+String(c.nom).length*8+meta.length*7.2+(si?si.lab.length*6.5+22:0)+8*(2+(meta?1:0)+(si?1:0)),showName=need<avail,on=S.has(c.num);
+  return `<div class="cow" data-cprow="${c.num}" style="cursor:pointer;gap:8px;align-items:center;padding:6px 10px">${CP.multi?`<input type="checkbox" ${on?'checked':''} tabindex="-1" style="flex:none;pointer-events:none">`:''}<span style="flex:1;min-width:0;white-space:nowrap"><b>${c.num}</b>${showName?' '+c.nom:''}</span>${meta?`<b style="flex:none;font-size:13px;white-space:nowrap">${meta}</b>`:''}${si?`<span class="pill" style="background:${si.col};flex:none;white-space:nowrap">${si.lab}</span>`:''}</div>`}).join('')||'<div class="mut">Aucune vache.</div>';
  const n=$('cpcount');if(n)n.textContent=CP.multi?CP.sel.length+' vache(s) choisie(s) · '+rows.length+' affichée(s)':rows.length+' affichée(s)'}
-function cpRender(){const o=$('cp');if(!o||!CP)return;const st=o.scrollTop;
- o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln)"><div style="display:flex;align-items:center;gap:10px"><button data-cpx style="font-size:13px;padding:4px 10px">← Annuler</button><b style="flex:1;font-size:19px">${CP.multi?'Choisir les vaches':'Choisir une vache'}</b>${CP.multi?'<button class="on" data-cpok style="padding:8px 16px">Valider</button>':''}</div><input id="cpq" type="search" class="zi" style="width:100%;text-align:left;margin-top:8px;box-sizing:border-box" placeholder="Numéro ou nom…" value="${CP.q.replace(/"/g,'&quot;')}" autocomplete="off"><div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:4px">${PKV.map(v=>`<button data-cpv="${v}" class="${CP.view===v?'on':''}" style="white-space:nowrap;flex:none">${(VLBL.find(x=>x[0]===v)||[v,v])[1]}</button>`).join('')}</div>${CP.multi?'<div class="row" style="margin-top:6px"><button data-cpall>Tout cocher (liste affichée)</button><button data-cpnone>Tout décocher</button></div>':''}<div class="mut" id="cpcount" style="margin-top:6px"></div></div><div id="cplist" style="padding:10px 12px 80px"></div>`;
+function cpRender(){const o=$('cp');if(!o||!CP)return;const st=o.scrollTop,P=CP.pn,f=CP.fil;
+ const cur=VLBL.find(x=>x[0]===CP.view),vl=cur?cur[1]:(CP.view==='basket'?'🧺 Panier':CP.view),vn=DB.cows.filter(c=>!c.elim&&(VIEWS[CP.view]||VIEWS.actives)(c)).length;
+ const fc=(f.jmin!==''||f.jmax!==''?1:0)+(f.smin!==''||f.smax!==''?1:0)+(f.pr!=='all'?1:0),PL={all:'📋',any:'📋 Avec',none:'📋 Sans',act:'📋 Actif',plan:'📋 Prévu'};
+ const bt=(a,l,on,sty)=>`<button type="button" ${a} class="ddb${on?' on':''}" style="${sty||'flex:none'}">${l}</button>`;
+ const ip=(id,v,ph)=>`<input id="${id}" type="number" inputmode="numeric" class="zi" style="width:100%;box-sizing:border-box" placeholder="${ph}" value="${v}">`;
+ const grp=VGRP.map(([g,ks])=>{const kk=ks.filter(v=>PKV.includes(v));return kk.length?(g?`<div class="mut" style="font-size:12px;font-weight:700;margin:8px 0 3px">${g}</div>`:'')+`<div style="display:flex;flex-wrap:wrap;gap:6px">${kk.map(v=>`<button type="button" data-cpv="${v}" class="${CP.view===v?'on':''}" style="border-left:5px solid ${VCOL[v]}">${VSHORT[v]} <b>${DB.cows.filter(c=>!c.elim&&VIEWS[v](c)).length}</b></button>`).join('')}</div>`:''}).join('');
+ const bsk=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px"><button type="button" data-cpv="basket" class="${CP.view==='basket'?'on':''}" style="border-left:5px solid var(--ac)">🧺 Panier <b>${BK.length}</b></button></div>`;
+ const pn=P==='vw'?`<div class="pcard" style="margin-top:8px">${BK.length||CP.view==='basket'?bsk:''}${grp}</div>`
+  :P==='srt'?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${Object.keys(SRTL).map(k=>`<button type="button" data-cpsk="${k}"${CP.sort.k===k?' class="on"':''}>${SRTL[k][0]}${CP.sort.k===k?' '+(CP.sort.d===1?SRTL[k][1]:SRTL[k][2]):''}</button>`).join('')}</div>`
+  :P==='fl'?`<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;margin-top:8px"><b>JEL</b>${ip('cjmin',f.jmin,'min')}${ip('cjmax',f.jmax,'max')}<b>JDS</b>${ip('csmin',f.smin,'min')}${ip('csmax',f.smax,'max')}<b>Protocole</b><select id="cpr" class="zi" style="grid-column:span 2;text-align:left;width:100%;box-sizing:border-box">${CPPR.map(([v,l])=>`<option value="${v}"${f.pr===v?' selected':''}>${l}</option>`).join('')}</select></div>`:'';
+ o.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 12px;border-bottom:1px solid var(--ln)"><div style="display:flex;align-items:center;gap:10px"><button data-cpx style="font-size:13px;padding:4px 10px">← Annuler</button><b style="flex:1;font-size:19px">${CP.multi?'Choisir les vaches':'Choisir une vache'}</b>${CP.multi?'<button class="on" data-cpok style="padding:8px 16px">Valider</button>':''}</div><div style="display:flex;gap:6px;align-items:center;margin-top:8px">${bt('data-cpvw',vl+' <small>'+vn+'</small> ▾',P==='vw','flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis')}${bt('data-cpsrt','<span>'+SRTL[CP.sort.k][0]+'</span> '+(CP.sort.d===1?'↑':'↓'),P==='srt')}${bt('data-cpqb','🔍',CP.qo||!!CP.q)}${bt('data-cppr',PL[f.pr]||'📋',f.pr!=='all')}${bt('data-cpfl','🎛'+(fc?' '+fc:''),fc>0||P==='fl')}</div>${pn}${CP.qo||CP.q?`<input id="cpq" type="search" class="zi" style="width:100%;text-align:left;margin-top:8px;box-sizing:border-box" placeholder="Numéro ou nom…" value="${CP.q.replace(/"/g,'&quot;')}" autocomplete="off">`:''}${CP.multi?'<div class="row" style="margin-top:8px"><button data-cpall>Tout cocher (liste affichée)</button><button data-cpnone>Tout décocher</button></div>':''}<div class="mut" id="cpcount" style="margin-top:6px"></div></div><div id="cplist" style="padding:8px 12px 80px"></div>`;
  cpList();o.scrollTop=st}
-function cpInput(e){if(e.target.id==='cpq'){CP.q=e.target.value;cpList()}}
+function cpInput(e){const i=e.target.id;
+ if(i==='cpq'){CP.q=e.target.value;cpList();return}
+ const m={cjmin:'jmin',cjmax:'jmax',csmin:'smin',csmax:'smax'}[i];if(m){CP.fil[m]=e.target.value;cpList();return}
+ if(i==='cpr'){CP.fil.pr=e.target.value;cpRender()}}
 function cpClick(e){const t=e.target;
  if(t.closest('[data-cpx]')){cpClose();return}
  if(t.closest('[data-cpok]')){const cb=CP.cb,sel=CP.sel.slice();cpClose();cb(sel);return}
- let b=t.closest('[data-cpv]');if(b){CP.view=b.dataset.cpv;cpRender();return}
+ let b=t.closest('[data-cpv]');if(b){CP.view=b.dataset.cpv;CP.pn=null;cpRender();return}
+ if(t.closest('[data-cpvw]')){CP.pn=CP.pn==='vw'?null:'vw';cpRender();return}
+ if(t.closest('[data-cpsrt]')){CP.pn=CP.pn==='srt'?null:'srt';cpRender();return}
+ if(t.closest('[data-cpfl]')){CP.pn=CP.pn==='fl'?null:'fl';cpRender();return}
+ if(t.closest('[data-cpqb]')){CP.qo=!(CP.qo||CP.q);if(!CP.qo)CP.q='';cpRender();if(CP.qo)setTimeout(()=>{const q=$('cpq');if(q)q.focus()},0);return}
+ if(t.closest('[data-cppr]')){const O=['all','any','none','act','plan'];CP.fil.pr=O[(O.indexOf(CP.fil.pr)+1)%O.length];cpRender();return}
+ b=t.closest('[data-cpsk]');if(b){const k=b.dataset.cpsk;CP.sort=CP.sort.k===k?{k,d:-CP.sort.d}:{k,d:1};cpRender();return}
  if(t.closest('[data-cpall]')){cpRows().forEach(c=>{if(!CP.sel.includes(c.num))CP.sel.push(c.num)});cpList();return}
  if(t.closest('[data-cpnone]')){const S=new Set(cpRows().map(c=>c.num));CP.sel=CP.sel.filter(n=>!S.has(n));cpList();return}
  b=t.closest('[data-cprow]');if(b){const n=b.dataset.cprow;
   if(!CP.multi){const cb=CP.cb;cpClose();cb([n]);return}
   if(CP.sel.includes(n))CP.sel=CP.sel.filter(x=>x!==n);else CP.sel.push(n);cpList()}}
+function pkApply(target,sel,extra){const toks=sel.concat(extra||[]);
+ if(target==='new')PF.cows=toks.join(' ');
+ else if(target.includes('|')){const [id,d]=target.split('|'),it=PT.act.find(x=>x.id===id);if(it){setDayCows(it,d,toks);schedSoon();bkUse(sel)}}
+ else{const it=PT.act.find(x=>x.id===target);if(it){it.cows=toks;savePT();schedSoon();bkUse(sel)}}
+ PK.open=false;protos()}
 let NLISTS=[];try{NLISTS=JSON.parse(localStorage.getItem('dsa_nlists')||'[]')||[]}catch(e){}
 const saveNL=()=>{try{localStorage.setItem('dsa_nlists',JSON.stringify(NLISTS))}catch(e){}};
 const isTaure=c=>{if(c.elim||c.vela)return false;const k=kind0(c);return k==='ges'||k==='sai'||(k==='gen'&&moisAge(c)>=13)};
@@ -1009,7 +1087,7 @@ function pCalHtml(){
  <div class="calg" style="margin-bottom:4px">${WK().map(x=>`<span class="mut" style="text-align:center;font-size:12px">${x}</span>`).join('')}</div><div class="calg">${cells}</div>
  <div class="mut" style="font-size:12px;margin-top:8px">${lg}</div>${det}`;
 }
-let PMOD={};
+let PMOD={};let PDELC=null,PDELT=0;
 let PRUN={};try{PRUN=JSON.parse(localStorage.getItem('dsa_prun')||'{}')||{}}catch(e){}
 const savePRUN=()=>{try{localStorage.setItem('dsa_prun',JSON.stringify(PRUN))}catch(e){}};
 function pChgHtml(it,es){
@@ -1029,7 +1107,7 @@ function pRunHtml(){
   const rows=es.map(e=>{const k=pdKey(e),dn=!!PDONE[k],col=(KIND[e.s.kind]||KIND.aut)[1],o=it.ov&&it.ov[e.s.d],moved=o&&o.date!=null,mod=o&&((o.add||[]).length||(o.rm||[]).length),
    late=!dn&&e.D<todayN,today=e.D===todayN,cnt=parseCows(effToks(it,e.s)).ok.length;
    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--ln)${dn?';opacity:.55':''}"><input type="checkbox" data-pdone="${k}" ${dn?'checked':''} style="width:28px;height:28px;flex:none;margin-top:2px"><div style="flex:1;min-width:0"><div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><b style="color:${col}">J${dayNo(it,e.s)}</b><input type="date" class="zi" style="width:auto" data-pf="ovd" data-pi="${it.id}" data-psd="${e.s.d}" value="${iso(e.D)}">${moved?`<button data-ovreset="${it.id}|${e.s.d}" title="Remettre la date prévue">↺</button>`:''}${today?'<span class="tag w">aujourd’hui</span>':late?'<span class="tag w">en retard</span>':''}</div><div style="font-weight:700;margin-top:4px${dn?';text-decoration:line-through':''}">${escH(e.s.txt||'(étape sans texte)')}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button data-pkopen="${it.id}|${e.s.d}">👥 ${cnt} vache${cnt>1?'s':''}${mod?' ✎':''}</button><button data-plist="${k}">📋 Liste</button></div></div></div>`}).join('');
-  const cl=!!PRUN[it.id];return `<div class="pcard"><div data-prun="${it.id}" style="cursor:pointer"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${cl?'▸':'▾'} ${escH(t.name)}</b><span class="tag">${nd} / ${es.length} faits</span></div><div class="mut">Jour 1 : ${fmt(it.start)} · ${st}</div></div><div style="margin-top:6px"><b>${parseCows(it.cows).ok.length} vaches</b> <button data-pkopen="${it.id}" style="margin-left:6px">＋ / − Vaches</button></div>${cowChips(it.cows)}${cl?'':`<div style="margin-top:8px">${rows}</div>`}${pChgHtml(it,es)}</div>`}).join('');
+  const cl=!!PRUN[it.id];return `<div class="pcard"><div data-prun="${it.id}" style="cursor:pointer"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${cl?'▸':'▾'} ${escH(t.name)}</b><span class="tag">${nd} / ${es.length} faits</span></div><div class="mut">Jour 1 : ${fmt(it.start)} · ${st}</div></div><div style="margin-top:6px"><b>${parseCows(it.cows).ok.length} vaches</b> <button data-pkopen="${it.id}" style="margin-left:6px">＋ / − Vaches</button></div>${cowChips(it.cows)}${cl?'':`<div style="margin-top:8px">${rows}</div>`}${pChgHtml(it,es)}<div style="margin-top:10px;text-align:right"><button data-pdelinst="${it.id}"${PDELC===it.id?' class="on" style="background:var(--rd);border-color:var(--rd)"':''}>${PDELC===it.id?'Supprimer ?':'🗑 Supprimer le protocole'}</button></div></div>`}).join('');
  return `<div class="mut" style="margin-bottom:8px">Touche le titre d’un protocole pour ouvrir ou fermer ses journées. Coche chaque journée quand les injections sont faites. Tu peux changer la date d’une journée et ajuster les vaches de cette seule journée (👥). « ＋ / − Vaches » change les vaches de tout le protocole.</div>`+(cards||'<div class="mut">Aucun protocole en cours. Va dans <b>Démarrer protocoles</b>.</div>')}
 function pActHtml(){
  if(PK.open)return pickerHtml();
@@ -1045,7 +1123,7 @@ function pActHtml(){
  <div style="margin-top:8px"><button data-pstart>Démarrer le protocole</button></div></div>`;
  const act=PT.act.length?PT.act.map(it=>{const t=tplOf(it.tpl);if(!t)return '';const n=Math.max(...t.steps.map(s=>s.d)),j=todayN-it.start+1;
   const st=j<1?`commence dans ${1-j} j`:j>n?'terminé':`jour ${j} sur ${n}`;
-  return `<div class="pcard"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${t.name}</b><button data-pdelinst="${it.id}">Supprimer</button></div>
+  return `<div class="pcard"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${t.name}</b><button data-pdelinst="${it.id}"${PDELC===it.id?' class="on" style="background:var(--rd);border-color:var(--rd)"':''}>${PDELC===it.id?'Supprimer ?':'Supprimer'}</button></div>
   <div class="mut">Jour 1 : ${fmt(it.start)} · ${st}</div>
   <div style="margin:6px 0">Jour 1 : <input type="date" class="zi" style="width:auto" data-pf="start" data-pi="${it.id}" value="${iso(it.start)}"></div>
   <textarea class="zi" rows="2" style="width:100%;text-align:left" data-pf="cows" data-pi="${it.id}">${it.cows.join(' ')}</textarea><div style="margin-top:6px"><button data-pkopen="${it.id}">☰ Choisir dans la liste</button></div>${cowChips(it.cows)}
@@ -1110,7 +1188,11 @@ function protoClick(e){
   const r=parseCows(PF.cows);if(!r.ok.length){alert(tr('Ajoute au moins une vache (numéros séparés par des espaces).'));return true}
   PT.act.push({id:uid(),tpl:PF.tpl,start:PF.start||todayN,cows:r.toks});savePT();schedSoon();bkUse(r.ok.map(c=>c.num));
   const d=toDate(PF.start||todayN);pCal={y:d.getUTCFullYear(),m:d.getUTCMonth()};pSel=PF.start||todayN;PF.cows='';pSub='cal';protos();return true}
- if(b=e.target.closest('[data-pdelinst]')){if(confirm(tr('Supprimer ce protocole ?'))){PT.act=PT.act.filter(x=>x.id!==b.dataset.pdelinst);savePT();schedSoon();protos()}return true}
+ if(b=e.target.closest('[data-pdelinst]')){const id=b.dataset.pdelinst;
+  if(PDELC===id){clearTimeout(PDELT);PDELC=null;PT.act=PT.act.filter(x=>x.id!==id);
+   const pre=id+'|';for(const M of [PDONE,PCD,PLX])for(const k of Object.keys(M))if(k.startsWith(pre))delete M[k];
+   delete PMOD[id];delete PRUN[id];savePT();savePD();savePCD();savePLX();savePRUN();schedSoon();toast(tr('Protocole supprimé'),2500);protos()}
+  else{PDELC=id;clearTimeout(PDELT);PDELT=setTimeout(()=>{PDELC=null;if(tab==='proto')protos()},3000);protos()}return true}
  if(b=e.target.closest('[data-ptpl]')){const a=b.dataset.ptpl,t=tplOf(b.dataset.pt);
   if(a==='new')PT.tpl.push({id:uid(),name:'Nouveau protocole',steps:[mkStep(1,'')]});
   else if(a==='dup'&&t)PT.tpl.push({...JSON.parse(JSON.stringify(t)),id:uid(),name:t.name+' (copie)'});
@@ -1123,7 +1205,7 @@ function protoClick(e){
 let PK={open:false,target:'new',sel:[],extra:[],q:'',view:'actives'};
 const PKV=['actives','basket','ges','tges','tar','vel','ouv','taur','sai','tsai','gen','veau'];
 function pkOpen(target){let toks;if(target==='new')toks=parseCows(PF.cows).toks;else if(target.includes('|')){const [id,d]=target.split('|'),it=PT.act.find(x=>x.id===id),t=it&&tplOf(it.tpl),st=t&&t.steps.find(x=>String(x.d)===d);toks=it&&st?effToks(it,st):[]}else toks=(PT.act.find(x=>x.id===target)||{cows:[]}).cows;
- const r=parseCows(toks);PK={open:true,target,sel:r.ok.map(c=>c.num),extra:r.bad,q:'',view:'actives'};protos()}
+ const r=parseCows(toks);PK.open=false;cpOpen(toks,true,sel=>pkApply(target,sel,r.bad),'actives')}
 function pkRows(){const q=nz(PK.q.trim()),f=VIEWS[PK.view]||VIEWS.actives;
  return DB.cows.filter(c=>!c.elim&&f(c)&&(!q||nz(c.num).includes(q)||nz(c.nom).includes(q))).sort((a,b)=>numCmp(a,b))}
 function pkCount(){const el=$('pkcount');if(el)el.textContent=PK.sel.length+' vache(s) choisie(s)'}
@@ -1650,6 +1732,7 @@ Tout décocher|Untick all|Desmarcar todas
 # vache(s) choisie(s)|# cow(s) chosen|# vaca(s) elegida(s)
 Ajoute au moins une vache (numéros séparés par des espaces).|Add at least one cow (numbers separated by spaces).|Añade al menos una vaca (números separados por espacios).
 Supprimer ce protocole ?|Delete this protocol?|¿Eliminar este protocolo?
+Protocole supprimé|Protocol deleted|Protocolo eliminado
 Ce modèle est utilisé par un protocole en cours.|This template is used by a protocol in progress.|Esta plantilla la usa un protocolo en curso.
 Garde au moins un modèle.|Keep at least one template.|Conserva al menos una plantilla.
 Supprimer ce modèle ?|Delete this template?|¿Eliminar esta plantilla?
@@ -1759,6 +1842,7 @@ let inF=false,LASTLIST=[],CURID=null;const tabHist=[];
 const AppP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;
 function back(){if(!AppP&&history.state&&history.state.f)history.back();else show()}
 function appBack(){
+ if($('evxmod')){$('evxmod').remove();return}
  if($('plxe')){$('plxe').remove();return}
  if($('ccf')){ccClose();return}
  if(inF&&PLRET){back();return}
@@ -2236,6 +2320,8 @@ $('m').onclick=e=>{
   if(e.target.closest('[data-usrsave]')){const v=($('usr-n').value||'').trim();if(!v){toast('Entre ton nom.');return}saveUser(v);toast('Nom enregistré ✓',2000);return}
   const pcb=e.target.closest('[data-pcset],[data-pcsync]');if(pcb){if('pcset' in pcb.dataset)pcForm();else pcSync(true);return}
   const fq=e.target.closest('[data-fq],[data-qa],[data-qs]');if(fq){const D=fq.dataset;if('fq' in D){FQ=+D.fq;fqApply();return}const c=DB.cows.find(x=>x.id===CURID);if(c){if('qa' in D)actForm(null,c.num,D.qa,'');else actForm(null,c.num,'TX',D.qs)}return}
+  const hx=e.target.closest('[data-hidok],[data-hidre],[data-hidrs]');
+  if(hx){const D=hx.dataset,k=D.hidok||D.hidre||D.hidrs,h=HID[k];if(h){if('hidok' in D){h.done=true;saveHID()}else if('hidre' in D){h.done=false;saveHID()}else evRestore(h.c,h.d,h.t);updActBadge();saisies()}return}
   const td=e.target.closest('[data-acttdel]');
   if(td){const k=td.dataset.acttdel;if(ACT.some(a=>a.ty===k)){toast('Ce type est utilisé par des actions.',4000);return}ACTP.custom=ACTP.custom.filter(c=>c.k!==k);ACTP.hide=ACTP.hide.filter(x=>x!==k);saveACTP();saisies();return}
   const ax=e.target.closest('[data-actnew],[data-actedit],[data-actok],[data-actback],[data-actdel],[data-actcopy]');
@@ -2246,7 +2332,7 @@ $('m').onclick=e=>{
    if('actback' in D&&a){a.st='p';delete a.dsa;saveACT();saisies();return}
    if('actdel' in D&&a){if(ACTDEL===a.id){clearTimeout(ACTDELT);ACTDEL=null;if(a.pc==='sent'){a.cows.forEach(c=>PCQ.push(a.id+'-'+c.i));savePCQ()}ACT.splice(ACT.indexOf(a),1);saveACT();pcSync()}else{ACTDEL=a.id;clearTimeout(ACTDELT);ACTDELT=setTimeout(()=>{ACTDEL=null;if(tab==='saisies')saisies()},3000)}saisies();return}
    if('actcopy' in D){const L=ACT.filter(x=>x.st==='p').sort((x,y)=>x.d-y.d).map(a=>fmt(a.d)+' · '+actLbl(a.ty)+(a.txt?' · '+a.txt:'')+(a.q&&a.q.length?' · quartiers '+a.q.join(', '):'')+' · '+a.cows.map(x=>x.num).join(', ')+(a.rl>0||a.rv>0?' · retrait'+(a.rl>0?' lait '+a.rl+' j':'')+(a.rv>0?' viande '+a.rv+' j':''):'')).join('\n');
-    try{navigator.clipboard.writeText(L).then(()=>toast('Liste copiée ✓',2500),()=>toast('Copie impossible.',3000))}catch(x){toast('Copie impossible.',3000)}return}
+    try{navigator.clipboard.writeText([L,hidCopy()].filter(Boolean).join('\n')).then(()=>toast('Liste copiée ✓',2500),()=>toast('Copie impossible.',3000))}catch(x){toast('Copie impossible.',3000)}return}
    return}
   const bk=e.target.closest('[data-bk]');if(bk){
   if(bk.dataset.bk==='copy'){const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('dsa_'))o[k]=localStorage.getItem(k)}
