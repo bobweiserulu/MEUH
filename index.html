@@ -411,7 +411,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-21h';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-24a';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 /* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
@@ -575,11 +575,19 @@ function hxParseConf(html){const doc=new DOMParser().parseFromString(html,'text/
  if(lin.length)r.lin=lin;
  const df=[...doc.querySelectorAll('td.defect')].filter(x=>x.textContent.trim()||x.children.length).map(x=>x.getAttribute('data-val')||'?');if(df.length)r.def=[...new Set(df)];
  return r}
+const HXH=ref=>({'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8','Accept-Language':'fr-CA,fr;q=0.9,en;q=0.8','Referer':ref,'Upgrade-Insecure-Requests':'1','Sec-Fetch-Dest':'document','Sec-Fetch-Mode':'navigate','Sec-Fetch-Site':'same-origin','Sec-Fetch-User':'?1'});
+function hxSnip(e){const b=String(e&&e.body||'').replace(/<(script|style)[\s\S]*?<\/\1>/gi,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,110);return b?' — «'+b+'»':''}
+async function hxPage(u,ref,what){const H=HXH(ref);
+ try{return await gdGet(u,'text',H)}catch(e){
+  if(e.status!==403&&e.status!==429&&e.status!==503)throw new Error(what+' : '+(e&&e.message||e)+hxSnip(e));
+  try{await gdGet('https://portal.holstein.ca/fr/AIS/AIS','text',HXH('https://portal.holstein.ca/fr'))}catch(_){}
+  await new Promise(r=>setTimeout(r,900));
+  try{return await gdGet(u,'text',H)}catch(e2){throw new Error(what+' : '+(e2&&e2.message||e2)+' (le site bloque la demande de l’app)'+hxSnip(e2))}}}
 async function holxFetch(natl){let id=HOL[natl];
- if(!id){if(!(await holFetch(natl)))throw new Error('Animal introuvable chez Holstein');id=HOL[natl]}
+ if(!id){let ok;try{ok=await holFetch(natl)}catch(e){throw new Error('Recherche Holstein : '+(e&&e.message||e)+hxSnip(e))}if(!ok)throw new Error('Animal introuvable chez Holstein');id=HOL[natl]}
  const reg='HOCANF'+natl,u=p=>'https://portal.holstein.ca/fr/AIS/'+p+'?animalId='+id+'&animalRegNo='+reg+'&uom=KG&me=BCA';
- const mn=hxParseMain(await gdGet(u('AIS'),'text'));if(!mn.cl&&!mn.ge)throw new Error('La page Holstein ne donne pas les données (connexion requise ?)');
- let cf={};try{cf=hxParseConf(await gdGet(u('Conformation'),'text'))}catch(e){}
+ const mn=hxParseMain(await hxPage(u('AIS'),'https://portal.holstein.ca/fr/AIS/AIS?animalRegNo='+reg,'Page AIS'));if(!mn.cl&&!mn.ge)throw new Error('La page Holstein ne donne pas les données (connexion requise ?)');
+ let cf={};try{cf=hxParseConf(await hxPage(u('Conformation'),u('AIS'),'Page Conformation'))}catch(e){}
  HX[natl]=Object.assign({t:Date.now()},mn,cf);saveHX();return HX[natl]}
 const hxNames={cr:'Croupe',sm:'Système mammaire',pl:'Puissance laitière',pm:'Pieds et membres'};
 function hxWeak(x){const a=['cr','sm','pl','pm'].filter(k=>x[k]!=null).map(k=>({n:hxNames[k],v:x[k]})).sort((p,q)=>p.v-q.v);if(!a.length)return[];return a.filter(q=>q.v<=a[0].v+1).slice(0,2)}
@@ -1502,8 +1510,8 @@ async function importBuf(buf,name){const u=new Uint8Array(buf),zip=u[0]===0x50&&
  if(!/^DSA-SYNCHRO/.test(txt.trim().slice(0,20)))throw new Error('ce n’est pas un fichier Synchro de DSA ('+name+')');load(txt,true)}
 const b64buf=b=>{const bin=atob(b),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a.buffer};
 const gdCH=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.CapacitorHttp;
-async function gdGet(url,type){const CH=gdCH();
- if(CH&&CH.get){const r=await CH.get({url,responseType:type==='bin'?'blob':'text',headers:{'User-Agent':'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36'}});if(r.status!==200)throw new Error('réponse '+r.status);return type==='bin'?b64buf(r.data):String(r.data)}
+async function gdGet(url,type,hdr){const CH=gdCH();
+ if(CH&&CH.get){const r=await CH.get({url,responseType:type==='bin'?'blob':'text',headers:Object.assign({'User-Agent':'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36'},hdr||{})});if(r.status!==200){const e=new Error('réponse '+r.status);e.status=r.status;e.body=typeof r.data==='string'?r.data:'';throw e}return type==='bin'?b64buf(r.data):String(r.data)}
  const r=await fetch(url);if(!r.ok)throw new Error('réponse '+r.status);return type==='bin'?await r.arrayBuffer():await r.text()}
 const gdFile=id=>gdGet('https://drive.google.com/uc?export=download&id='+id,'bin');
 function gdList(html){const out=[],seen=new Set(),re=/entry-([-\w]{20,})[\s\S]{0,1500}?flip-entry-title">([^<]*)</g;let m;
