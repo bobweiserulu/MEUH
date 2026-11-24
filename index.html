@@ -411,7 +411,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-24a';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-24c';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 /* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
@@ -612,11 +612,21 @@ function holxOpen(c){const old=$('holxmod');if(old)old.remove();if(!c||!c.natl)r
  const reg='HOCANF'+c.natl,id=HOL[c.natl],ext=id?`https://portal.holstein.ca/fr/AIS/AIS?animalId=${id}&animalRegNo=${reg}&uom=KG&me=BCA`:`https://portal.holstein.ca/fr/AIS/AIS?animalRegNo=${reg}`;
  const draw=(msg)=>{const x=HX[c.natl];o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto"><div style="font-size:18px;font-weight:800">${escH(c.num)} ${escH(c.nom||'')}</div><div class="mut">${escH(reg)}${x?' · mis à jour '+new Date(x.t).toLocaleDateString('fr-CA'):''}</div>
   ${msg?`<div style="margin:8px 0;font-weight:600">${escH(msg)}</div>`:''}${x?hxHtml(c,x):(msg?'':'<div class="empty">Pas encore récupéré.</div>')}
-  <div class="row" style="margin-top:10px;justify-content:flex-end"><a class="btn" href="${ext}" target="_blank" rel="noopener" style="text-decoration:none;font-weight:600;padding:8px 12px">Ouvrir Holstein ↗</a><button data-hxd="upd">🔄 ${x?'Mettre à jour':'Récupérer'}</button><button class="on" data-hxd="x">Fermer</button></div></div>`};
+  <div class="row" style="margin-top:10px;justify-content:flex-end"><a class="btn" href="${ext}" target="_blank" rel="noopener" style="text-decoration:none;font-weight:600;padding:8px 12px">Ouvrir Holstein ↗</a><button data-hxd="imp">📂 Importer une page</button><button data-hxd="upd">🔄 ${x?'Mettre à jour':'Récupérer'}</button><button class="on" data-hxd="x">Fermer</button></div></div>`};
  const run=async()=>{if(!gdCH()){draw('La récupération marche seulement dans l’application installée (APK).');return}
-  draw('⏳ Chargement…');try{await holxFetch(c.natl);draw('');hxRefresh(c)}catch(e){draw('Échec : '+(e&&e.message||e))}};
+  draw('⏳ Chargement…');try{await holxFetch(c.natl);draw('');hxRefresh(c)}catch(e){const m=String(e&&e.message||e);draw('Échec : '+m+(/Just a moment|Cloudflare|cookies/i.test(m)?' — Le site exige un vrai navigateur. Pour beaucoup de vaches : Réglages → « 📥 Holstein via le navigateur ». Pour une seule : enregistre les pages (Ctrl+S) puis « 📂 Importer une page ».':''))}};
+ const imp=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='.html,.htm,text/html';fi.multiple=true;
+  fi.onchange=async()=>{const fl=[...fi.files];if(!fl.length)return;draw('⏳ Lecture…');
+   try{const mg={};let any=false;
+    for(const f of fl){const t=await f.text();
+     if(!t.includes(c.natl)){draw('« '+f.name+' » ne parle pas de '+reg+' : mauvaise vache ?');return}
+     for(const p of [hxParseMain(t),hxParseConf(t)])for(const k in p){const v=p[k];if(v!=null&&!(Array.isArray(v)&&!v.length)){mg[k]=v;any=true}}}
+    if(!mg.cl&&!mg.ge&&!mg.co&&!mg.lin){draw('Ces fichiers ne contiennent pas les données attendues (page AIS ou Conformation de Holstein).');return}
+    HX[c.natl]=Object.assign({},HX[c.natl]||{},{t:Date.now()},mg);saveHX();draw('Importé ✓ ('+fl.length+' fichier'+(fl.length>1?'s':'')+')');hxRefresh(c)}
+   catch(e){draw('Échec de l’import : '+(e&&e.message||e))}};
+  fi.click()};
  document.body.appendChild(o);draw('');
- o.onclick=ev=>{const b=ev.target.closest('[data-hxd]');if(ev.target===o||(b&&b.dataset.hxd==='x')){o.remove();return}if(b&&b.dataset.hxd==='upd')run()};
+ o.onclick=ev=>{const b=ev.target.closest('[data-hxd]');if(ev.target===o||(b&&b.dataset.hxd==='x')){o.remove();return}if(b&&b.dataset.hxd==='upd')run();if(b&&b.dataset.hxd==='imp')imp()};
  if(!HX[c.natl])run()}
 function hxRefresh(c){const r=$('holrow');if(r&&r.dataset.a===c.natl){const ho=$('holinfo');if(ho)ho.remove();r.outerHTML=holBlock(c,EVF)}if(tab==='semence'&&typeof SEMCOW!=='undefined'&&SEMCOW===c.id)semBody()}
 function hxSem(c){if(!c.natl)return '';const x=HX[c.natl];
@@ -634,6 +644,63 @@ async function holxAll(){const S=s=>{const x=$('holst');if(x)x.textContent=s},B=
  hxBusy=false;B(L0);S('Terminé : '+ok+' récupérées'+(bad?', '+bad+' échecs':'')+'.')}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-holx],[data-hxo]');if(!b||!DB)return;e.stopPropagation();e.preventDefault();
  const n=b.dataset.holx||b.dataset.hxo,c=DB.cows.find(x=>x.natl===n&&!x.elim)||DB.cows.find(x=>x.natl===n);if(c)holxOpen(c)},true);
+
+/* --- import en lot : le navigateur du cell lit les pages Holstein (il passe Cloudflare), MEUH reçoit le résultat --- */
+async function hxJob(pM,pC){
+ const D=document;
+ if(location.hostname!=='portal.holstein.ca'){alert('Ouvre d’abord une page de portal.holstein.ca (Holstein Canada), puis relance.');return}
+ const old=D.getElementById('meuhov');if(old)old.remove();
+ const ov=D.createElement('div');ov.id='meuhov';ov.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#fff;color:#111;padding:14px;font:16px sans-serif;overflow:auto';
+ ov.innerHTML='<div style="font-size:20px;font-weight:800">MEUH : lecture Holstein</div><div id="mst" style="margin:8px 0">Colle la liste des vaches (copiée dans MEUH), puis touche Démarrer.</div><textarea id="mta" style="width:100%;height:150px;font-size:14px;box-sizing:border-box"></textarea><div style="margin-top:8px"><button id="mgo" style="font-size:18px;padding:10px 14px;margin:2px">▶ Démarrer</button> <button id="mcp" style="font-size:18px;padding:10px 14px;margin:2px">📋 Copier le résultat</button> <button id="mx" style="font-size:18px;padding:10px 14px;margin:2px">Fermer</button></div>';
+ D.body.appendChild(ov);
+ const $=i=>D.getElementById(i),st=s=>{$('mst').textContent=s},sf=m=>{const e=new Error(m);e.soft=1;return e};
+ try{const t=await navigator.clipboard.readText();if(/\d{6}/.test(t))$('mta').value=t}catch(e){}
+ let run=false,R={},ID={},INFO={},bad=0;
+ const out=()=>JSON.stringify({v:1,hx:R,hol:ID,holi:INFO});
+ const get=async(u,x)=>{const r=await fetch(u,{credentials:'include',headers:x?{'X-Requested-With':'XMLHttpRequest'}:{}});const t=await r.text();if(!r.ok)throw new Error('réponse '+r.status+(/Just a moment/.test(t)?' (Cloudflare : recharge la page Holstein puis relance)':''));return t};
+ $('mx').onclick=()=>{run=false;ov.remove()};
+ $('mcp').onclick=async()=>{const s=out();$('mta').value=s;try{await navigator.clipboard.writeText(s);st('Copié ✓ ('+Object.keys(R).length+' vaches). Retourne dans MEUH et colle.')}catch(e){$('mta').select();try{document.execCommand('copy');st('Copié ✓ ('+Object.keys(R).length+' vaches). Retourne dans MEUH et colle.')}catch(x){st('Sélectionne tout le texte de la case et copie-le à la main.')}}};
+ $('mgo').onclick=async()=>{
+  if(run){run=false;return}
+  const L=[...new Set(($('mta').value.match(/\d{6,}/g)||[]))];
+  if(!L.length){st('Aucun numéro trouvé dans la case.');return}
+  run=true;bad=0;$('mgo').textContent='⏹ Arrêter';let err=0,msg='';
+  for(let i=0;i<L.length&&run;i++){const n=L[i];st('Lecture '+(i+1)+' / '+L.length+' ('+n+') · '+Object.keys(R).length+' ok, '+bad+' échecs');
+   try{
+    const d=JSON.parse(await get('/en/AIS/ReadAnimalSearchGrid?animalSearchString='+encodeURIComponent(n),1)),l=d.Data||[],a=l.find(x=>String(x.RegNumber)===n&&x.SexCode==='F')||l.find(x=>String(x.RegNumber)===n);
+    if(!a||!a.AnimalId)throw sf('introuvable');
+    const u=p=>'/fr/AIS/'+p+'?animalId='+a.AnimalId+'&animalRegNo=HOCANF'+n+'&uom=KG&me=BCA';
+    const mn=pM(await get(u('AIS')));if(!mn.cl&&!mn.ge)throw sf('page sans données');
+    let cf={};try{cf=pC(await get(u('Conformation')))}catch(e){}
+    R[n]=Object.assign({t:Date.now()},mn,cf);ID[n]=a.AnimalId;INFO[n]={n:a.DisplayAnimalName||'',b:a.BreederName||'',o:a.OwnerName||'',p:a.HerdBookPurityDisplay||'',c:a.Colour||''};err=0;
+   }catch(e){bad++;if(e.soft)err=0;else if(++err>=5){msg=' Arrêt : '+e.message+'.';break}}
+   await new Promise(r=>setTimeout(r,500))}
+  run=false;$('mgo').textContent='▶ Démarrer';st('Terminé : '+Object.keys(R).length+' vaches lues, '+bad+' échecs.'+msg+' Touche « Copier le résultat ».');
+ };
+}
+function hxScript(){return '(async()=>{const hxNum='+hxNum+',hxCells='+hxCells+',hxAfter='+hxAfter+',hxCL='+hxCL+';'+hxParseMain+';'+hxParseConf+';await ('+hxJob+')(hxParseMain,hxParseConf)})()'}
+function hxCopy(t,ok){const f=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();let r=false;try{r=document.execCommand('copy')}catch(e){}a.remove();toast(r?ok:'Copie impossible.',3000)};
+ try{navigator.clipboard.writeText(t).then(()=>toast(ok,3000),f)}catch(e){f()}}
+function hxImport(txt){let d;try{d=JSON.parse(String(txt).trim())}catch(e){return'Texte illisible : le résultat est incomplet ou mal collé.'}
+ if(!d||d.v!==1||!d.hx)return'Ce n’est pas un résultat MEUH.';let n=0;
+ for(const k in d.hx){const r=d.hx[k];if(!r||!(r.cl||r.ge||r.co||r.lin))continue;HX[k]=Object.assign({},HX[k]||{},r);n++;if(d.hol&&d.hol[k])HOL[k]=+d.hol[k];if(d.holi&&d.holi[k])HOLI[k]=d.holi[k]}
+ saveHX();saveHOL();return n+' vache'+(n>1?'s':'')+' importée'+(n>1?'s':'')+' ✓'}
+function hxBulk(){const old=$('hxbulkmod');if(old)old.remove();
+ const o=document.createElement('div');o.id='hxbulkmod';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center';
+ const L=(DB?DB.cows:[]).filter(c=>!c.elim&&c.natl&&!HX[c.natl]).map(c=>c.natl);
+ const sm='min-height:44px;font-size:15px;margin:3px 0;width:100%';
+ o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto"><div style="font-size:18px;font-weight:800">📥 Holstein via le navigateur</div>
+ <div class="mut" style="margin:6px 0;line-height:1.5">Le navigateur du cell passe la protection du site ; MEUH reçoit ensuite le résultat.<br><b>1.</b> Copie la liste (${L.length} vache${L.length>1?'s':''} sans données).<br><b>2.</b> Copie le script.<br><b>3.</b> Dans Chrome, ouvre une page de <b>portal.holstein.ca</b> (connecté). Touche la barre d’adresse, écris <b>javascript:</b> puis colle le script (juste après), Entrée.<br><b>4.</b> Colle la liste, touche Démarrer, puis « Copier le résultat ».<br><b>5.</b> Reviens ici, colle le résultat, touche Importer.</div>
+ <button data-hb="list" style="${sm}"${L.length?'':' disabled'}>1. 📋 Copier la liste des vaches</button><button data-hb="scr" style="${sm}">2. 📋 Copier le script</button>
+ <textarea id="hbta" placeholder="5. Colle ici le résultat" style="width:100%;height:110px;box-sizing:border-box;margin-top:6px;font-size:13px"></textarea><div id="hbmsg" style="margin:6px 0;font-weight:600"></div>
+ <div class="row" style="justify-content:flex-end"><button data-hb="paste">Coller</button><button data-hb="imp" class="on">Importer</button><button data-hb="x">Fermer</button></div></div>`;
+ document.body.appendChild(o);
+ o.onclick=async ev=>{const b=ev.target.closest('[data-hb]'),M=s=>{$('hbmsg').textContent=s};if(ev.target===o||(b&&b.dataset.hb==='x')){o.remove();return}if(!b)return;const k=b.dataset.hb;
+  if(k==='list')hxCopy(L.join('\n'),'Liste copiée ✓');
+  else if(k==='scr')hxCopy(encodeURIComponent(hxScript()),'Script copié ✓ (écris javascript: avant de coller)');
+  else if(k==='paste'){try{$('hbta').value=await navigator.clipboard.readText()}catch(e){M('Colle à la main : appuie longtemps dans la case.')}}
+  else if(k==='imp'){const t=$('hbta').value;if(!t.trim()){M('Colle d’abord le résultat.');return}M(hxImport(t))}}}
+document.addEventListener('click',e=>{if(!e.target.closest('[data-hxbulk]'))return;e.stopPropagation();e.preventDefault();hxBulk()},true);
 /* ===== fin Holstein ===== */
 
 function menuOpen(){const old=$('menumod');if(old){old.remove();return}
@@ -973,7 +1040,7 @@ function reglages(){
  <div class="row" style="margin:6px 0"><button data-bk="rest">Restaurer depuis le texte collé</button></div>
  <h3>Holstein Canada</h3>
   <div class="mut">Garde dans le téléphone le lien et les infos (éleveur, pureté, nom officiel) de chaque vache active, pour les voir sans réseau.</div>
-  <div class="row" style="margin:6px 0"><button data-holall>🐄 Récupérer les infos Holstein (vaches actives)</button></div><div class="row" style="margin:6px 0"><button data-holxall>📋 Récupérer classification et génétique (vaches actives)</button></div><div class="mut" id="holst"></div>
+  <div class="row" style="margin:6px 0"><button data-holall>🐄 Récupérer les infos Holstein (vaches actives)</button></div><div class="row" style="margin:6px 0"><button data-holxall>📋 Récupérer classification et génétique (vaches actives)</button></div><div class="row" style="margin:6px 0"><button data-hxbulk>📥 Holstein via le navigateur (beaucoup de vaches)</button></div><div class="mut" id="holst"></div>
   <h3>Vibration</h3>
  <div class="mut" id="vbinfo">${(()=>{const H=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Haptics;return 'Plugin Haptics : '+(H?'présent':'absent')+' · navigator.vibrate : '+(navigator.vibrate?'présent':'absent')})()}</div>
  <div class="row" style="margin:6px 0"><button data-vb="plugin">Tester (plugin)</button><button data-vb="web">Tester (navigateur)</button></div>
