@@ -82,7 +82,7 @@ const ELM={VABA:'vente abattoir',MORT:'morte',MAMM:'mammite',VLAI:'vente laitiè
 const REF={REP:'reproduction',FPRO:'faible production',RLOC:'pattes',TDIF:'traite difficile',AGE:'âge',AUTR:'autre',MAMM:'mammite'};
 let SKB='n';try{SKB=localStorage.getItem('dsa_skb')||'n'}catch(e){}
 let SKBM='numeric';try{SKBM=localStorage.getItem('dsa_skbm')||'numeric'}catch(e){}
-const SKBSEL='#q,#cpq,#pkq,#cp-s,#rsq,#skbtest',skbMode=()=>SKB==='t'?'text':SKBM,IM=()=>' inputmode="'+skbMode()+'"';
+const SKBSEL='#q,#cpq,#pkq,#cp-s,#rsq,#skbtest,#sem-q',skbMode=()=>SKB==='t'?'text':SKBM,IM=()=>' inputmode="'+skbMode()+'"';
 let SKBB=null,SKBI=null;
 function skbApply(){document.querySelectorAll(SKBSEL).forEach(i=>i.setAttribute('inputmode',skbMode()))}
 function skbOff(){if(SKBI&&SKBI.style)SKBI.style.paddingRight=SKBI.dataset.pr||'';if(SKBB)SKBB.remove();SKBB=null;SKBI=null}
@@ -348,7 +348,7 @@ function actForm(a,preset,pty,ptxt,multi){
   const {ok,bad}=findCows($('ac-c').value);
   if(bad.length||!ok.length){toast(bad.length?'Numéro introuvable : '+bad.join(', '):'Ajoute au moins une vache.',5000);return}
   const o={id:a?a.id:Date.now().toString(36),ty,d:dayN(ds),txt:$('ac-t').value.trim(),rl:RLTY.includes(ty)?(+$('ac-rl').value||0):0,rv:RLTY.includes(ty)?(+$('ac-rv').value||0):0,q:QTY.includes(ty)?[...d.querySelectorAll('[data-q].on')].map(x=>+x.dataset.q):[],cows:ok.map(c=>({i:c.id,n:c.natl||'',num:c.num,nom:c.nom})),st:'p',ts:a?a.ts:Date.now(),by:a?(a.by||USER):USER};
-  if(a)ACT[ACT.indexOf(a)]=o;else ACT.push(o);saveACT();d.remove();pcSync();toast('Action enregistrée ✓',2500);
+  if(a)ACT[ACT.indexOf(a)]=o;else ACT.push(o);saveACT();d.remove();pcSync();toast('Action enregistrée ✓',2500);if(!a&&ty==='SAIL')semUse(o);
   if(tab==='saisies')saisies();else if(inF){const c=DB.cows.find(x=>x.id===CURID);if(c)fiche(c.id,true)}}}
 let PC={addr:'',code:'',auto:true};try{PC=Object.assign(PC,JSON.parse(localStorage.getItem('dsa_pc')||'{}'))}catch(e){}
 const savePC=()=>{try{localStorage.setItem('dsa_pc',JSON.stringify(PC))}catch(e){}};
@@ -411,8 +411,222 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-21f';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-21h';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
+
+/* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
+let SEM=[],SEMLOG=[],SEMC={},SEMTAB='inv',SEMCOW=null,SEMQ='',SEMDEL=null,SEMDELT=0,PEDC=null;
+try{SEM=JSON.parse(localStorage.getItem('dsa_sem')||'[]')||[];SEMLOG=JSON.parse(localStorage.getItem('dsa_semlog')||'[]')||[];SEMC=JSON.parse(localStorage.getItem('dsa_semc')||'{}')||{}}catch(e){}
+const saveSEM=()=>{try{localStorage.setItem('dsa_sem',JSON.stringify(SEM));localStorage.setItem('dsa_semlog',JSON.stringify(SEMLOG.slice(-60)));localStorage.setItem('dsa_semc',JSON.stringify(SEMC))}catch(e){}};
+const semK=s=>{s=String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');const m=s.match(/^0*(\d{1,3})([A-Z]{1,3})0*(\d+)([A-Z]*)$/);return m?m[1]+m[2]+m[3]+m[4]:s};
+const SEMREL=['','père de la vache','père de sa mère','père de sa grand-mère maternelle','père de son arrière-grand-mère maternelle'];
+const semPct=f=>(+(f*100).toFixed(2)).toString().replace('.',',')+' %';
+const semUid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const SEMCOL=['var(--gr)','#d4a300','#e08a00','var(--rd)'];
+const iaKey=raw=>{const m=String(raw||'').match(/IA\|([^\\;]+)/);return m?semK(m[1]):''};
+function pedGet(){if(PEDC&&PEDC.db===DB)return PEDC;
+ const par={},stat={},fem={};
+ for(const c of DB.cows)for(const e of c.evRaw){
+  if(e.t==='VELA'){const tau=(e.raw.match(/TAU#\|([^\\]+)/)||[])[1]||'',tk=tau?semK(tau):'';
+   for(const m of e.raw.matchAll(/(?:^|\\)(FE|MA)\|[^\\\[]*\[ATQ=(\d+)\]/g)){par[m[2]]={dam:c,sire:tk,tau:tau.trim(),d:e.d};if(m[1]==='FE'&&tk)fem[tk]=(fem[tk]||0)+1}}
+  else if(e.t==='SAIL'||e.t==='SAILF'){const k=iaKey(e.raw);if(k){const s=stat[k]||(stat[k]={n:0,f:0});s.n++;if(e.t==='SAILF')s.f++}}}
+ PEDC={db:DB,par,stat,fem};return PEDC}
+function semChain(c){const P=pedGet(),ch=[],seen=new Set();let cur=c,g=1;
+ while(cur&&g<=4&&cur.natl&&P.par[cur.natl]&&!seen.has(cur.id)){seen.add(cur.id);const p=P.par[cur.natl];ch.push({cow:cur,tau:p.tau,sk:p.sire,dam:p.dam,g});cur=p.dam;g++}
+ return ch}
+function semRisk(b,ch){if(!ch.length)return{lvl:-1,F:0,why:[]};
+ const bl=[[semK(b.code),0,'Le taureau'],[b.pere?semK(b.pere):'',1,'Le père du taureau'],[b.mgs?semK(b.mgs):'',2,'Le père de la mère du taureau']];
+ let F=0;const why=[];
+ for(const [k,n1,lb] of bl){if(!k)continue;for(const x of ch)if(x.sk&&x.sk===k){const f=Math.pow(.5,n1+x.g+1);F+=f;why.push(lb+' = '+SEMREL[x.g]+' ('+semPct(f)+')')}}
+ return{lvl:F>=.125?3:F>=.0625?2:F>0?1:0,F,why}}
+function semHerd(b){const P=pedGet(),k=semK(b.code),s=P.stat[k],fi=P.fem[k]||0,a=[];
+ if(s)a.push(s.n+' service'+(s.n>1?'s':'')+' · '+Math.round(100*s.f/s.n)+' % de conception'+(s.n<5?' (peu de données)':''));
+ if(fi)a.push(fi+' fille'+(fi>1?'s':'')+' née'+(fi>1?'s':'')+' à la ferme');
+ return a.join(' · ')}
+function semOnCow(c,b){const k=semK(b.code),l=c.evRaw.filter(e=>(e.t==='SAIL'||e.t==='SAILF')&&iaKey(e.raw)===k);return l.length?'Déjà utilisé sur elle : '+l.length+' fois (dernière : '+fmt(l[l.length-1].d)+')':''}
+const semBox='border:1px solid var(--ln);border-radius:12px;background:var(--card);padding:10px 12px;margin:8px 0';
+
+function semences(){$('info').textContent='🐂 Choix de taureau';
+ const tb=(k,t)=>`<button data-semt="${k}" class="${SEMTAB===k?'on':''}" style="flex:1;min-height:44px">${t}</button>`;
+ $('m').innerHTML=`<div class="row" style="margin:6px 0">${tb('inv','📦 Inventaire')}${tb('aide','🎯 Aide au choix')}</div><div id="sem-b"></div>`;semBody()}
+function semBody(){const b=$('sem-b');if(!b)return;b.innerHTML=SEMTAB==='inv'?semInv():semAide()}
+
+function semInv(){const tot=SEM.reduce((a,b)=>a+(+b.doses||0),0),L=[...SEM].sort((a,b)=>(a.nm||a.code).localeCompare(b.nm||b.code));
+ const card=b=>{const d=+b.doses||0,col=d===0?'var(--mut)':d<=2?'#e08a00':'var(--tx)';
+  return `<div style="${semBox}${d===0?';opacity:.65':''}"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><b style="font-size:17px">${escH(b.nm||b.code)}</b>${b.nm&&b.code?`<div class="mut">${escH(b.code)}</div>`:''}${b.pere||b.mgs?`<div class="mut" style="font-size:12px">${b.pere?'Père : '+escH(b.pere):''}${b.pere&&b.mgs?' · ':''}${b.mgs?'Père de la mère : '+escH(b.mgs):''}</div>`:''}${b.note?`<div style="font-size:13px;margin-top:2px">✚ ${escH(b.note)}</div>`:''}</div>
+  <div style="display:flex;align-items:center;gap:6px;flex:none"><button data-semx="dec" data-id="${b.id}" style="min-width:44px;min-height:44px;font-size:22px">−</button><div style="min-width:38px;text-align:center;font-size:24px;font-weight:800;color:${col}">${d}</div><button data-semx="inc" data-id="${b.id}" style="min-width:44px;min-height:44px;font-size:22px">＋</button></div></div>
+  <div class="row" style="margin-top:6px;justify-content:flex-end"><button data-semx="edit" data-id="${b.id}">✎ Modifier</button><button data-semx="del" data-id="${b.id}"${SEMDEL===b.id?' class="on" style="background:var(--rd);border-color:var(--rd)"':''}>${SEMDEL===b.id?'Supprimer ?':'🗑'}</button></div></div>`};
+ const lg=SEMLOG.slice(-8).reverse().map((l,i)=>{const ix=SEMLOG.length-1-i;return `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--ln)"><div style="flex:1;min-width:0" class="mut">${fmt(l.d)} · <b>${escH(l.nm)}</b> −${l.n} → vache ${escH((l.cows||[]).join(', '))}</div><button data-semx="undo" data-i="${ix}" title="Remettre la dose">↩</button></div>`}).join('');
+ return `<div class="row" style="margin:6px 0;justify-content:space-between;align-items:center"><span class="mut">${SEM.length} taureau${SEM.length>1?'x':''} · ${tot} dose${tot>1?'s':''}</span><button class="on" data-semx="add" style="min-height:44px">＋ Ajouter un taureau</button></div>`
+  +(L.length?L.map(card).join(''):'<div class="empty">Aucun taureau pour l’instant.<br>Touche « Ajouter un taureau ».</div>')
+  +(lg?`<h3 style="margin:16px 0 4px">Dernières utilisations</h3><div class="mut" style="font-size:12px;margin-bottom:4px">Une dose est retirée automatiquement quand tu enregistres une saillie avec le code du taureau. ↩ la remet.</div>${lg}`:'')}
+
+function semForm(b){const old=$('semmod');if(old)old.remove();
+ const o=document.createElement('div');o.id='semmod';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center';
+ const zs='width:100%;text-align:left;box-sizing:border-box',lb=t=>`<label class="mut" style="display:block;margin-top:8px">${t}</label>`,v=x=>escH(b?b[x]||'':'');
+ o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto"><h3 style="margin:0 0 4px">${b?'Modifier le taureau':'Ajouter un taureau'}</h3>
+ ${lb('Nom')}<input id="sm-nm" class="zi" style="${zs}" value="${v('nm')}" autocomplete="off">
+ ${lb('Code (ex. 200HO06400)')}<input id="sm-cd" class="zi" style="${zs}" value="${v('code')}" autocomplete="off" autocapitalize="characters">
+ ${lb('Nombre de doses')}<input id="sm-ds" type="number" inputmode="numeric" min="0" class="zi" style="${zs}" value="${b?+b.doses||0:''}">
+ ${lb('Père du taureau (code ou nom) — facultatif')}<input id="sm-pe" class="zi" style="${zs}" value="${v('pere')}" autocomplete="off">
+ ${lb('Père de sa mère (code ou nom) — facultatif')}<input id="sm-mg" class="zi" style="${zs}" value="${v('mgs')}" autocomplete="off">
+ ${lb('Points forts / notes — facultatif')}<input id="sm-nt" class="zi" style="${zs}" value="${v('note')}" placeholder="ex. pattes, pis, vêlage facile" autocomplete="off">
+ <div class="mut" style="font-size:12px;margin-top:6px">Le père et le père de la mère servent à vérifier la parenté avec la vache (consanguinité).</div>
+ <div class="row" style="margin-top:12px;justify-content:flex-end"><button data-smx="x">Annuler</button><button class="on" data-smx="ok">Enregistrer</button></div></div>`;
+ document.body.appendChild(o);
+ o.onclick=ev=>{const t=ev.target.closest('[data-smx]');if(ev.target===o||(t&&t.dataset.smx==='x')){o.remove();return}if(!t)return;
+  const g=i=>($(i).value||'').trim(),nm=g('sm-nm'),cd=g('sm-cd').toUpperCase(),ds=Math.max(0,parseInt($('sm-ds').value)||0);
+  if(!nm&&!cd){toast('Entre un nom ou un code.',2500);return}
+  const f={nm,code:cd,doses:ds,pere:g('sm-pe'),mgs:g('sm-mg'),note:g('sm-nt')};
+  if(b)Object.assign(b,f);
+  else{const k=cd?semK(cd):'',ex=k&&SEM.find(x=>x.code&&semK(x.code)===k);
+   if(ex){ex.doses=(+ex.doses||0)+ds;for(const q of ['nm','pere','mgs','note'])if(!ex[q]&&f[q])ex[q]=f[q];toast('Déjà dans l’inventaire : doses ajoutées ✓',3000)}
+   else SEM.push(Object.assign({id:semUid()},f))}
+  saveSEM();o.remove();semBody()}}
+
+function semUse(a){try{const toks=String(a.txt||'').split(/[\s,;]+/).filter(Boolean),all=String(a.txt||'').trim().toUpperCase();
+ const b=SEM.find(x=>(x.code&&toks.some(t=>semK(t)===semK(x.code)))||(x.nm&&x.nm.trim().toUpperCase()===all));if(!b)return;
+ const n=a.cows.length;if((+b.doses||0)<=0){toast('🐂 '+(b.nm||b.code)+' : plus de doses en inventaire',4000);return}
+ const k=Math.min(n,+b.doses);b.doses=(+b.doses)-k;SEMLOG.push({ts:Date.now(),d:a.d,id:b.id,nm:b.nm||b.code,n:k,cows:a.cows.map(x=>x.num)});saveSEM();
+ toast('🐂 '+(b.nm||b.code)+' : '+b.doses+' dose'+(b.doses>1?'s':'')+' restante'+(b.doses>1?'s':''),3500);if(tab==='semence')semBody()}catch(e){}}
+
+function semRes(){if(!SEMQ.trim())return '';const q=SEMQ.trim().toLowerCase();
+ const L=DB.cows.filter(c=>!c.elim&&((c.num||'').toLowerCase().includes(q)||(c.nom||'').toLowerCase().includes(q))).slice(0,8);
+ return L.length?L.map(c=>`<button data-semx="pick" data-id="${c.id}" style="display:block;width:100%;text-align:left;min-height:46px;margin:4px 0">${escH(c.num)} <b>${escH(c.nom||'')}</b> <span class="mut">· ${VSHORT[kind(c)]||''}</span></button>`).join(''):'<div class="mut" style="margin:6px 0">Aucune vache trouvée.</div>'}
+
+function semAide(){if(!DB)return '<div class="empty">Charge d’abord un fichier DSA.</div>';
+ const c=SEMCOW&&DB.cows.find(x=>x.id===SEMCOW);
+ return `<input id="sem-q" type="search"${IM()} class="zi" style="width:100%;text-align:left;box-sizing:border-box" placeholder="Numéro ou nom de la vache" value="${escH(SEMQ)}" autocomplete="off"><div id="sem-r">${semRes()}</div>`
+  +(c?semCow(c):'<div class="mut" style="margin:12px 0">Cherche une vache pour voir sa généalogie et les taureaux de ton inventaire, classés selon la parenté.</div>')}
+
+function semCow(c){const ch=semChain(c),P=pedGet();
+ const inv=k=>{const b=k&&SEM.find(x=>x.code&&semK(x.code)===k);return b&&b.nm?' <span class="mut">('+escH(b.nm)+')</span>':''};
+ let ped;
+ if(!ch.length)ped=`<div class="mut">Généalogie inconnue : cette vache n’est pas née à la ferme (ou son ATQ n’est pas dans le fichier). Le classement ne peut pas vérifier la parenté.</div>`;
+ else{const last=ch[ch.length-1];ped=ch.map((x,i)=>`<div style="margin-left:${i*14}px;${i?'margin-top:2px':''}"><b>${i?'Mère':'Vache'} : ${escH(x.cow.num)} ${escH(x.cow.nom||'')}</b><div class="mut" style="margin-left:14px">Père : ${x.tau?escH(x.tau)+inv(x.sk):'inconnu'}</div></div>`).join('')
+  +(last.dam?`<div style="margin-left:${ch.length*14}px;margin-top:2px"><b>Mère : ${escH(last.dam.num)} ${escH(last.dam.nom||'')}</b> <span class="mut">(père inconnu)</span></div>`:'')}
+ const av=SEM.filter(b=>(+b.doses||0)>0).map(b=>({b,r:semRisk(b,ch),h:semHerd(b)})),
+  rate=b=>{const s=P.stat[semK(b.code)];return s&&s.n>=3?s.f/s.n:.5};
+ av.sort((x,y)=>(x.r.lvl-y.r.lvl)||(rate(y.b)-rate(x.b))||(x.b.nm||x.b.code).localeCompare(y.b.nm||y.b.code));
+ const BT=['🟢 Aucune parenté connue','🟡 Faible parenté','🟠 Prudence','🔴 À éviter'];
+ const cardB=({b,r,h})=>{const col=r.lvl<0?'var(--mut)':SEMCOL[r.lvl],on=semOnCow(c,b);
+  return `<div style="${semBox};border-left:5px solid ${col}"><div style="display:flex;gap:8px;align-items:baseline"><div style="flex:1;min-width:0"><b style="font-size:17px">${escH(b.nm||b.code)}</b>${b.nm&&b.code?` <span class="mut">${escH(b.code)}</span>`:''}</div><span class="tag">${b.doses} dose${b.doses>1?'s':''}</span></div>
+  <div style="color:${col};font-weight:700;margin:2px 0">${r.lvl<0?'⚪ Parenté non vérifiable':BT[r.lvl]+(r.F>0?' · ≥ '+semPct(r.F):'')}</div>
+  ${r.why.map(w=>`<div class="mut" style="font-size:13px">• ${escH(w)}</div>`).join('')}
+  ${h?`<div class="mut" style="font-size:13px">À la ferme : ${escH(h)}</div>`:''}${on?`<div class="mut" style="font-size:13px">${escH(on)}</div>`:''}
+  ${b.note?`<div style="font-size:13px;margin-top:2px">✚ ${escH(b.note)}</div>`:''}
+  <div class="row" style="margin-top:6px;justify-content:flex-end"><button data-semx="use" data-id="${b.id}" class="on">❤️ Utiliser sur ${escH(c.num)}</button></div></div>`};
+ const none=SEM.filter(b=>(+b.doses||0)<=0);
+ return `<div style="${semBox};margin-top:12px"><div style="font-size:18px;font-weight:800">${escH(c.num)} ${escH(c.nom||'')} <span class="mut" style="font-size:13px;font-weight:400">· ${VSHORT[kind(c)]||''}${c.lact?' · lact. '+c.lact:''}</span></div>
+  <div class="mut" style="margin:6px 0 2px;font-size:12px;font-weight:600">GÉNÉALOGIE (reconstituée du fichier DSA)</div>${ped}
+  <div class="mut" style="margin:10px 0 2px;font-size:12px;font-weight:600">POINTS À AMÉLIORER (classification)</div>${hxSem(c)}<input id="sem-cn" class="zi" style="width:100%;text-align:left;box-sizing:border-box" value="${escH(SEMC[c.id]||'')}" placeholder="ex. pattes, attache du pis, structure" autocomplete="off"></div>
+  <h3 style="margin:14px 0 2px">Taureaux en inventaire (${av.length})</h3>
+  ${SEM.some(b=>!b.pere&&!b.mgs)?'<div class="mut" style="font-size:12px;margin-bottom:4px">Parenté vérifiée avec le père et les grands-pères de la vache. Ajoute le père du taureau (✎ dans l’inventaire) pour une vérification plus complète.</div>':''}
+  ${av.length?av.map(cardB).join(''):'<div class="empty">Aucun taureau avec des doses.</div>'}
+  ${none.length?`<div class="mut" style="font-size:12px;margin-top:6px">Sans doses : ${none.map(b=>escH(b.nm||b.code)).join(', ')}</div>`:''}`}
+
+document.addEventListener('click',e=>{
+ const t=e.target.closest('[data-semt]');if(t){SEMTAB=t.dataset.semt;semences();return}
+ const b=e.target.closest('[data-semx]');if(!b)return;const a=b.dataset.semx,id=b.dataset.id,bl=SEM.find(x=>x.id===id);
+ if(a==='add')semForm(null);
+ else if(a==='edit'&&bl)semForm(bl);
+ else if((a==='inc'||a==='dec')&&bl){bl.doses=Math.max(0,(+bl.doses||0)+(a==='inc'?1:-1));saveSEM();semBody()}
+ else if(a==='del'&&bl){if(SEMDEL===id){clearTimeout(SEMDELT);SEMDEL=null;SEM=SEM.filter(x=>x.id!==id);saveSEM();toast('Taureau supprimé',2000)}else{SEMDEL=id;clearTimeout(SEMDELT);SEMDELT=setTimeout(()=>{SEMDEL=null;if(tab==='semence')semBody()},3000)}semBody()}
+ else if(a==='undo'){const l=SEMLOG[+b.dataset.i],x=l&&SEM.find(q=>q.id===l.id);if(l){if(x)x.doses=(+x.doses||0)+l.n;SEMLOG.splice(+b.dataset.i,1);saveSEM();semBody();toast(x?'Dose remise ✓':'Journal retiré (taureau supprimé)',2000)}}
+ else if(a==='pick'){SEMCOW=id;SEMQ='';semBody();scrollTo(0,0)}
+ else if(a==='use'&&bl&&SEMCOW){const c=DB.cows.find(x=>x.id===SEMCOW);if(c)actForm(null,c.num,'SAIL',bl.code||bl.nm)}});
+document.addEventListener('input',e=>{if(e.target.id==='sem-q'){SEMQ=e.target.value;const r=$('sem-r');if(r)r.innerHTML=semRes()}});
+document.addEventListener('change',e=>{if(e.target.id==='sem-cn'&&SEMCOW){const v=e.target.value.trim();if(v)SEMC[SEMCOW]=v;else delete SEMC[SEMCOW];saveSEM()}});
+/* ===== fin Choix de taureau ===== */
+
+/* ===== 📋 Holstein : classification + génétique + parents (lu sur les pages AIS de portal.holstein.ca) ===== */
+let HX={};try{HX=JSON.parse(localStorage.getItem('dsa_holx')||'{}')||{}}catch(e){}
+const saveHX=()=>{try{localStorage.setItem('dsa_holx',JSON.stringify(HX))}catch(e){}};
+const hxNum=s=>{if(s==null)return null;const m=String(s).replace(/\s/g,'').replace(',','.').match(/^-?\d+(?:\.\d+)?/);return m?+m[0]:null};
+const hxCells=doc=>[...doc.querySelectorAll('td,th')].map(x=>x.textContent.replace(/\s+/g,' ').trim());
+const hxAfter=(T,l)=>{for(let i=0;i<T.length-1;i++)if(T[i]===l&&hxNum(T[i+1])!=null)return{v:hxNum(T[i+1]),r:hxNum(T[i+2])};return null};
+const hxCL=/\b(EX|TB|BP|B|P|M)-(\d{2,3})-(\d+)\s*(?:ANS|YR)[A-Z-]*/;
+function hxParseMain(html){const doc=new DOMParser().parseFromString(html,'text/html'),txt=(doc.body?doc.body.textContent:'').replace(/\s+/g,' '),T=hxCells(doc),r={};
+ let m=txt.match(hxCL);if(m)r.cl={g:m[1],s:+m[2],l:+m[3]};
+ const g=(re,i)=>{const q=txt.match(re);return q?(i?q[i]:+q[1]):null};
+ r.sm=g(/SM:(\d+)/);r.pm=g(/P\/M:(\d+)/);r.pl=g(/PL:(\d+)/);r.cr=g(/Cr:(\d+)/);
+ m=txt.match(/SM:\d+\s*\(([^)]*)\)/);if(m)r.smx=m[1].trim();
+ m=txt.match(/([\d.,]+)\s*%\s*INB/);if(m)r.inb=hxNum(m[1]);
+ m=txt.match(/Né\(é\):\s*(\d{1,2}\s+\S+\s+\d{4})/);if(m)r.nais=m[1];
+ const ge={};for(const [k,l] of [['ipv','IPV'],['pro','Pro$'],['lait','Lait'],['gras','Gras'],['prot','Protéine'],['prod','Production'],['repro','Reproduction'],['lon','Longévité et Conformation'],['trai','Aptitude à la traite'],['sante','Santé et bien-être'],['env','Impact environnemental'],['conf','Conformation'],['croupe','Croupe'],['plg','Puissance laitière'],['smg','Système mammaire'],['pmg','Pieds et membres']]){const x=hxAfter(T,l);if(x)ge[k]=x.v;if(k==='ipv'&&x&&x.r!=null)ge.ipvr=x.r}
+ const fi=[...txt.matchAll(/Fiabilité\s*(\d+)\s*%/g)].map(x=>+x[1]);if(fi[0]!=null)ge.fprod=fi[0];if(fi[1]!=null)ge.fconf=fi[1];
+ const dg=T.find(x=>/^[a-zéû]+\.\*\d\d$/i.test(x));if(dg)ge.dt=dg;
+ if(Object.keys(ge).length)r.ge=ge;
+ const par=lbl=>{const st=[...doc.querySelectorAll('strong')].find(x=>x.textContent.trim()===lbl);if(!st||!st.parentElement)return null;
+  const row=st.parentElement,a=row.querySelector('a');if(!a)return null;const id=((a.getAttribute('href')||'').match(/animalId=(\d+)/i)||[])[1]||'';
+  const sib=[];let e=row.nextElementSibling;for(let i=0;e&&i<3;i++,e=e.nextElementSibling)sib.push(e);
+  const sp=sib[0]&&sib[0].querySelector('span');let nm=sib[0]?sib[0].textContent.replace(/\s+/g,' ').trim():'';const p=sp?sp.textContent.trim():'';if(p&&nm.endsWith(p))nm=nm.slice(0,-p.length).trim();
+  const cm=sib.map(x=>x.textContent).join(' ').match(hxCL);
+  return{id,reg:a.textContent.trim(),n:nm,p,cl:cm?cm[0].replace(/\s+/g,''):''}};
+ const s=par('Père:'),d=par('Mère:');if(s)r.sire=s;if(d)r.dam=d;
+ return r}
+function hxParseConf(html){const doc=new DOMParser().parseFromString(html,'text/html'),txt=(doc.body?doc.body.textContent:'').replace(/\s+/g,' '),r={};
+ const m=txt.match(/\b((?:EX|TB|BP|B|P|M)-\d{2,3}-\d+\s*(?:ANS|YR)[A-Z-]*)\s+(\d{1,2}\s+\S+\s+\d{4})\s+(\d+)\s+(\d+)/);
+ if(m){r.cdt=m[2];r.clact=+m[3];r.cjel=+m[4]}
+ const co={};for(const th of doc.querySelectorAll('th.section-title')){const v=hxNum(th.nextElementSibling&&th.nextElementSibling.textContent);if(v!=null)co[th.textContent.trim()]=v}
+ if(Object.keys(co).length)r.co=co;
+ const lin=[];for(const tr of doc.querySelectorAll('tr')){const td=[...tr.children].filter(x=>x.tagName==='TD'&&!x.classList.contains('defect'));
+  for(let i=0;i<td.length-1;i++){if(!td[i].classList.contains('text-right')&&td[i+1].classList.contains('text-right')){const v=hxNum(td[i+1].textContent),l=td[i].textContent.replace(/\s+/g,' ').trim();if(l&&v!=null&&v>=1&&v<=9&&!/^\d/.test(l)){lin.push([l,v]);i++}}}}
+ if(lin.length)r.lin=lin;
+ const df=[...doc.querySelectorAll('td.defect')].filter(x=>x.textContent.trim()||x.children.length).map(x=>x.getAttribute('data-val')||'?');if(df.length)r.def=[...new Set(df)];
+ return r}
+async function holxFetch(natl){let id=HOL[natl];
+ if(!id){if(!(await holFetch(natl)))throw new Error('Animal introuvable chez Holstein');id=HOL[natl]}
+ const reg='HOCANF'+natl,u=p=>'https://portal.holstein.ca/fr/AIS/'+p+'?animalId='+id+'&animalRegNo='+reg+'&uom=KG&me=BCA';
+ const mn=hxParseMain(await gdGet(u('AIS'),'text'));if(!mn.cl&&!mn.ge)throw new Error('La page Holstein ne donne pas les données (connexion requise ?)');
+ let cf={};try{cf=hxParseConf(await gdGet(u('Conformation'),'text'))}catch(e){}
+ HX[natl]=Object.assign({t:Date.now()},mn,cf);saveHX();return HX[natl]}
+const hxNames={cr:'Croupe',sm:'Système mammaire',pl:'Puissance laitière',pm:'Pieds et membres'};
+function hxWeak(x){const a=['cr','sm','pl','pm'].filter(k=>x[k]!=null).map(k=>({n:hxNames[k],v:x[k]})).sort((p,q)=>p.v-q.v);if(!a.length)return[];return a.filter(q=>q.v<=a[0].v+1).slice(0,2)}
+const hxChip=n=>{const x=HX[n];return x&&x.cl?'📋 '+x.cl.g+' '+x.cl.s:'📋 Class.'};
+function hxLine(x){const p=[];if(x.cl)p.push(x.cl.g+'-'+x.cl.s);for(const k of ['cr','sm','pl','pm'])if(x[k]!=null)p.push({cr:'Cr',sm:'SM',pl:'PL',pm:'P/M'}[k]+' '+x[k]);return p.join(' · ')}
+function hxHtml(c,x){const box='background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:8px 10px;margin:8px 0',h3='font-size:12px;font-weight:600;color:var(--mut);margin:0 0 4px';
+ const wk=hxWeak(x),weakK=wk.map(q=>q.n);
+ const cell=(k,l)=>x[k]==null?'':`<div style="flex:1;min-width:70px;text-align:center;padding:6px 4px;border-radius:8px;border:1px solid var(--ln);${weakK.includes(hxNames[k])?'background:color-mix(in srgb,#e08a00 22%,var(--card));':''}"><div style="font-size:11px;color:var(--mut)">${l}</div><div style="font-size:20px;font-weight:800">${x[k]}</div></div>`;
+ const g=x.ge||{},gv=(l,k,u)=>g[k]==null?'':`<div><span class="mut">${l}</span> <b>${g[k]}${u||''}</b></div>`;
+ const pa=(l,p)=>p?`<div><span class="mut">${l}</span> <b>${escH(p.n||p.reg)}</b> <span class="mut">${escH(p.reg)}${p.p?' · '+escH(p.p):''}${p.cl?' · '+escH(p.cl):''}</span></div>`:'';
+ return `<div style="${box}"><div style="${h3}">CLASSIFICATION${x.cdt?' · '+escH(x.cdt)+(x.clact?' · lact. '+x.clact:'')+(x.cjel?' · '+x.cjel+' j':''):''}</div>
+  ${x.cl?`<div style="font-size:22px;font-weight:800;margin-bottom:6px">${escH(x.cl.g)} ${x.cl.s} <span class="mut" style="font-size:13px;font-weight:400">· ${x.cl.l} lactation${x.cl.l>1?'s':''}</span></div>`:''}
+  <div style="display:flex;gap:6px;flex-wrap:wrap">${cell('cr','Croupe')}${cell('sm','Syst. mamm.')}${cell('pl','Puiss. lait.')}${cell('pm','Pieds/mb.')}</div>
+  ${wk.length?`<div style="margin-top:6px;color:#e08a00;font-weight:700">À améliorer : ${wk.map(q=>q.n+' ('+q.v+')').join(', ')}</div>`:''}
+  ${x.smx?`<div class="mut" style="font-size:13px;margin-top:2px">Système mammaire : ${escH(x.smx)}</div>`:''}
+  ${x.def&&x.def.length?`<div style="font-size:13px;margin-top:2px">Défauts : ${x.def.map(escH).join(', ')}</div>`:''}</div>
+  ${x.ge?`<div style="${box}"><div style="${h3}">GÉNÉTIQUE${g.dt?' · '+escH(g.dt):''}${g.fprod!=null?' · fiabilité '+g.fprod+' %':''}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;font-size:14px">${gv('IPV','ipv')}${gv('Pro$','pro')}${gv('Lait','lait',' kg')}${gv('Gras','gras',' kg')}${gv('Protéine','prot',' kg')}${gv('Reproduction','repro')}${gv('Longévité','lon')}${gv('Santé','sante')}${gv('Traite','trai')}${g.conf!=null?`<div style="grid-column:span 2;margin-top:4px"><span class="mut">Conformation génétique</span> <b>${g.conf}</b><span class="mut"> · Croupe ${g.croupe??'–'} · Puiss. lait. ${g.plg??'–'} · Syst. mamm. ${g.smg??'–'} · Pieds ${g.pmg??'–'}</span></div>`:''}${x.inb!=null?`<div><span class="mut">Consanguinité</span> <b>${x.inb} %</b></div>`:''}</div></div>`:''}
+  ${x.sire||x.dam?`<div style="${box}"><div style="${h3}">PARENTS (Holstein Canada)</div>${pa('Père',x.sire)}${pa('Mère',x.dam)}</div>`:''}
+  ${x.lin&&x.lin.length?`<details style="${box}"><summary style="${h3};cursor:pointer">POINTAGES LINÉAIRES (${x.lin.length})</summary><div style="display:grid;grid-template-columns:1fr auto 1fr auto;gap:2px 10px;font-size:13px;margin-top:6px">${x.lin.map(([l,v])=>`<span>${escH(l)}</span><b style="text-align:right">${v}</b>`).join('')}</div></details>`:''}`}
+function holxOpen(c){const old=$('holxmod');if(old)old.remove();if(!c||!c.natl)return;
+ const o=document.createElement('div');o.id='holxmod';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center';
+ const reg='HOCANF'+c.natl,id=HOL[c.natl],ext=id?`https://portal.holstein.ca/fr/AIS/AIS?animalId=${id}&animalRegNo=${reg}&uom=KG&me=BCA`:`https://portal.holstein.ca/fr/AIS/AIS?animalRegNo=${reg}`;
+ const draw=(msg)=>{const x=HX[c.natl];o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto"><div style="font-size:18px;font-weight:800">${escH(c.num)} ${escH(c.nom||'')}</div><div class="mut">${escH(reg)}${x?' · mis à jour '+new Date(x.t).toLocaleDateString('fr-CA'):''}</div>
+  ${msg?`<div style="margin:8px 0;font-weight:600">${escH(msg)}</div>`:''}${x?hxHtml(c,x):(msg?'':'<div class="empty">Pas encore récupéré.</div>')}
+  <div class="row" style="margin-top:10px;justify-content:flex-end"><a class="btn" href="${ext}" target="_blank" rel="noopener" style="text-decoration:none;font-weight:600;padding:8px 12px">Ouvrir Holstein ↗</a><button data-hxd="upd">🔄 ${x?'Mettre à jour':'Récupérer'}</button><button class="on" data-hxd="x">Fermer</button></div></div>`};
+ const run=async()=>{if(!gdCH()){draw('La récupération marche seulement dans l’application installée (APK).');return}
+  draw('⏳ Chargement…');try{await holxFetch(c.natl);draw('');hxRefresh(c)}catch(e){draw('Échec : '+(e&&e.message||e))}};
+ document.body.appendChild(o);draw('');
+ o.onclick=ev=>{const b=ev.target.closest('[data-hxd]');if(ev.target===o||(b&&b.dataset.hxd==='x')){o.remove();return}if(b&&b.dataset.hxd==='upd')run()};
+ if(!HX[c.natl])run()}
+function hxRefresh(c){const r=$('holrow');if(r&&r.dataset.a===c.natl){const ho=$('holinfo');if(ho)ho.remove();r.outerHTML=holBlock(c,EVF)}if(tab==='semence'&&typeof SEMCOW!=='undefined'&&SEMCOW===c.id)semBody()}
+function hxSem(c){if(!c.natl)return '';const x=HX[c.natl];
+ if(!x)return `<div style="margin:2px 0 6px"><button data-hxo="${c.natl}" style="padding:6px 10px;font-size:13px">📋 Récupérer la classification</button></div>`;
+ const wk=hxWeak(x);return `<div style="margin:2px 0 6px"><b>${escH(hxLine(x))}</b>${wk.length?` <span style="color:#e08a00;font-weight:700">→ à améliorer : ${wk.map(q=>escH(q.n)+' ('+q.v+')').join(', ')}</span>`:''} <button data-hxo="${c.natl}" style="padding:2px 8px;font-size:12px">Détails</button></div>`}
+let hxBusy=false;
+async function holxAll(){const S=s=>{const x=$('holst');if(x)x.textContent=s},B=s=>{const x=document.querySelector('[data-holxall]');if(x)x.textContent=s},L0='📋 Récupérer classification et génétique (vaches actives)';
+ if(hxBusy){hxBusy=false;return}
+ if(!gdCH()){S('Cette fonction marche seulement dans l’application installée (APK).');return}
+ const L=DB.cows.filter(c=>!c.elim&&c.natl&&!HX[c.natl]);if(!L.length){S('Tout est déjà récupéré ✓');return}
+ hxBusy=true;let ok=0,bad=0,err=0;
+ for(let i=0;i<L.length&&hxBusy;i++){B('⏹ Arrêter ('+i+' / '+L.length+')');
+  try{await holxFetch(L[i].natl);ok++;err=0}catch(e){bad++;if(++err>=5){S('Le site ne répond pas : arrêt. '+ok+' récupérées. '+(e&&e.message||'')); hxBusy=false;B(L0);return}}
+  await new Promise(r=>setTimeout(r,350))}
+ hxBusy=false;B(L0);S('Terminé : '+ok+' récupérées'+(bad?', '+bad+' échecs':'')+'.')}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-holx],[data-hxo]');if(!b||!DB)return;e.stopPropagation();e.preventDefault();
+ const n=b.dataset.holx||b.dataset.hxo,c=DB.cows.find(x=>x.natl===n&&!x.elim)||DB.cows.find(x=>x.natl===n);if(c)holxOpen(c)},true);
+/* ===== fin Holstein ===== */
 
 function menuOpen(){const old=$('menumod');if(old){old.remove();return}
  const n=ACT.filter(a=>a.st==='p').length;
@@ -420,12 +634,12 @@ function menuOpen(){const old=$('menumod');if(old){old.remove();return}
  const row=(k,ic,t,r)=>`<button type="button" data-mn="${k}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:50px;padding:0 14px;border:0;border-bottom:1px solid var(--ln);background:transparent;color:inherit;font-size:16px;text-align:left;border-radius:0"><span style="width:24px;text-align:center">${ic}</span><span style="flex:1">${t}</span>${r||''}</button>`;
  const sc=t=>`<div class="mut" style="padding:12px 14px 4px;font-size:12px;font-weight:600;letter-spacing:.4px">${t}</div>`;
  const bdg=n?`<span class="bdgn" style="position:static;display:inline-flex">${n>99?'99+':n}</span>`:'';
- d.innerHTML=`<div id="menup" style="position:absolute;top:0;bottom:0;left:0;width:min(84vw,330px);background:var(--bg);box-shadow:4px 0 20px rgba(0,0,0,.3);transform:translateX(-100%);transition:transform .2s ease;padding-top:env(safe-area-inset-top,0px);overflow:auto"><div style="padding:14px;font-size:18px;font-weight:700">🐄 MEUH</div>${sc('SAISIE')}${row('act','✍','Saisies à entrer dans DSA',bdg)}${row('multi','👥','Action sur plusieurs vaches')}${row('pc','💻','Envoi au PC','<span class="mut" style="font-size:12px">'+escH(PC.addr?(PCST||''):'non configuré')+'</span>')}${sc('OUTILS')}${row('rap','📊','Rapport')}${sc('COMPTE')}${row('nom','👤','Mon nom','<span class="mut" style="font-size:13px">'+escH(USER)+'</span>')}${row('upd','⟳','Mettre à jour')}${row('set','⚙','Réglages')}<div class="mut" style="padding:12px 14px;font-size:12px">Version ${BUILD}</div></div>`;
+ d.innerHTML=`<div id="menup" style="position:absolute;top:0;bottom:0;left:0;width:min(84vw,330px);background:var(--bg);box-shadow:4px 0 20px rgba(0,0,0,.3);transform:translateX(-100%);transition:transform .2s ease;padding-top:env(safe-area-inset-top,0px);overflow:auto"><div style="padding:14px;font-size:18px;font-weight:700">🐄 MEUH</div>${sc('SAISIE')}${row('act','✍','Saisies à entrer dans DSA',bdg)}${row('multi','👥','Action sur plusieurs vaches')}${row('pc','💻','Envoi au PC','<span class="mut" style="font-size:12px">'+escH(PC.addr?(PCST||''):'non configuré')+'</span>')}${sc('OUTILS')}${row('rap','📊','Rapport')}${row('sem','🐂','Choix de taureau')}${sc('COMPTE')}${row('nom','👤','Mon nom','<span class="mut" style="font-size:13px">'+escH(USER)+'</span>')}${row('upd','⟳','Mettre à jour')}${row('set','⚙','Réglages')}<div class="mut" style="padding:12px 14px;font-size:12px">Version ${BUILD}</div></div>`;
  document.body.appendChild(d);requestAnimationFrame(()=>{const m=$('menup');if(m)m.style.transform='none'});
  d.onclick=e=>{if(e.target===d){d.remove();return}const b=e.target.closest('[data-mn]');if(!b)return;const k=b.dataset.mn;d.remove();
   if(k==='act')$('actb').click();
   else if(k==='multi'){if(!DB){toast('Charge d’abord un fichier.',2500);return}nlActStart()}
-  else if(k==='pc')pcForm();else if(k==='rap')$('t5').click();else if(k==='nom')nameForm();else if(k==='upd')$('upd').click();else if(k==='set')$('gear').click()}}
+  else if(k==='pc')pcForm();else if(k==='rap')$('t5').click();else if(k==='sem'){if(tab!=='semence'){tabHist.push(tab);tab='semence';pushNav()}TABS.forEach(x=>$(x).classList.remove('on'));show()}else if(k==='nom')nameForm();else if(k==='upd')$('upd').click();else if(k==='set')$('gear').click()}}
 window.addEventListener('popstate',()=>{const m=$('menumod');if(m)m.remove()});
 $('menub').onclick=menuOpen;
 const SANTE=['Oculaire','Respiratoire','Cutané','Acétonémie','Digestif','Mammaire','Nombril','Locomoteur','Reproduction','Fumier','Divers'];
@@ -455,7 +669,7 @@ function holBlock(c,ef){
  const lac=`<a class="btn" href="https://lactanetgen.ca/query/summary.php?breed=HO&country=CAN&sex=F&regnum=${c.natl}" target="_blank" rel="noopener" style="${st}">🧬 CDN ↗</a>`;
  const ais=`${HP()}AIS?animalRegNo=${reg}`;
  let h=`<div class="row" id="holrow" data-a="${c.natl}">${ic}${lac}<a class="btn" href="${ais}" target="_blank" rel="noopener" style="${st}">🐄 HC ↗</a>`;
- if(id)h+=`<a class="btn" href="${HP()}Conformation?animalId=${id}&animalRegNo=${reg}&uom=KG&me=BCA" target="_blank" rel="noopener" style="${st}">📋 Class. ↗</a>`;
+ h+=`<button data-holx="${c.natl}" style="${sm}">${hxChip(c.natl)}</button>`;
  h+=ic2+'</div>';const I=HOLI[c.natl];
  if(I){const bits=[];if(I.n)bits.push(I.n);if(I.b)bits.push('Éleveur : '+I.b);if(I.o&&I.o!==I.b)bits.push('Propriétaire : '+I.o);if(I.p)bits.push('Pureté '+I.p+' %');if(I.c)bits.push(I.c);h+=`<div class="mut" id="holinfo" style="margin-top:4px;line-height:1.5">${bits.join(' · ')}</div>`}
  return h}
@@ -646,7 +860,7 @@ $('flrow').addEventListener('input',e=>{const i=e.target.id;if(i==='fjmin')FIL.j
 $('flrow').addEventListener('click',e=>{if(e.target.closest('#fclr')){FIL={jmin:'',jmax:'',smin:'',smax:'',pr:'all'};renderFil();list()}});
 let LSCR=null;
 function show(){show0();if(LSCR){if(LSCR.tab===tab){const y=LSCR.y;LSCR=null;scrollTo(0,y);requestAnimationFrame(()=>scrollTo(0,y));setTimeout(()=>scrollTo(0,y),80)}else LSCR=null}}
-function show0(){if(PLRET){const o=$('pl'),r=PLRET;PLRET=null;if(o){o.style.display='';setTimeout(()=>{plRender();o.scrollTop=r.st},0)}}pre();closeDD();document.querySelector('header').style.display=tab==='fiches'?'':'none';$('tabs').style.display='';$('m').style.paddingBottom='';inF=false;const f=tab==='fiches';$('bar').style.display=f?'':'none';if(tab==='reglages'){reglages();return}if(tab==='saisies'){saisies();return}if(tab==='rappels'){rappels();return}if(tab==='proto'){protos();return}if(DB){if(f)list();else if(tab==='roulette')roulette();else if(tab==='recherche')recherche();else if(tab==='rapport')rapport();else regie()}}
+function show0(){if(PLRET){const o=$('pl'),r=PLRET;PLRET=null;if(o){o.style.display='';setTimeout(()=>{plRender();o.scrollTop=r.st},0)}}pre();closeDD();document.querySelector('header').style.display=tab==='fiches'?'':'none';$('tabs').style.display='';$('m').style.paddingBottom='';inF=false;const f=tab==='fiches';$('bar').style.display=f?'':'none';if(tab==='semence'){semences();return}if(tab==='reglages'){reglages();return}if(tab==='saisies'){saisies();return}if(tab==='rappels'){rappels();return}if(tab==='proto'){protos();return}if(DB){if(f)list();else if(tab==='roulette')roulette();else if(tab==='recherche')recherche();else if(tab==='rapport')rapport();else regie()}}
 
 /* ===== Réglages, nom, rappels, rapport ===== */
 const pad=n=>String(n).padStart(2,'0');
@@ -751,7 +965,7 @@ function reglages(){
  <div class="row" style="margin:6px 0"><button data-bk="rest">Restaurer depuis le texte collé</button></div>
  <h3>Holstein Canada</h3>
   <div class="mut">Garde dans le téléphone le lien et les infos (éleveur, pureté, nom officiel) de chaque vache active, pour les voir sans réseau.</div>
-  <div class="row" style="margin:6px 0"><button data-holall>🐄 Récupérer les infos Holstein (vaches actives)</button></div><div class="mut" id="holst"></div>
+  <div class="row" style="margin:6px 0"><button data-holall>🐄 Récupérer les infos Holstein (vaches actives)</button></div><div class="row" style="margin:6px 0"><button data-holxall>📋 Récupérer classification et génétique (vaches actives)</button></div><div class="mut" id="holst"></div>
   <h3>Vibration</h3>
  <div class="mut" id="vbinfo">${(()=>{const H=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Haptics;return 'Plugin Haptics : '+(H?'présent':'absent')+' · navigator.vibrate : '+(navigator.vibrate?'présent':'absent')})()}</div>
  <div class="row" style="margin:6px 0"><button data-vb="plugin">Tester (plugin)</button><button data-vb="web">Tester (navigateur)</button></div>
@@ -1866,6 +2080,8 @@ let inF=false,LASTLIST=[],CURID=null;const tabHist=[];
 const AppP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;
 function back(){if(!AppP&&history.state&&history.state.f)history.back();else show()}
 function appBack(){
+ if($('holxmod')){$('holxmod').remove();return}
+ if($('semmod')){$('semmod').remove();return}
  if($('evxmod')){$('evxmod').remove();return}
  if($('plxe')){$('plxe').remove();return}
  if($('ccf')){ccClose();return}
@@ -2325,6 +2541,7 @@ $('m').onclick=e=>{
  if(e.target.closest('[data-gdnow]')){driveUpdate(false);return}
  const gf=e.target.closest('[data-gdforce]');if(gf){if(gf.dataset.arm){delete gf.dataset.arm;gf.textContent='⚠ Forcer la mise à jour du cloud (même si plus ancien)';driveUpdate(false,true)}else{gf.dataset.arm='1';gf.textContent='⚠ Appuie encore : ça remplace les données de l’app';setTimeout(()=>{if(gf.dataset.arm){delete gf.dataset.arm;gf.textContent='⚠ Forcer la mise à jour du cloud (même si plus ancien)'}},4000)}return}
   if(e.target.closest('[data-impf]')){$('f').value='';$('f').click();return}
+ if(e.target.closest('[data-holxall]')){holxAll();return}
  if(e.target.closest('[data-holall]')){holAll();return}
   const nt=e.target.closest('[data-note],[data-noteedit],[data-notesave],[data-notedel]');
   if(nt){const c=DB.cows.find(x=>x.id===CURID);if(!c)return;const k=noteKey(c),D=nt.dataset;
