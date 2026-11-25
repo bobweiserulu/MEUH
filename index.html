@@ -411,7 +411,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-24e';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-24f';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 /* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
@@ -659,12 +659,20 @@ async function hxJob(pM,pC){
  const out=()=>JSON.stringify({v:1,hx:R,hol:ID,holi:INFO});
  const get=async(u,x)=>{const r=await fetch(u,{credentials:'include',headers:x?{'X-Requested-With':'XMLHttpRequest'}:{}});const t=await r.text();if(!r.ok)throw new Error('réponse '+r.status+(/Just a moment/.test(t)?' (Cloudflare : recharge la page Holstein puis relance)':''));return t};
  $('mx').onclick=()=>{run=false;ov.remove()};
- $('mcp').onclick=async()=>{const s=out();$('mta').value=s;try{await navigator.clipboard.writeText(s);st('Copié ✓ ('+Object.keys(R).length+' vaches). Retourne dans MEUH et colle.')}catch(e){$('mta').select();try{document.execCommand('copy');st('Copié ✓ ('+Object.keys(R).length+' vaches). Retourne dans MEUH et colle.')}catch(x){st('Sélectionne tout le texte de la case et copie-le à la main.')}}};
+ let PP=[],pi=0;
+ const chunks=()=>{const P=[];let cur={v:1,hx:{},hol:{},holi:{}},sz=0;for(const k of Object.keys(R)){const one=JSON.stringify(R[k]).length+200;if(sz+one>90000&&Object.keys(cur.hx).length){P.push(cur);cur={v:1,hx:{},hol:{},holi:{}};sz=0}cur.hx[k]=R[k];cur.hol[k]=ID[k];cur.holi[k]=INFO[k];sz+=one}if(Object.keys(cur.hx).length)P.push(cur);return P.map(x=>JSON.stringify(x))};
+ $('mcp').onclick=async()=>{if(pi>=PP.length){PP=chunks();pi=0}
+  if(!PP.length){st('Rien à copier.');return}
+  const t=PP[pi],lab='Partie '+(pi+1)+' / '+PP.length;$('mta').value=t;let ok=true;pi++;
+  try{await navigator.clipboard.writeText(t)}catch(e){$('mta').select();try{ok=document.execCommand('copy')}catch(x){ok=false}}
+  const last=pi>=PP.length;
+  st((ok?'Copié ✓ ':'Sélectionne tout le texte de la case et copie-le. ')+lab+' ('+Math.round(t.length/1000)+' ko). Colle-la dans MEUH, touche Importer'+(last?'. C’est la dernière partie.':', puis reviens ici et touche « Copier la partie suivante ».'));
+  $('mcp').textContent=last?'📋 Tout recopier (depuis la partie 1)':'📋 Copier la partie suivante'};
  $('mgo').onclick=async()=>{
   if(run){run=false;return}
   const L=[...new Set(($('mta').value.match(/\d{6,}/g)||[]))];
   if(!L.length){st('Aucun numéro trouvé dans la case.');return}
-  run=true;bad=0;$('mgo').textContent='⏹ Arrêter';let err=0,msg='';
+  run=true;bad=0;PP=[];pi=0;$('mcp').textContent='📋 Copier le résultat';$('mgo').textContent='⏹ Arrêter';let err=0,msg='';
   for(let i=0;i<L.length&&run;i++){const n=L[i];st('Lecture '+(i+1)+' / '+L.length+' ('+n+') · '+Object.keys(R).length+' ok, '+bad+' échecs');
    try{
     const d=JSON.parse(await get('/en/AIS/ReadAnimalSearchGrid?animalSearchString='+encodeURIComponent(n),1)),l=d.Data||[],a=l.find(x=>String(x.RegNumber)===n&&x.SexCode==='F')||l.find(x=>String(x.RegNumber)===n);
@@ -701,7 +709,7 @@ function hxBulk(){const old=$('hxbulkmod');if(old)old.remove();
   else if(k==='us')hxCopy(hxUserscript(),'Script Firefox copié ✓');
   else if(k==='scr')hxCopy(encodeURIComponent(hxScript()),'Script copié ✓ (écris javascript: avant de coller)');
   else if(k==='paste'){try{$('hbta').value=await navigator.clipboard.readText()}catch(e){M('Colle à la main : appuie longtemps dans la case.')}}
-  else if(k==='imp'){const t=$('hbta').value;if(!t.trim()){M('Colle d’abord le résultat.');return}M(hxImport(t))}}}
+  else if(k==='imp'){const t=$('hbta').value;if(!t.trim()){M('Colle d’abord le résultat.');return}{const m=hxImport(t);M(m+(/✓/.test(m)?' Colle la partie suivante s’il y en a une.':''));if(/✓/.test(m))$('hbta').value=''}}}}
 document.addEventListener('click',e=>{if(!e.target.closest('[data-hxbulk]'))return;e.stopPropagation();e.preventDefault();hxBulk()},true);
 /* ===== fin Holstein ===== */
 
