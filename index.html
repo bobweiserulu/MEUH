@@ -411,7 +411,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-24f';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-24g';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 /* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
@@ -651,7 +651,7 @@ async function hxJob(pM,pC){
  if(location.hostname!=='portal.holstein.ca'){alert('Ouvre d’abord une page de portal.holstein.ca (Holstein Canada), puis relance.');return}
  const old=D.getElementById('meuhov');if(old)old.remove();
  const ov=D.createElement('div');ov.id='meuhov';ov.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#fff;color:#111;padding:14px;font:16px sans-serif;overflow:auto';
- ov.innerHTML='<div style="font-size:20px;font-weight:800">MEUH : lecture Holstein</div><div id="mst" style="margin:8px 0">Colle la liste des vaches (copiée dans MEUH), puis touche Démarrer.</div><textarea id="mta" style="width:100%;height:150px;font-size:14px;box-sizing:border-box"></textarea><div style="margin-top:8px"><button id="mgo" style="font-size:18px;padding:10px 14px;margin:2px">▶ Démarrer</button> <button id="mcp" style="font-size:18px;padding:10px 14px;margin:2px">📋 Copier le résultat</button> <button id="mx" style="font-size:18px;padding:10px 14px;margin:2px">Fermer</button></div>';
+ ov.innerHTML='<div style="font-size:20px;font-weight:800">MEUH : lecture Holstein</div><div id="mst" style="margin:8px 0">Colle la liste des vaches (copiée dans MEUH), puis touche Démarrer.</div><textarea id="mta" style="width:100%;height:150px;font-size:14px;box-sizing:border-box"></textarea><div style="margin-top:8px"><button id="mgo" style="font-size:18px;padding:10px 14px;margin:2px">▶ Démarrer</button> <button id="mdl" style="font-size:18px;padding:10px 14px;margin:2px">💾 Enregistrer le fichier</button> <button id="mcp" style="font-size:18px;padding:10px 14px;margin:2px">📋 Copier (en parties)</button> <button id="mx" style="font-size:18px;padding:10px 14px;margin:2px">Fermer</button></div>';
  D.body.appendChild(ov);
  const $=i=>D.getElementById(i),st=s=>{$('mst').textContent=s},sf=m=>{const e=new Error(m);e.soft=1;return e};
  try{const t=await navigator.clipboard.readText();if(/\d{6}/.test(t))$('mta').value=t}catch(e){}
@@ -659,6 +659,7 @@ async function hxJob(pM,pC){
  const out=()=>JSON.stringify({v:1,hx:R,hol:ID,holi:INFO});
  const get=async(u,x)=>{const r=await fetch(u,{credentials:'include',headers:x?{'X-Requested-With':'XMLHttpRequest'}:{}});const t=await r.text();if(!r.ok)throw new Error('réponse '+r.status+(/Just a moment/.test(t)?' (Cloudflare : recharge la page Holstein puis relance)':''));return t};
  $('mx').onclick=()=>{run=false;ov.remove()};
+ $('mdl').onclick=()=>{if(!Object.keys(R).length){st('Rien à enregistrer.');return}try{const bl=new Blob([out()],{type:'application/json'}),a=D.createElement('a');a.href=URL.createObjectURL(bl);a.download='meuh-holstein.json';D.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href)},4000);st('Fichier « meuh-holstein.json » enregistré ('+Object.keys(R).length+' vaches, '+Math.round(out().length/1000)+' ko). Retourne dans MEUH : 📂 Choisir le fichier.')}catch(e){st('Enregistrement impossible : '+e.message)}};
  let PP=[],pi=0;
  const chunks=()=>{const P=[];let cur={v:1,hx:{},hol:{},holi:{}},sz=0;for(const k of Object.keys(R)){const one=JSON.stringify(R[k]).length+200;if(sz+one>90000&&Object.keys(cur.hx).length){P.push(cur);cur={v:1,hx:{},hol:{},holi:{}};sz=0}cur.hx[k]=R[k];cur.hol[k]=ID[k];cur.holi[k]=INFO[k];sz+=one}if(Object.keys(cur.hx).length)P.push(cur);return P.map(x=>JSON.stringify(x))};
  $('mcp').onclick=async()=>{if(pi>=PP.length){PP=chunks();pi=0}
@@ -672,7 +673,7 @@ async function hxJob(pM,pC){
   if(run){run=false;return}
   const L=[...new Set(($('mta').value.match(/\d{6,}/g)||[]))];
   if(!L.length){st('Aucun numéro trouvé dans la case.');return}
-  run=true;bad=0;PP=[];pi=0;$('mcp').textContent='📋 Copier le résultat';$('mgo').textContent='⏹ Arrêter';let err=0,msg='';
+  run=true;bad=0;PP=[];pi=0;$('mcp').textContent='📋 Copier (en parties)';$('mgo').textContent='⏹ Arrêter';let err=0,msg='';
   for(let i=0;i<L.length&&run;i++){const n=L[i];st('Lecture '+(i+1)+' / '+L.length+' ('+n+') · '+Object.keys(R).length+' ok, '+bad+' échecs');
    try{
     const d=JSON.parse(await get('/en/AIS/ReadAnimalSearchGrid?animalSearchString='+encodeURIComponent(n),1)),l=d.Data||[],a=l.find(x=>String(x.RegNumber)===n&&x.SexCode==='F')||l.find(x=>String(x.RegNumber)===n);
@@ -683,7 +684,7 @@ async function hxJob(pM,pC){
     R[n]=Object.assign({t:Date.now()},mn,cf);ID[n]=a.AnimalId;INFO[n]={n:a.DisplayAnimalName||'',b:a.BreederName||'',o:a.OwnerName||'',p:a.HerdBookPurityDisplay||'',c:a.Colour||''};err=0;
    }catch(e){bad++;if(e.soft)err=0;else if(++err>=5){msg=' Arrêt : '+e.message+'.';break}}
    await new Promise(r=>setTimeout(r,500))}
-  run=false;$('mgo').textContent='▶ Démarrer';st('Terminé : '+Object.keys(R).length+' vaches lues, '+bad+' échecs.'+msg+' Touche « Copier le résultat ».');
+  run=false;$('mgo').textContent='▶ Démarrer';st('Terminé : '+Object.keys(R).length+' vaches lues, '+bad+' échecs.'+msg+' Touche « Enregistrer le fichier ».');
  };
 }
 function hxScript(){return '(async()=>{const hxNum='+hxNum+',hxCells='+hxCells+',hxAfter='+hxAfter+',hxCL='+hxCL+';'+hxParseMain+';'+hxParseConf+';await ('+hxJob+')(hxParseMain,hxParseConf)})()'}
@@ -699,15 +700,16 @@ function hxBulk(){const old=$('hxbulkmod');if(old)old.remove();
  const L=(DB?DB.cows:[]).filter(c=>!c.elim&&c.natl&&!HX[c.natl]).map(c=>c.natl);
  const sm='min-height:44px;font-size:15px;margin:3px 0;width:100%';
  o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto"><div style="font-size:18px;font-weight:800">📥 Holstein via le navigateur</div>
- <div class="mut" style="margin:6px 0;line-height:1.5">Le navigateur du cell passe la protection du site ; MEUH reçoit ensuite le résultat.<br><b>1.</b> Copie la liste (${L.length} vache${L.length>1?'s':''} sans données).<br><b>2.</b> Copie le script.<br><b>3. Méthode recommandée (Firefox) :</b> installe <b>Firefox</b> puis l’extension <b>Violentmonkey</b> (menu ⋮ → Modules complémentaires). Ouvre Violentmonkey → ＋ (nouveau script), efface tout, colle le script « Firefox » (bouton 2) et enregistre. Ensuite, sur <b>portal.holstein.ca</b> (connecté), un bouton vert <b>MEUH</b> apparaît en bas à droite : touche-le.<br><i>Autre méthode (Chrome, capricieuse) : barre d’adresse, écrire javascript: puis coller le script « Chrome ».</i><br><b>4.</b> Colle la liste, touche Démarrer, puis « Copier le résultat ».<br><b>5.</b> Reviens ici, colle le résultat, touche Importer.</div>
+ <div class="mut" style="margin:6px 0;line-height:1.5">Le navigateur du cell passe la protection du site ; MEUH reçoit ensuite le résultat.<br><b>1.</b> Copie la liste (${L.length} vache${L.length>1?'s':''} sans données).<br><b>2.</b> Copie le script.<br><b>3. Méthode recommandée (Firefox) :</b> installe <b>Firefox</b> puis l’extension <b>Violentmonkey</b> (menu ⋮ → Modules complémentaires). Ouvre Violentmonkey → ＋ (nouveau script), efface tout, colle le script « Firefox » (bouton 2) et enregistre. Ensuite, sur <b>portal.holstein.ca</b> (connecté), un bouton vert <b>MEUH</b> apparaît en bas à droite : touche-le.<br><i>Autre méthode (Chrome, capricieuse) : barre d’adresse, écrire javascript: puis coller le script « Chrome ».</i><br><b>4.</b> Colle la liste, touche Démarrer, puis <b>💾 Enregistrer le fichier</b>.<br><b>5.</b> Reviens ici et touche <b>📂 Choisir le fichier</b> : prends « meuh-holstein.json » (dossier Téléchargements). Le collage de texte reste possible en secours.</div>
  <button data-hb="list" style="${sm}"${L.length?'':' disabled'}>1. 📋 Copier la liste des vaches</button><button data-hb="us" style="${sm}">2. 📋 Copier le script (Firefox + Violentmonkey)</button><button data-hb="scr" style="${sm}">2. 📋 Copier le script (Chrome)</button>
  <textarea id="hbta" placeholder="5. Colle ici le résultat" style="width:100%;height:110px;box-sizing:border-box;margin-top:6px;font-size:13px"></textarea><div id="hbmsg" style="margin:6px 0;font-weight:600"></div>
- <div class="row" style="justify-content:flex-end"><button data-hb="paste">Coller</button><button data-hb="imp" class="on">Importer</button><button data-hb="x">Fermer</button></div></div>`;
+ <div class="row" style="justify-content:flex-end"><button data-hb="file">📂 Choisir le fichier</button><button data-hb="paste">Coller</button><button data-hb="imp" class="on">Importer</button><button data-hb="x">Fermer</button></div></div>`;
  document.body.appendChild(o);
  o.onclick=async ev=>{const b=ev.target.closest('[data-hb]'),M=s=>{$('hbmsg').textContent=s};if(ev.target===o||(b&&b.dataset.hb==='x')){o.remove();return}if(!b)return;const k=b.dataset.hb;
   if(k==='list')hxCopy(L.join('\n'),'Liste copiée ✓');
   else if(k==='us')hxCopy(hxUserscript(),'Script Firefox copié ✓');
   else if(k==='scr')hxCopy(encodeURIComponent(hxScript()),'Script copié ✓ (écris javascript: avant de coller)');
+  else if(k==='file'){const fi=document.createElement('input');fi.type='file';fi.onchange=async()=>{const f=fi.files[0];if(!f)return;M('⏳ Lecture…');try{M(hxImport(await f.text()))}catch(e){M('Lecture impossible : '+(e&&e.message||e))}};fi.click()}
   else if(k==='paste'){try{$('hbta').value=await navigator.clipboard.readText()}catch(e){M('Colle à la main : appuie longtemps dans la case.')}}
   else if(k==='imp'){const t=$('hbta').value;if(!t.trim()){M('Colle d’abord le résultat.');return}{const m=hxImport(t);M(m+(/✓/.test(m)?' Colle la partie suivante s’il y en a une.':''));if(/✓/.test(m))$('hbta').value=''}}}}
 document.addEventListener('click',e=>{if(!e.target.closest('[data-hxbulk]'))return;e.stopPropagation();e.preventDefault();hxBulk()},true);
