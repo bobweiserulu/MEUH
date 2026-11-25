@@ -82,7 +82,7 @@ const ELM={VABA:'vente abattoir',MORT:'morte',MAMM:'mammite',VLAI:'vente laitiè
 const REF={REP:'reproduction',FPRO:'faible production',RLOC:'pattes',TDIF:'traite difficile',AGE:'âge',AUTR:'autre',MAMM:'mammite'};
 let SKB='n';try{SKB=localStorage.getItem('dsa_skb')||'n'}catch(e){}
 let SKBM='numeric';try{SKBM=localStorage.getItem('dsa_skbm')||'numeric'}catch(e){}
-const SKBSEL='#q,#cpq,#pkq,#cp-s,#rsq,#skbtest,#sem-q',skbMode=()=>SKB==='t'?'text':SKBM,IM=()=>' inputmode="'+skbMode()+'"';
+const SKBSEL='#q,#cpq,#pkq,#cp-s,#rsq,#skbtest,#sem-q,#ins-q',skbMode=()=>SKB==='t'?'text':SKBM,IM=()=>' inputmode="'+skbMode()+'"';
 let SKBB=null,SKBI=null;
 function skbApply(){document.querySelectorAll(SKBSEL).forEach(i=>i.setAttribute('inputmode',skbMode()))}
 function skbOff(){if(SKBI&&SKBI.style)SKBI.style.paddingRight=SKBI.dataset.pr||'';if(SKBB)SKBB.remove();SKBB=null;SKBI=null}
@@ -231,10 +231,12 @@ function lbarRender(){let b=$('lbar');const sh=tab==='fiches'&&!inF&&(selMode||B
  if(!b){b=document.createElement('div');b.id='lbar';b.onclick=lbarClick;document.body.appendChild(b)}
  b.style.cssText='position:fixed;left:0;right:0;bottom:'+$('tabs').offsetHeight+'px;z-index:7;background:var(--card);border-top:1px solid var(--ln);padding:6px 10px;box-shadow:0 -2px 8px rgba(0,0,0,.12)';
  let h='';
- if(selMode)h+=`<div class="row" style="margin:0 0 4px;align-items:center"><b>${SELS.size} sélectionnée(s)</b><button data-lball>Tout (${LASTLIST.length})</button><button data-lbnone>Aucune</button><button class="on" data-lbadd>🧺 Mettre au panier</button></div>`;
- if(BK.length)h+=`<div class="row" style="margin:0;align-items:center"><b>🧺 ${BK.length}</b><button data-lbview>Voir</button><button data-lbproto>Protocole ▸</button><button data-lblist>Liste ▸</button><button data-lbclr style="color:var(--rd)">Vider</button></div>`;
+ if(selMode)h+=`<div class="row" style="margin:0 0 4px;align-items:center"><b>${SELS.size} sélectionnée(s)</b><button data-lball>Tout (${LASTLIST.length})</button><button data-lbnone>Aucune</button><button class="on" data-lbadd>🧺 Mettre au panier</button><button data-lbins>💉 Inséminer</button></div>`;
+ if(BK.length)h+=`<div class="row" style="margin:0;align-items:center"><b>🧺 ${BK.length}</b><button data-lbview>Voir</button><button data-lbproto>Protocole ▸</button><button data-lblist>Liste ▸</button><button data-lbins2>💉 Inséminer ▸</button><button data-lbclr style="color:var(--rd)">Vider</button></div>`;
  b.innerHTML=h;$('m').style.paddingBottom=(b.offsetHeight+12)+'px'}
 function lbarClick(e){const t=e.target;
+ if(t.closest('[data-lbins]')){insOpen([...SELS].map(id=>DB.cows.find(x=>x.id===id)).filter(Boolean));return}
+ if(t.closest('[data-lbins2]')){insOpen(BK.map(n=>DB.cows.find(x=>String(x.num)===String(n)&&!x.elim)).filter(Boolean));return}
  if(t.closest('[data-lball]')){LASTLIST.forEach(id=>SELS.add(id));selDecorate();lbarRender();return}
  if(t.closest('[data-lbnone]')){SELS.clear();selDecorate();lbarRender();return}
  if(t.closest('[data-lbadd]')){const ids=[...SELS];let n=0;ids.forEach(id=>{const c=DB.cows.find(x=>x.id===id);if(c&&!inBK(c.num)){BK.push(c.num);n++}});saveBK();SELS.clear();selMode=false;toast(ids.length+' vache(s) → panier ('+BK.length+' au total)',2500);list();return}
@@ -411,7 +413,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-24g';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-25a';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 /* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
@@ -455,10 +457,10 @@ function semInv(){const tot=SEM.reduce((a,b)=>a+(+b.doses||0),0),L=[...SEM].sort
  const card=b=>{const d=+b.doses||0,col=d===0?'var(--mut)':d<=2?'#e08a00':'var(--tx)';
   return `<div style="${semBox}${d===0?';opacity:.65':''}"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><b style="font-size:17px">${escH(b.nm||b.code)}</b>${b.nm&&b.code?`<div class="mut">${escH(b.code)}</div>`:''}${b.pere||b.mgs?`<div class="mut" style="font-size:12px">${b.pere?'Père : '+escH(b.pere):''}${b.pere&&b.mgs?' · ':''}${b.mgs?'Père de la mère : '+escH(b.mgs):''}</div>`:''}${b.note?`<div style="font-size:13px;margin-top:2px">✚ ${escH(b.note)}</div>`:''}</div>
   <div style="display:flex;align-items:center;gap:6px;flex:none"><button data-semx="dec" data-id="${b.id}" style="min-width:44px;min-height:44px;font-size:22px">−</button><div style="min-width:38px;text-align:center;font-size:24px;font-weight:800;color:${col}">${d}</div><button data-semx="inc" data-id="${b.id}" style="min-width:44px;min-height:44px;font-size:22px">＋</button></div></div>
-  <div class="row" style="margin-top:6px;justify-content:flex-end"><button data-semx="edit" data-id="${b.id}">✎ Modifier</button><button data-semx="del" data-id="${b.id}"${SEMDEL===b.id?' class="on" style="background:var(--rd);border-color:var(--rd)"':''}>${SEMDEL===b.id?'Supprimer ?':'🗑'}</button></div></div>`};
+  <div class="row" style="margin-top:6px;justify-content:flex-end"><button data-semx="inc10" data-id="${b.id}">＋10</button><button data-semx="edit" data-id="${b.id}">✎ Modifier</button><button data-semx="del" data-id="${b.id}"${SEMDEL===b.id?' class="on" style="background:var(--rd);border-color:var(--rd)"':''}>${SEMDEL===b.id?'Supprimer ?':'🗑'}</button></div></div>`};
  const lg=SEMLOG.slice(-8).reverse().map((l,i)=>{const ix=SEMLOG.length-1-i;return `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--ln)"><div style="flex:1;min-width:0" class="mut">${fmt(l.d)} · <b>${escH(l.nm)}</b> −${l.n} → vache ${escH((l.cows||[]).join(', '))}</div><button data-semx="undo" data-i="${ix}" title="Remettre la dose">↩</button></div>`}).join('');
  return `<div class="row" style="margin:6px 0;justify-content:space-between;align-items:center"><span class="mut">${SEM.length} taureau${SEM.length>1?'x':''} · ${tot} dose${tot>1?'s':''}</span><button class="on" data-semx="add" style="min-height:44px">＋ Ajouter un taureau</button></div>`
-  +(L.length?L.map(card).join(''):'<div class="empty">Aucun taureau pour l’instant.<br>Touche « Ajouter un taureau ».</div>')
+  +(L.length?[1,2,3,4,5,6,''].map(cs=>{const g=L.filter(b=>String(b.cs||'')===String(cs));if(!g.length)return '';const n=g.reduce((a,b)=>a+(+b.doses||0),0);return `<div style="display:flex;justify-content:space-between;align-items:baseline;margin:14px 2px 2px"><b style="font-size:17px">${cs?'Casier '+cs:'Sans casier'}</b><span class="mut">${n} dose${n>1?'s':''}</span></div>`+g.map(card).join('')}).join(''):'<div class="empty">Aucun taureau pour l’instant.<br>Touche « Ajouter un taureau ».<br><br><button data-semx="seed" class="on" style="min-height:48px">📥 Charger mon inventaire papier (casiers 2, 3, 5, 6)</button></div>')
   +(lg?`<h3 style="margin:16px 0 4px">Dernières utilisations</h3><div class="mut" style="font-size:12px;margin-bottom:4px">Une dose est retirée automatiquement quand tu enregistres une saillie avec le code du taureau. ↩ la remet.</div>${lg}`:'')}
 
 function semForm(b){const old=$('semmod');if(old)old.remove();
@@ -468,6 +470,7 @@ function semForm(b){const old=$('semmod');if(old)old.remove();
  ${lb('Nom')}<input id="sm-nm" class="zi" style="${zs}" value="${v('nm')}" autocomplete="off">
  ${lb('Code (ex. 200HO06400)')}<input id="sm-cd" class="zi" style="${zs}" value="${v('code')}" autocomplete="off" autocapitalize="characters">
  ${lb('Nombre de doses')}<input id="sm-ds" type="number" inputmode="numeric" min="0" class="zi" style="${zs}" value="${b?+b.doses||0:''}">
+ ${lb('Casier dans la tank')}<select id="sm-cs" class="zi" style="${zs}"><option value="">— aucun —</option>${[1,2,3,4,5,6].map(n=>`<option value="${n}"${b&&String(b.cs)===String(n)?' selected':''}>Casier ${n}</option>`).join('')}</select>
  ${lb('Père du taureau (code ou nom) — facultatif')}<input id="sm-pe" class="zi" style="${zs}" value="${v('pere')}" autocomplete="off">
  ${lb('Père de sa mère (code ou nom) — facultatif')}<input id="sm-mg" class="zi" style="${zs}" value="${v('mgs')}" autocomplete="off">
  ${lb('Points forts / notes — facultatif')}<input id="sm-nt" class="zi" style="${zs}" value="${v('note')}" placeholder="ex. pattes, pis, vêlage facile" autocomplete="off">
@@ -477,10 +480,10 @@ function semForm(b){const old=$('semmod');if(old)old.remove();
  o.onclick=ev=>{const t=ev.target.closest('[data-smx]');if(ev.target===o||(t&&t.dataset.smx==='x')){o.remove();return}if(!t)return;
   const g=i=>($(i).value||'').trim(),nm=g('sm-nm'),cd=g('sm-cd').toUpperCase(),ds=Math.max(0,parseInt($('sm-ds').value)||0);
   if(!nm&&!cd){toast('Entre un nom ou un code.',2500);return}
-  const f={nm,code:cd,doses:ds,pere:g('sm-pe'),mgs:g('sm-mg'),note:g('sm-nt')};
+  const f={nm,code:cd,doses:ds,cs:$('sm-cs').value,pere:g('sm-pe'),mgs:g('sm-mg'),note:g('sm-nt')};
   if(b)Object.assign(b,f);
   else{const k=cd?semK(cd):'',ex=k&&SEM.find(x=>x.code&&semK(x.code)===k);
-   if(ex){ex.doses=(+ex.doses||0)+ds;for(const q of ['nm','pere','mgs','note'])if(!ex[q]&&f[q])ex[q]=f[q];toast('Déjà dans l’inventaire : doses ajoutées ✓',3000)}
+   if(ex){ex.doses=(+ex.doses||0)+ds;for(const q of ['nm','cs','pere','mgs','note'])if(!ex[q]&&f[q])ex[q]=f[q];toast('Déjà dans l’inventaire : doses ajoutées ✓',3000)}
    else SEM.push(Object.assign({id:semUid()},f))}
   saveSEM();o.remove();semBody()}}
 
@@ -530,6 +533,8 @@ document.addEventListener('click',e=>{
  const b=e.target.closest('[data-semx]');if(!b)return;const a=b.dataset.semx,id=b.dataset.id,bl=SEM.find(x=>x.id===id);
  if(a==='add')semForm(null);
  else if(a==='edit'&&bl)semForm(bl);
+ else if(a==='inc10'&&bl){bl.doses=(+bl.doses||0)+10;saveSEM();semBody();toast('＋10 doses : '+(bl.nm||bl.code)+' → '+bl.doses,2500)}
+ else if(a==='seed'&&!SEM.length){[['200HO12399','Dropbox',2,'2'],['200HO7972','Allgaud (ou Albaqua)',12,'2'],['200HO13601','Honoris',3,'2'],['200HO12529','Havenofear',5,'2'],['HO12340','Largon (ou Largan)',6,'2'],['200HO13669','Lestrange-P',3,'2'],['200HO13512','Currency PP',4,'3'],['200HO13515','Alcaraz',5,'3'],['200HO13602','Popfest',5,'3'],['200HO13438','Ludwig',2,'3'],['200AN10775','',5,'5'],['200AN10412','Flattop',12,'5'],['777HO13087','Proficient',5,'6'],['777HO13224','Edward',2,'6']].forEach(x=>SEM.push({id:semUid(),code:x[0],nm:x[1],doses:x[2],cs:x[3],pere:'',mgs:'',note:''}));saveSEM();semBody();toast('Inventaire chargé ✓ (14 taureaux)',3000)}
  else if((a==='inc'||a==='dec')&&bl){bl.doses=Math.max(0,(+bl.doses||0)+(a==='inc'?1:-1));saveSEM();semBody()}
  else if(a==='del'&&bl){if(SEMDEL===id){clearTimeout(SEMDELT);SEMDEL=null;SEM=SEM.filter(x=>x.id!==id);saveSEM();toast('Taureau supprimé',2000)}else{SEMDEL=id;clearTimeout(SEMDELT);SEMDELT=setTimeout(()=>{SEMDEL=null;if(tab==='semence')semBody()},3000)}semBody()}
  else if(a==='undo'){const l=SEMLOG[+b.dataset.i],x=l&&SEM.find(q=>q.id===l.id);if(l){if(x)x.doses=(+x.doses||0)+l.n;SEMLOG.splice(+b.dataset.i,1);saveSEM();semBody();toast(x?'Dose remise ✓':'Journal retiré (taureau supprimé)',2000)}}
@@ -538,6 +543,92 @@ document.addEventListener('click',e=>{
 document.addEventListener('input',e=>{if(e.target.id==='sem-q'){SEMQ=e.target.value;const r=$('sem-r');if(r)r.innerHTML=semRes()}});
 document.addEventListener('change',e=>{if(e.target.id==='sem-cn'&&SEMCOW){const v=e.target.value.trim();if(v)SEMC[SEMCOW]=v;else delete SEMC[SEMCOW];saveSEM()}});
 /* ===== fin Choix de taureau ===== */
+/* ===== 💉 Insémination : choisir les vaches et la semence, planifier la saillie, texter l'inséminateur (page retirable) ===== */
+let INS={ids:[],bull:{},date:'',q:'',nm:'',tel:'',last:null};
+try{const o=JSON.parse(localStorage.getItem('dsa_ins')||'{}');INS.nm=o.nm||'';INS.tel=o.tel||''}catch(e){}
+const saveINS=()=>{try{localStorage.setItem('dsa_ins',JSON.stringify({nm:INS.nm,tel:INS.tel}))}catch(e){}};
+const INSE=['🟢','🟡','🟠','🔴'],insIco=r=>r.lvl<0?'⚪':INSE[r.lvl];
+function insOpen(cows){
+ for(const c of cows||[])if(c&&!INS.ids.includes(c.id))INS.ids.push(c.id);
+ if(!INS.date)INS.date=iso(todayN+1);
+ selMode=false;SELS.clear();
+ if(tab!=='insem'){tabHist.push(tab);tab='insem';pushNav()}
+ TABS.forEach(x=>$(x).classList.remove('on'));show()}
+const insCow=id=>DB.cows.find(x=>x.id===id);
+function insText(o){o=o||INS;
+ const rows=o.ids.map(insCow).filter(Boolean).sort((a,b)=>String(a.num).localeCompare(String(b.num),undefined,{numeric:true})).map(c=>{const b=SEM.find(x=>x.id===o.bull[c.id]);
+  return '• '+c.num+(c.nom&&c.nom.trim()?' '+c.nom.trim():'')+' → '+(b?(b.nm||b.code)+(b.nm&&b.code?' ('+b.code+')':'')+(b.cs?', casier '+b.cs:''):'(semence à choisir)')});
+ const dl=o.date?new Date(o.date+'T12:00:00').toLocaleDateString('fr-CA',{weekday:'long',day:'numeric',month:'long'}):'';
+ return 'Bonjour'+(o.nm&&o.nm.trim()?' '+o.nm.trim():'')+',\nInsémination'+(dl?' pour '+dl:'')+' ('+rows.length+' vache'+(rows.length>1?'s':'')+') :\n'+rows.join('\n')+'\nMerci !'}
+function insSms(txt,tel){const n=String(tel||'').replace(/[^\d+]/g,''),a=document.createElement('a');a.href='sms:'+n+'?body='+encodeURIComponent(txt);document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);
+ toast(n?'Ouverture de la messagerie… (sinon touche Copier)':'Choisis le contact dans la messagerie.',3500)}
+function insem(){$('info').textContent='💉 Insémination';
+ if(!DB){$('m').innerHTML='<div class="empty">Charge d’abord un fichier DSA.</div>';return}
+ if(!INS.date)INS.date=iso(todayN+1);
+ $('m').innerHTML='<div id="ins-b"></div>';insBody()}
+function insRes(){const q=INS.q.trim().toLowerCase();if(!q)return '';
+ const L=DB.cows.filter(c=>!c.elim&&!INS.ids.includes(c.id)&&((c.num||'').toLowerCase().includes(q)||(c.nom||'').toLowerCase().includes(q))).slice(0,8);
+ return L.length?L.map(c=>`<button data-insx="add" data-id="${c.id}" style="display:block;width:100%;text-align:left;min-height:46px;margin:4px 0">${escH(c.num)} <b>${escH(c.nom||'')}</b> <span class="mut">· ${VSHORT[kind(c)]||''}</span></button>`).join(''):'<div class="mut" style="margin:6px 0">Aucune vache trouvée.</div>'}
+function insOpts(c,sel){const ch=c?semChain(c):[],k=r=>r.lvl<0?.5:r.lvl;
+ const L=SEM.filter(b=>(+b.doses||0)>0||b.id===sel).map(b=>({b,r:c?semRisk(b,ch):{lvl:-1}})).sort((x,y)=>(k(x.r)-k(y.r))||((x.b.nm||x.b.code).localeCompare(y.b.nm||y.b.code)));
+ return '<option value="">— choisir une semence —</option>'+L.map(({b,r})=>`<option value="${b.id}"${b.id===sel?' selected':''}>${c?insIco(r)+' ':''}${escH(b.nm||b.code)}${b.nm&&b.code?' · '+escH(b.code):''}${b.cs?' · casier '+b.cs:''} · ${+b.doses||0} dose${(+b.doses||0)>1?'s':''}</option>`).join('')}
+function insCard(c,dn){const bid=INS.bull[c.id]||'',b=bid&&SEM.find(x=>x.id===bid);let info='';
+ if(b){const r=semRisk(b,semChain(c));if(r.lvl>=1)info+=`<div style="font-size:13px;color:${SEMCOL[r.lvl]}">${insIco(r)} ${escH(r.why.join(' · '))}</div>`;const on=semOnCow(c,b);if(on)info+=`<div class="mut" style="font-size:13px">${escH(on)}</div>`}
+ if(ACT.some(a=>a.st==='p'&&a.ty==='SAIL'&&a.d===dn&&actHas(a,c)))info+='<div style="font-size:13px;color:var(--rd)">⚠ Une saillie est déjà prévue ce jour-là pour cette vache.</div>';
+ return `<div style="${semBox}"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><b style="font-size:17px">${escH(c.num)}</b> ${escH(c.nom||'')} <span class="mut" style="font-size:13px">· ${VSHORT[kind(c)]||''}${c.sail?' · saillie il y a '+(todayN-c.sail.d)+' j':''}</span></div><button data-insx="rm" data-id="${c.id}" title="Retirer" style="min-width:44px;min-height:44px">✕</button></div>
+ <select data-insb="${c.id}" class="zi" style="width:100%;box-sizing:border-box;text-align:left;margin-top:6px;min-height:44px">${insOpts(c,bid)}</select>${info}</div>`}
+function insBody(){const B=$('ins-b');if(!B)return;const dn=INS.date?dayN(INS.date):0,cows=INS.ids.map(insCow).filter(Boolean);
+ cows.sort((a,b)=>String(a.num).localeCompare(String(b.num),undefined,{numeric:true}));
+ const cnt={};cows.forEach(c=>{const k=INS.bull[c.id];if(k)cnt[k]=(cnt[k]||0)+1});
+ const warn=Object.keys(cnt).map(k=>{const b=SEM.find(x=>x.id===k);return b&&cnt[k]>(+b.doses||0)?`<div style="color:var(--rd);font-weight:600">⚠ ${escH(b.nm||b.code)} : ${cnt[k]} vache${cnt[k]>1?'s':''} mais ${+b.doses||0} dose${(+b.doses||0)>1?'s':''} en inventaire.</div>`:''}).join('');
+ const zs='width:100%;text-align:left;box-sizing:border-box';
+ const last=INS.last?`<div style="${semBox};margin-top:14px"><b>✓ Dernière planification</b> <span class="mut">(${INS.last.n} vache${INS.last.n>1?'s':''})</span><div class="row" style="margin-top:6px"><button data-insx="lsms">📱 Texter</button><button data-insx="lcp">📋 Copier le texte</button></div></div>`:'';
+ B.innerHTML=`<label class="mut">Date de l’insémination</label><input id="ins-d" type="date" class="zi" style="${zs}" value="${INS.date}">
+ <h3 style="margin:14px 0 4px">Vaches <span class="tag">${cows.length}</span></h3>
+ <input id="ins-q" type="search"${IM()} class="zi" style="${zs}" placeholder="Ajouter une vache (numéro ou nom)" value="${escH(INS.q)}" autocomplete="off"><div id="ins-r">${insRes()}</div>
+ ${BK.length?`<div class="row" style="margin:6px 0"><button data-insx="bk">🧺 Ajouter le panier (${BK.length})</button></div>`:''}
+ ${cows.length?'':'<div class="mut" style="margin:8px 0;line-height:1.5">Astuce : dans <b>Fiches</b>, utilise tes filtres, touche ☑ pour cocher les vaches, puis <b>💉 Inséminer</b>.</div>'}
+ ${cows.length>1?`<div style="${semBox}"><div class="mut" style="font-size:12px;font-weight:600">MÊME SEMENCE POUR TOUTES</div><div class="row" style="margin-top:4px;flex-wrap:nowrap"><select id="ins-all" class="zi" style="flex:1;min-width:0;text-align:left;min-height:44px">${insOpts(null,'')}</select><button data-insx="all" class="on" style="min-height:44px">Appliquer</button></div></div>`:''}
+ ${cows.map(c=>insCard(c,dn)).join('')}${warn}
+ <h3 style="margin:16px 0 4px">Inséminateur</h3>
+ <div class="row" style="flex-wrap:nowrap"><input id="ins-nm" class="zi" style="flex:1;min-width:0;text-align:left;box-sizing:border-box" placeholder="Nom (facultatif)" value="${escH(INS.nm)}" autocomplete="off"><input id="ins-tel" type="tel" inputmode="tel" class="zi" style="flex:1;min-width:0;text-align:left;box-sizing:border-box" placeholder="Numéro de téléphone" value="${escH(INS.tel)}" autocomplete="off"></div>
+ <div class="mut" style="margin:10px 0 2px;font-size:12px;font-weight:600">TEXTE</div><div id="ins-p" style="${semBox};white-space:pre-wrap;font-size:14px">${escH(insText())}</div>
+ <div class="row" style="margin-top:8px;flex-direction:column;align-items:stretch"><button data-insx="save" class="on" style="min-height:50px;font-size:16px"${cows.length?'':' disabled'}>💾 Enregistrer + 📱 Texter</button><button data-insx="save0" style="min-height:46px"${cows.length?'':' disabled'}>💾 Enregistrer seulement</button><button data-insx="cp" style="min-height:46px"${cows.length?'':' disabled'}>📋 Copier le texte</button></div>
+ <div class="mut" style="font-size:12px;margin:8px 0">Enregistrer ajoute une « Saillie » à la fiche de chaque vache, retire les doses de l’inventaire et envoie l’info au PC.</div>${last}`}
+function insPrev(){const p=$('ins-p');if(p)p.textContent=insText()}
+function insSave(sms){
+ if(!INS.ids.length){toast('Choisis au moins une vache.',2500);return}
+ if(!INS.date){toast('Choisis la date.',2500);return}
+ const miss=INS.ids.filter(id=>!INS.bull[id]||!SEM.find(x=>x.id===INS.bull[id]));
+ if(miss.length){toast('Choisis une semence pour chaque vache ('+miss.length+' sans semence).',3500);return}
+ const txt=insText(),tel=INS.tel,d=dayN(INS.date),by=new Map();
+ for(const id of INS.ids){const k=INS.bull[id];if(!by.has(k))by.set(k,[]);by.get(k).push(insCow(id))}
+ let n=0;
+ for(const [bid,cows] of by){const b=SEM.find(x=>x.id===bid);
+  const o={id:'IN'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),ty:'SAIL',d,txt:((b.code||'')+' '+(b.nm||'')).trim(),rl:0,rv:0,q:[],cows:cows.map(c=>({i:c.id,n:c.natl||'',num:c.num,nom:c.nom})),st:'p',ts:Date.now(),by:USER};
+  ACT.push(o);n+=cows.length;semUse(o)}
+ saveACT();pcSync();
+ INS.last={txt,tel,n};INS.ids=[];INS.bull={};
+ toast('💉 '+n+' saillie'+(n>1?'s':'')+' planifiée'+(n>1?'s':'')+' ✓',3500);
+ insBody();scrollTo(0,0);if(sms)insSms(txt,tel)}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-insx]');if(!b||tab!=='insem')return;const a=b.dataset.insx,id=b.dataset.id;
+ if(a==='add'){if(!INS.ids.includes(id))INS.ids.push(id);INS.q='';insBody()}
+ else if(a==='rm'){INS.ids=INS.ids.filter(x=>x!==id);delete INS.bull[id];insBody()}
+ else if(a==='bk'){for(const n of BK){const c=DB.cows.find(x=>String(x.num)===String(n)&&!x.elim);if(c&&!INS.ids.includes(c.id))INS.ids.push(c.id)}insBody()}
+ else if(a==='all'){const v=$('ins-all').value;if(!v){toast('Choisis une semence.',2000);return}INS.ids.forEach(i=>INS.bull[i]=v);insBody()}
+ else if(a==='save')insSave(true);else if(a==='save0')insSave(false);
+ else if(a==='cp')hxCopy(insText(),'Texte copié ✓');
+ else if(a==='lsms'&&INS.last)insSms(INS.last.txt,INS.last.tel);
+ else if(a==='lcp'&&INS.last)hxCopy(INS.last.txt,'Texte copié ✓')});
+document.addEventListener('change',e=>{if(tab!=='insem')return;const t=e.target;
+ if(t.dataset&&t.dataset.insb){if(t.value)INS.bull[t.dataset.insb]=t.value;else delete INS.bull[t.dataset.insb];insBody()}
+ else if(t.id==='ins-d'){INS.date=t.value;insBody()}});
+document.addEventListener('input',e=>{if(tab!=='insem')return;const t=e.target;
+ if(t.id==='ins-q'){INS.q=t.value;const r=$('ins-r');if(r)r.innerHTML=insRes()}
+ else if(t.id==='ins-nm'){INS.nm=t.value;saveINS();insPrev()}
+ else if(t.id==='ins-tel'){INS.tel=t.value;saveINS()}});
+/* ===== fin Insémination ===== */
+
 
 /* ===== 📋 Holstein : classification + génétique + parents (lu sur les pages AIS de portal.holstein.ca) ===== */
 let HX={};try{HX=JSON.parse(localStorage.getItem('dsa_holx')||'{}')||{}}catch(e){}
@@ -721,12 +812,12 @@ function menuOpen(){const old=$('menumod');if(old){old.remove();return}
  const row=(k,ic,t,r)=>`<button type="button" data-mn="${k}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:50px;padding:0 14px;border:0;border-bottom:1px solid var(--ln);background:transparent;color:inherit;font-size:16px;text-align:left;border-radius:0"><span style="width:24px;text-align:center">${ic}</span><span style="flex:1">${t}</span>${r||''}</button>`;
  const sc=t=>`<div class="mut" style="padding:12px 14px 4px;font-size:12px;font-weight:600;letter-spacing:.4px">${t}</div>`;
  const bdg=n?`<span class="bdgn" style="position:static;display:inline-flex">${n>99?'99+':n}</span>`:'';
- d.innerHTML=`<div id="menup" style="position:absolute;top:0;bottom:0;left:0;width:min(84vw,330px);background:var(--bg);box-shadow:4px 0 20px rgba(0,0,0,.3);transform:translateX(-100%);transition:transform .2s ease;padding-top:env(safe-area-inset-top,0px);overflow:auto"><div style="padding:14px;font-size:18px;font-weight:700">🐄 MEUH</div>${sc('SAISIE')}${row('act','✍','Saisies à entrer dans DSA',bdg)}${row('multi','👥','Action sur plusieurs vaches')}${row('pc','💻','Envoi au PC','<span class="mut" style="font-size:12px">'+escH(PC.addr?(PCST||''):'non configuré')+'</span>')}${sc('OUTILS')}${row('rap','📊','Rapport')}${row('sem','🐂','Choix de taureau')}${sc('COMPTE')}${row('nom','👤','Mon nom','<span class="mut" style="font-size:13px">'+escH(USER)+'</span>')}${row('upd','⟳','Mettre à jour')}${row('set','⚙','Réglages')}<div class="mut" style="padding:12px 14px;font-size:12px">Version ${BUILD}</div></div>`;
+ d.innerHTML=`<div id="menup" style="position:absolute;top:0;bottom:0;left:0;width:min(84vw,330px);background:var(--bg);box-shadow:4px 0 20px rgba(0,0,0,.3);transform:translateX(-100%);transition:transform .2s ease;padding-top:env(safe-area-inset-top,0px);overflow:auto"><div style="padding:14px;font-size:18px;font-weight:700">🐄 MEUH</div>${sc('SAISIE')}${row('act','✍','Saisies à entrer dans DSA',bdg)}${row('multi','👥','Action sur plusieurs vaches')}${row('pc','💻','Envoi au PC','<span class="mut" style="font-size:12px">'+escH(PC.addr?(PCST||''):'non configuré')+'</span>')}${sc('OUTILS')}${row('rap','📊','Rapport')}${row('ins','💉','Insémination')}${row('sem','🐂','Choix de taureau / inventaire')}${sc('COMPTE')}${row('nom','👤','Mon nom','<span class="mut" style="font-size:13px">'+escH(USER)+'</span>')}${row('upd','⟳','Mettre à jour')}${row('set','⚙','Réglages')}<div class="mut" style="padding:12px 14px;font-size:12px">Version ${BUILD}</div></div>`;
  document.body.appendChild(d);requestAnimationFrame(()=>{const m=$('menup');if(m)m.style.transform='none'});
  d.onclick=e=>{if(e.target===d){d.remove();return}const b=e.target.closest('[data-mn]');if(!b)return;const k=b.dataset.mn;d.remove();
   if(k==='act')$('actb').click();
   else if(k==='multi'){if(!DB){toast('Charge d’abord un fichier.',2500);return}nlActStart()}
-  else if(k==='pc')pcForm();else if(k==='rap')$('t5').click();else if(k==='sem'){if(tab!=='semence'){tabHist.push(tab);tab='semence';pushNav()}TABS.forEach(x=>$(x).classList.remove('on'));show()}else if(k==='nom')nameForm();else if(k==='upd')$('upd').click();else if(k==='set')$('gear').click()}}
+  else if(k==='pc')pcForm();else if(k==='rap')$('t5').click();else if(k==='ins'){insOpen([])}else if(k==='sem'){if(tab!=='semence'){tabHist.push(tab);tab='semence';pushNav()}TABS.forEach(x=>$(x).classList.remove('on'));show()}else if(k==='nom')nameForm();else if(k==='upd')$('upd').click();else if(k==='set')$('gear').click()}}
 window.addEventListener('popstate',()=>{const m=$('menumod');if(m)m.remove()});
 $('menub').onclick=menuOpen;
 const SANTE=['Oculaire','Respiratoire','Cutané','Acétonémie','Digestif','Mammaire','Nombril','Locomoteur','Reproduction','Fumier','Divers'];
@@ -947,7 +1038,7 @@ $('flrow').addEventListener('input',e=>{const i=e.target.id;if(i==='fjmin')FIL.j
 $('flrow').addEventListener('click',e=>{if(e.target.closest('#fclr')){FIL={jmin:'',jmax:'',smin:'',smax:'',pr:'all'};renderFil();list()}});
 let LSCR=null;
 function show(){show0();if(LSCR){if(LSCR.tab===tab){const y=LSCR.y;LSCR=null;scrollTo(0,y);requestAnimationFrame(()=>scrollTo(0,y));setTimeout(()=>scrollTo(0,y),80)}else LSCR=null}}
-function show0(){if(PLRET){const o=$('pl'),r=PLRET;PLRET=null;if(o){o.style.display='';setTimeout(()=>{plRender();o.scrollTop=r.st},0)}}pre();closeDD();document.querySelector('header').style.display=tab==='fiches'?'':'none';$('tabs').style.display='';$('m').style.paddingBottom='';inF=false;const f=tab==='fiches';$('bar').style.display=f?'':'none';if(tab==='semence'){semences();return}if(tab==='reglages'){reglages();return}if(tab==='saisies'){saisies();return}if(tab==='rappels'){rappels();return}if(tab==='proto'){protos();return}if(DB){if(f)list();else if(tab==='roulette')roulette();else if(tab==='recherche')recherche();else if(tab==='rapport')rapport();else regie()}}
+function show0(){if(PLRET){const o=$('pl'),r=PLRET;PLRET=null;if(o){o.style.display='';setTimeout(()=>{plRender();o.scrollTop=r.st},0)}}pre();closeDD();document.querySelector('header').style.display=tab==='fiches'?'':'none';$('tabs').style.display='';$('m').style.paddingBottom='';inF=false;const f=tab==='fiches';$('bar').style.display=f?'':'none';if(tab==='semence'){semences();return}if(tab==='insem'){insem();return}if(tab==='reglages'){reglages();return}if(tab==='saisies'){saisies();return}if(tab==='rappels'){rappels();return}if(tab==='proto'){protos();return}if(DB){if(f)list();else if(tab==='roulette')roulette();else if(tab==='recherche')recherche();else if(tab==='rapport')rapport();else regie()}}
 
 /* ===== Réglages, nom, rappels, rapport ===== */
 const pad=n=>String(n).padStart(2,'0');
