@@ -413,7 +413,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-26a';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-26c';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 /* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
@@ -433,14 +433,20 @@ function pedGet(){if(PEDC&&PEDC.db===DB)return PEDC;
    for(const m of e.raw.matchAll(/(?:^|\\)(FE|MA)\|[^\\\[]*\[ATQ=(\d+)\]/g)){par[m[2]]={dam:c,sire:tk,tau:tau.trim(),d:e.d};if(m[1]==='FE'&&tk)fem[tk]=(fem[tk]||0)+1}}
   else if(e.t==='SAIL'||e.t==='SAILF'){const k=iaKey(e.raw);if(k){const s=stat[k]||(stat[k]={n:0,f:0});s.n++;if(e.t==='SAILF')s.f++}}}
  PEDC={db:DB,par,stat,fem};return PEDC}
+const HXs=c=>{const x=typeof HX!=='undefined'&&c&&c.natl?HX[c.natl]:null;return x&&x.sire&&x.sire.n?x.sire.n:''};
+const codeName=k=>{if(!k)return '';const b=SEM.find(x=>x.code&&semK(x.code)===k);if(b&&b.nm)return b.nm;const P=BP[bpKey(k)]||BPSEED[bpKey(k)];return P&&P.n||''};
+const normN=s=>String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[*]+/g,' ').replace(/[^A-Z0-9 -]/g,' ').replace(/-/g,' ').replace(/\s+/g,' ').trim().replace(/( (ET|P|PP|RC|TV|TL|TY|TR|TD|TM))+$/,'').trim();
+const nameHit=(a,b)=>{a=normN(a);b=normN(b);if(a.length<4||b.length<4)return false;return a===b||a.endsWith(' '+b)||b.endsWith(' '+a)};
 function semChain(c){const P=pedGet(),ch=[],seen=new Set();let cur=c,g=1;
- while(cur&&g<=4&&cur.natl&&P.par[cur.natl]&&!seen.has(cur.id)){seen.add(cur.id);const p=P.par[cur.natl];ch.push({cow:cur,tau:p.tau,sk:p.sire,dam:p.dam,g});cur=p.dam;g++}
+ while(cur&&g<=4&&cur.natl&&P.par[cur.natl]&&!seen.has(cur.id)){seen.add(cur.id);const p=P.par[cur.natl];ch.push({cow:cur,tau:p.tau,sk:p.sire,dam:p.dam,g,sn:HXs(cur)||codeName(p.sire)});cur=p.dam;g++}
+ if(!ch.length){const n=HXs(c);if(n)ch.push({cow:c,tau:'',sk:'',dam:null,g:1,sn:n})}
  return ch}
-function semRisk(b,ch){if(!ch.length)return{lvl:-1,F:0,why:[]};
- const bl=[[semK(b.code),0,'Le taureau'],[b.pere?semK(b.pere):'',1,'Le père du taureau'],[b.mgs?semK(b.mgs):'',2,'Le père de la mère du taureau']];
+function semRisk(b,ch){if(!ch||!ch.length)return{lvl:-1,F:0,why:[]};
+ const P=bpGet(b),pd=P&&P.ped||[],bl=[[semK(b.code),b.nm,0,'Le taureau']];
+ [[b.pere||pd[0],1,'Le père du taureau'],[b.mgs||pd[1],2,'Le père de la mère du taureau'],[pd[2],3,'Le père de sa grand-mère maternelle']].forEach(([v,n1,lb])=>{if(v)bl.push([semK(v),v,n1,lb])});
  let F=0;const why=[];
- for(const [k,n1,lb] of bl){if(!k)continue;for(const x of ch)if(x.sk&&x.sk===k){const f=Math.pow(.5,n1+x.g+1);F+=f;why.push(lb+' = '+SEMREL[x.g]+' ('+semPct(f)+')')}}
- return{lvl:F>=.125?3:F>=.0625?2:F>0?1:0,F,why}}
+ for(const [k,nm,n1,lb] of bl)for(const x of ch){if(!((k&&x.sk&&x.sk===k)||(nm&&nameHit(nm,x.sn))))continue;const f=Math.pow(.5,n1+x.g+1);F+=f;why.push(lb+(n1?' ('+nm+')':'')+' = '+SEMREL[x.g]+(x.sn?' ('+x.sn+')':'')+' → '+semPct(f))}
+ return{lvl:F>=.125?3:F>=.0625?2:F>0?1:0,F,why,part:!(b.pere||b.mgs||pd.length)}}
 function semHerd(b){const P=pedGet(),k=semK(b.code),s=P.stat[k],fi=P.fem[k]||0,a=[];
  if(s)a.push(s.n+' service'+(s.n>1?'s':'')+' · '+Math.round(100*s.f/s.n)+' % de conception'+(s.n<5?' (peu de données)':''));
  if(fi)a.push(fi+' fille'+(fi>1?'s':'')+' née'+(fi>1?'s':'')+' à la ferme');
@@ -461,6 +467,7 @@ function semInv(){const tot=SEM.reduce((a,b)=>a+(+b.doses||0),0),L=[...SEM].sort
  const lg=SEMLOG.slice(-8).reverse().map((l,i)=>{const ix=SEMLOG.length-1-i;return `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--ln)"><div style="flex:1;min-width:0" class="mut">${fmt(l.d)} · <b>${escH(l.nm)}</b> −${l.n} → vache ${escH((l.cows||[]).join(', '))}</div><button data-semx="undo" data-i="${ix}" title="Remettre la dose">↩</button></div>`}).join('');
  return `<div class="row" style="margin:6px 0;justify-content:space-between;align-items:center"><span class="mut">${SEM.length} taureau${SEM.length>1?'x':''} · ${tot} dose${tot>1?'s':''}</span><button class="on" data-semx="add" style="min-height:44px">＋ Ajouter un taureau</button></div>`
   +(L.length?[1,2,3,4,5,6,''].map(cs=>{const g=L.filter(b=>String(b.cs||'')===String(cs));if(!g.length)return '';const n=g.reduce((a,b)=>a+(+b.doses||0),0);return `<div style="display:flex;justify-content:space-between;align-items:baseline;margin:14px 2px 2px"><b style="font-size:17px">${cs?'Casier '+cs:'Sans casier'}</b><span class="mut">${n} dose${n>1?'s':''}</span></div>`+g.map(card).join('')}).join(''):'<div class="empty">Aucun taureau pour l’instant.<br>Touche « Ajouter un taureau ».<br><br><button data-semx="seed" class="on" style="min-height:48px">📥 Charger mon inventaire papier (casiers 2, 3, 5, 6)</button></div>')
+  +`<div style="${semBox}"><b>🧬 Profils des taureaux</b><div class="mut" style="font-size:12px;margin:2px 0 6px">Forces, faiblesses et pedigree, lus sur semex.com.</div><div class="row" style="gap:6px"><button data-semx="bpall" style="min-height:44px">🔄 Tout mettre à jour</button><button data-semx="bpweb" style="min-height:44px">🌐 Via le navigateur</button></div></div>`
   +(lg?`<h3 style="margin:16px 0 4px">Dernières utilisations</h3><div class="mut" style="font-size:12px;margin-bottom:4px">Une dose est retirée automatiquement quand tu enregistres une saillie avec le code du taureau. ↩ la remet.</div>${lg}`:'')}
 
 function semForm(b){const old=$('semmod');if(old)old.remove();
@@ -506,16 +513,16 @@ function semCow(c){const ch=semChain(c),P=pedGet();
  const inv=k=>{const b=k&&SEM.find(x=>x.code&&semK(x.code)===k);return b&&b.nm?' <span class="mut">('+escH(b.nm)+')</span>':''};
  let ped;
  if(!ch.length)ped=`<div class="mut">Généalogie inconnue : cette vache n’est pas née à la ferme (ou son ATQ n’est pas dans le fichier). Le classement ne peut pas vérifier la parenté.</div>`;
- else{const last=ch[ch.length-1];ped=ch.map((x,i)=>`<div style="margin-left:${i*14}px;${i?'margin-top:2px':''}"><b>${i?'Mère':'Vache'} : ${escH(x.cow.num)} ${escH(x.cow.nom||'')}</b><div class="mut" style="margin-left:14px">Père : ${x.tau?escH(x.tau)+inv(x.sk):'inconnu'}</div></div>`).join('')
+ else{const last=ch[ch.length-1];ped=ch.map((x,i)=>`<div style="margin-left:${i*14}px;${i?'margin-top:2px':''}"><b>${i?'Mère':'Vache'} : ${escH(x.cow.num)} ${escH(x.cow.nom||'')}</b><div class="mut" style="margin-left:14px">Père : ${x.tau?escH(x.tau)+inv(x.sk):''}${x.sn?(x.tau?' · ':'')+escH(x.sn):(x.tau?'':'inconnu')}</div></div>`).join('')
   +(last.dam?`<div style="margin-left:${ch.length*14}px;margin-top:2px"><b>Mère : ${escH(last.dam.num)} ${escH(last.dam.nom||'')}</b> <span class="mut">(père inconnu)</span></div>`:'')}
  const N=cowNeeds(c),av=SEM.filter(b=>(+b.doses||0)>0).map(b=>{const r=semRisk(b,ch),beef=isBeef(b);return{b,r,h:semHerd(b),beef,f:beef?null:bpFit(b,c,N)}}),
   rate=b=>{const s=P.stat[semK(b.code)];return s&&s.n>=3?s.f/s.n:.5};
  av.sort((x,y)=>(x.beef-y.beef)||(bpTot(y.f,y.r)-bpTot(x.f,x.r))||(x.r.lvl-y.r.lvl)||(rate(y.b)-rate(x.b))||(x.b.nm||x.b.code).localeCompare(y.b.nm||y.b.code));
  av.filter(x=>!x.beef&&x.f&&x.f.fit!=null&&x.r.lvl<3).slice(0,3).forEach((x,i)=>{x.rk=i+1});
- const BT=['🟢 Aucune parenté connue','🟡 Faible parenté','🟠 Prudence','🔴 À éviter'];
+ const BT=['🟢 Aucun lien connu','🟡 Lien faible','🟠 Lien moyen','🔴 Lien élevé'];
  const cardB=({b,r,h,f,beef,rk})=>{const col=r.lvl<0?'var(--mut)':SEMCOL[r.lvl],on=semOnCow(c,b);
   return `<div style="${semBox};border-left:5px solid ${col}"><div style="display:flex;gap:8px;align-items:baseline"><div style="flex:1;min-width:0"><b style="font-size:17px">${rk?'⭐ ':''}${beef?'🥩 ':''}${escH(b.nm||b.code)}</b>${b.nm&&b.code?` <span class="mut">${escH(b.code)}</span>`:''}</div><span class="tag">${b.doses} dose${b.doses>1?'s':''}</span></div>
-  <div style="color:${col};font-weight:700;margin:2px 0">${r.lvl<0?'⚪ Parenté non vérifiable':BT[r.lvl]+(r.F>0?' · ≥ '+semPct(r.F):'')}</div>
+  <div style="color:${col};font-weight:700;margin:2px 0">${r.lvl<0?'⚪ Parenté non vérifiable':BT[r.lvl]+(r.F>0?' · +'+semPct(r.F)+' de consanguinité':'')+(r.part?' <span class="mut" style="font-weight:400;font-size:12px">· pedigree du taureau non chargé (🔄 dans Inventaire)</span>':'')}</div>
   ${r.why.map(w=>`<div class="mut" style="font-size:13px">• ${escH(w)}</div>`).join('')}
   ${bpFitHtml(f)}${beef?'<div class="mut" style="font-size:13px">Taureau de boucherie : pour une vache dont tu ne gardes pas la génisse.</div>':''}
   ${h?`<div class="mut" style="font-size:13px">À la ferme : ${escH(h)}</div>`:''}${on?`<div class="mut" style="font-size:13px">${escH(on)}</div>`:''}
@@ -525,7 +532,7 @@ function semCow(c){const ch=semChain(c),P=pedGet();
  return `<div style="${semBox};margin-top:12px"><div style="font-size:18px;font-weight:800">${escH(c.num)} ${escH(c.nom||'')} <span class="mut" style="font-size:13px;font-weight:400">· ${VSHORT[kind(c)]||''}${c.lact?' · lact. '+c.lact:''}</span></div>
   <div class="mut" style="margin:6px 0 2px;font-size:12px;font-weight:600">GÉNÉALOGIE (reconstituée du fichier DSA)</div>${ped}
   <div class="mut" style="margin:10px 0 2px;font-size:12px;font-weight:600">POINTS À AMÉLIORER (classification)</div>${hxSem(c)}${N?`<div style="font-size:13px;margin:4px 0">${escH(needTxt(N)||'Aucune faiblesse marquée.')}</div>`:'<div class="mut" style="font-size:13px;margin:4px 0">Classification non chargée : le classement ne tient pas compte de ses faiblesses (bouton 📋 sur la fiche).</div>'}<input id="sem-cn" class="zi" style="width:100%;text-align:left;box-sizing:border-box" value="${escH(SEMC[c.id]||'')}" placeholder="ex. pattes, attache du pis, structure" autocomplete="off"></div>
-  <h3 style="margin:14px 0 2px">Taureaux en inventaire (${av.length})</h3><div class="mut" style="font-size:12px;margin-bottom:4px">Classés du meilleur choix au moins bon : ce qui comble les faiblesses de la vache, sans lien de parenté (🔴 en dernier, bœuf après).</div>
+  ${av.some(x=>x.rk)?`<div style="${semBox};border-color:var(--gr)"><b>⭐ Meilleurs choix pour ${escH(c.num)} ${escH(c.nom||'')}</b>${av.filter(x=>x.rk).map(x=>`<div style="margin-top:4px"><b>${x.rk}. ${escH(x.b.nm||x.b.code)}</b> <span class="mut">· ${BT[x.r.lvl<0?0:x.r.lvl].slice(0,2)} ${x.f&&x.f.help.length?escH(x.f.help.slice(0,2).join(' · ')):''}</span></div>`).join('')}</div>`:''}<h3 style="margin:14px 0 2px">Taureaux en inventaire (${av.length})</h3><div class="mut" style="font-size:12px;margin-bottom:4px">Classés du meilleur choix au moins bon : ce qui comble les faiblesses de la vache, avec le moins de parenté (🔴 en dernier, bœuf après). Le « + % » est la consanguinité <b>ajoutée</b> par les ancêtres communs connus (père, père de la mère, etc.) ; la base de la race s’y ajoute toujours, donc « aucun lien connu » correspond au niveau bas (≈ 6 %) d’un programme qui compte tout le pedigree.</div>
   ${SEM.some(b=>!b.pere&&!b.mgs)?'<div class="mut" style="font-size:12px;margin-bottom:4px">Parenté vérifiée avec le père et les grands-pères de la vache. Ajoute le père du taureau (✎ dans l’inventaire) pour une vérification plus complète.</div>':''}
   ${av.length?av.map(cardB).join(''):'<div class="empty">Aucun taureau avec des doses.</div>'}
   ${none.length?`<div class="mut" style="font-size:12px;margin-top:6px">Sans doses : ${none.map(b=>escH(b.nm||b.code)).join(', ')}</div>`:''}`}
@@ -535,6 +542,8 @@ document.addEventListener('click',e=>{
  const b=e.target.closest('[data-semx]');if(!b)return;const a=b.dataset.semx,id=b.dataset.id,bl=SEM.find(x=>x.id===id);
  if(a==='add')semForm(null);
  else if(a==='edit'&&bl)semForm(bl);
+ else if(a==='bpall'){bpAll()}
+ else if(a==='bpweb'){bpWeb()}
  else if(a==='inc10'&&bl){bl.doses=(+bl.doses||0)+10;saveSEM();semBody();toast('＋10 doses : '+(bl.nm||bl.code)+' → '+bl.doses,2500)}
  else if(a==='seed'&&!SEM.length){[['200HO12399','Dropbox',2,'2'],['200HO7972','Allgaud',12,'2'],['200HO13601','Honoris',3,'2'],['200HO12529','Havenofear',5,'2'],['200HO12340','Larson',6,'2'],['200HO13669','Lestrange-P',3,'2'],['200HO13512','Currency-PP',4,'3'],['200HO13515','Alcaraz',5,'3'],['200HO13602','Popfest',5,'3'],['200HO13438','Ludwig',2,'3'],['200AN10775','',5,'5'],['200AN10412','Flattop',12,'5'],['777HO13087','Proficient',5,'6'],['777HO13224','Edouard-PP',2,'6']].forEach(x=>SEM.push({id:semUid(),code:x[0],nm:x[1],doses:x[2],cs:x[3],pere:'',mgs:'',note:''}));saveSEM();semBody();toast('Inventaire chargé ✓ (14 taureaux)',3000)}
  else if((a==='inc'||a==='dec')&&bl){bl.doses=Math.max(0,(+bl.doses||0)+(a==='inc'?1:-1));saveSEM();semBody()}
@@ -644,9 +653,9 @@ const BPSEED={
 'HO13601':{n:'Honoris',gt:2828,pr:[501,39,21,148],hl:[-.3,2.99,-.1,.6,.1],cp:[1.93,1.55,1.29,.87,.7,.73],l:[1.62,.83,.93,.96,.73,1.62,.61,.9,.79,1.04,1.8,1.68,1.69,1.46,1.43,.48,.27,.73],d:'Semex 08-26'},
 'HO13669':{n:'Lestrange-P',gt:3036,pr:[911,51,30,433],hl:[1.6,2.97,.9,1.7,1],cp:[1.35,1.82,1.43,.28,.67,.24],l:[.95,.26,.33,.73,1.26,1.15,-.16,.83,.89,.82,2.07,1.71,1.46,.77,1.49,.74,-.08,.65],d:'Semex 08-26'},
 'HO13438':{n:'Ludwig',gt:3120,pr:[631,63,26,593],hl:[2.6,2.78,.4,1,.7],cp:[1.25,2.07,1.53,-.42,.31,.1],l:[.22,-.25,.09,1.06,.99,1.2,.8,.38,.16,.36,1.89,1.8,1.7,.61,1.13,1.23,-.62,.7],d:'Semex 08-26'},
-'HO12529':{n:'Havenofear',gt:2931,pr:[1127,6,41,144],hl:[1.1,3.25,-.9,0,-.3],cp:[2.85,.94,2.13,.95,1.09,1.75],l:[1.96,1.42,1.89,1.96,1.53,1.45,-.56,1.39,2.04,1.4,2.72,3.36,3.31,1.09,1.21,.69,-.24,1.25],d:'Semex 08-26'},
-'HO12399':{n:'Dropbox',gt:3068,pr:[470,29,36,302],hl:[.7,2.66,.6,.9,.7],cp:[2.57,-.46,1.62,1.14,1.02,1.33],l:[3.04,.97,1.21,1.56,1.06,2.24,.73,1.23,1.68,1.7,2.72,2.56,2.13,1.12,2.16,1.44,-.89,1.24],d:'Semex 08-26'},
-'HO7972':{n:'Allgaud',gt:2615,pr:[1407,9,15,-6],hl:[-2,2.92,-1.5,-2,-1.5],cp:[1.47,2.29,1.22,.13,.94,.79],l:[.82,.39,.87,1.44,-.24,1.58,.87,1.06,.86,1.08,1.14,2.08,2.11,1.9,.14,.39,1.5,.96],d:'Semex 08-26'},
+'HO12529':{ped:['DELTA-LAMBDA','DOC','JEDI'],n:'Havenofear',gt:2931,pr:[1127,6,41,144],hl:[1.1,3.25,-.9,0,-.3],cp:[2.85,.94,2.13,.95,1.09,1.75],l:[1.96,1.42,1.89,1.96,1.53,1.45,-.56,1.39,2.04,1.4,2.72,3.36,3.31,1.09,1.21,.69,-.24,1.25],d:'Semex 08-26'},
+'HO12399':{ped:['HIGHJUMP','CASPER','DELTA'],n:'Dropbox',gt:3068,pr:[470,29,36,302],hl:[.7,2.66,.6,.9,.7],cp:[2.57,-.46,1.62,1.14,1.02,1.33],l:[3.04,.97,1.21,1.56,1.06,2.24,.73,1.23,1.68,1.7,2.72,2.56,2.13,1.12,2.16,1.44,-.89,1.24],d:'Semex 08-26'},
+'HO7972':{ped:['ALLIGATOR','GYMNAST','1STCLASS'],n:'Allgaud',gt:2615,pr:[1407,9,15,-6],hl:[-2,2.92,-1.5,-2,-1.5],cp:[1.47,2.29,1.22,.13,.94,.79],l:[.82,.39,.87,1.44,-.24,1.58,.87,1.06,.86,1.08,1.14,2.08,2.11,1.9,.14,.39,1.5,.96],d:'Semex 08-26'},
 'HO12340':{n:'Larson',gt:3023,pr:[1108,67,38,434],hl:[-.2,2.85,-.3,0,-.1],cp:[1.45,1.82,1.12,.03,-.05,1.3],l:[1.35,.54,1.03,1.92,-.08,.86,.09,.05,1.25,.22,1.27,2.01,2.11,1.06,.58,.33,1.25,.54],d:'Semex 08-26'},
 'HO13087':{n:'Proficient',gt:3026,pr:[297,54,21,395],hl:[1.4,2.78,-.2,.6,.3],cp:[1.85,1.25,1.74,.69,.84,1.04],l:[1.08,1,1.31,1.26,-.04,1.21,-.01,1.08,1.65,.93,2.76,2.16,1.62,.31,1.88,1.52,-.7,1.49],d:'Semex 08-26'},
 'HO13224':{n:'Edouard-PP',gt:2691,pr:[-213,16,6,71],hl:[.3,2.99,.7,.9,.5],cp:[1.07,.95,1.34,1.12,.44,-.3],l:[1.59,.57,.52,-.11,.86,1.46,-.1,.6,.59,.79,2.11,1.7,1.25,.56,2.54,-.15,.69,.02],d:'Semex 08-26'}};
@@ -732,10 +741,11 @@ function bpParse(html){const t=String(html).replace(/<(script|style)[\s\S]*?<\/\
   hl=[rx('Productive Life','\\s+(-?\\d+\\.\\d+)'),rx('Somatic Cell Score','\\s+(-?\\d+\\.\\d+)'),rx('Daughter Pregnancy Rate','\\s+(-?\\d+\\.\\d+)'),rx('Cow Conception Rate','\\s+(-?\\d+\\.\\d+)'),rx('Fertility Index','\\s+(-?\\d+\\.\\d+)')],
   pr=[rx('Milk lbs','\\s+(-?\\d+)'),rx('Fat lbs','\\s+(-?\\d+)'),rx('Protein lbs','\\s+(-?\\d+)'),rx('NM\\$','\\s+(-?\\d+)')],gm=t.match(/GTPI\s+(\d{4})/);
  const ok=l.filter(x=>x!=null).length>=15&&cp.slice(2).every(x=>x!=null)&&hl.slice(0,3).every(x=>x!=null);if(!ok)return null;
- const z=a=>a.map(x=>x==null?0:x);return{gt:gm?+gm[1]:0,pr:z(pr),hl:z(hl),cp:z(cp),l:z(l)}}
+ const tp=String(html).replace(/<(script|style)[\s\S]*?<\/\1>/gi,'|').replace(/<[^>]+>/g,'|').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&'),pm=tp.match(/0200[A-Z]{2}\d{5}\s*([^|]*?)\s+x\s+([^|]*?)\s+x\s+([^|]+?)\s*(?:\||$)/),ped=pm?[pm[1],pm[2],pm[3]].map(x=>x.trim()):null;
+ const z=a=>a.map(x=>x==null?0:x);const o={gt:gm?+gm[1]:0,pr:z(pr),hl:z(hl),cp:z(cp),l:z(l)};if(ped)o.ped=ped;return o}
 async function bpFetch(b){const k=bpKey(b.code),m=k.match(/^([A-Z]+)(\d+)$/);if(!m)throw new Error('code illisible');
  const cd='0200'+m[1]+m[2].padStart(5,'0'),urls=['https://www.semex.com/inc/bull/'+cd+'&lang=en&data=tpi&print=n','https://www.semex.com/di/nz/inc/bull/'+cd+'&lang=en&data=tpi&print=n'];
- let last='';for(const u of urls){try{const h=await gdGet(u,'text'),P=bpParse(h);if(P){P.n=b.nm||b.code;P.d='Semex '+iso(todayN);BP[k]=P;saveBP();return P}last='page lue mais profil incomplet'}catch(e){last=String(e&&e.message||e)}}
+ let last='';for(const u of urls){try{const h=await gdGet(u,'text'),P=bpParse(h);if(P){P.n=b.nm||b.code;P.d='Semex '+iso(todayN);if(!P.ped){const o=BPSEED[k]||BP[k];if(o&&o.ped)P.ped=o.ped}BP[k]=P;saveBP();return P}last='page lue mais profil incomplet'}catch(e){last=String(e&&e.message||e)}}
  throw new Error(last||'introuvable')}
 function bpModal(b){const old=$('bpmod');if(old)old.remove();const P=bpGet(b),o=document.createElement('div');o.id='bpmod';
  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:55;display:flex;align-items:flex-end;justify-content:center';
@@ -754,6 +764,47 @@ function bpModal(b){const old=$('bpmod');if(old)old.remove();const P=bpGet(b),o=
  document.body.appendChild(o);
  o.onclick=async ev=>{const t=ev.target.closest('[data-bpx]');if(ev.target===o||(t&&t.dataset.bpx==='x')){o.remove();return}if(!t)return;
   if(t.dataset.bpx==='upd'){$('bpmsg').textContent='⏳ Recherche sur semex.com…';try{await bpFetch(b);bpModal(b);if(tab==='semence')semBody()}catch(e){$('bpmsg').textContent='Échec : '+(e&&e.message||e)+'. Le site refuse peut-être la lecture depuis l’app.'}}}}
+
+/* --- méthode « navigateur » (même idée que pour les vaches) : lit les pages semex.com depuis Firefox puis envoie un fichier à MEUH --- */
+async function bpJob(pP,LAB){const D=document;
+ if(!/(^|\.)semex\.com$/.test(location.hostname)){alert('Ouvre d’abord une page de semex.com, puis relance.');return}
+ const old=D.getElementById('meuhbp');if(old)old.remove();
+ const ov=D.createElement('div');ov.id='meuhbp';ov.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#fff;color:#111;padding:14px;font:16px sans-serif;overflow:auto';
+ ov.innerHTML='<div style="font-size:20px;font-weight:800">MEUH : lecture des taureaux (Semex)</div><div id="bst" style="margin:8px 0">Colle la liste des codes (copiée dans MEUH), puis touche Démarrer.</div><textarea id="bta" style="width:100%;height:130px;font-size:14px;box-sizing:border-box"></textarea><div style="margin-top:8px"><button id="bgo" style="font-size:18px;padding:10px 14px;margin:2px">▶ Démarrer</button> <button id="bdl" style="font-size:18px;padding:10px 14px;margin:2px">💾 Enregistrer le fichier</button> <button id="bx" style="font-size:18px;padding:10px 14px;margin:2px">Fermer</button></div>';
+ D.body.appendChild(ov);const $=i=>D.getElementById(i),st=s=>{$('bst').textContent=s};
+ try{const t=await navigator.clipboard.readText();if(/[A-Z]{2}\d{3}/i.test(t))$('bta').value=t}catch(e){}
+ const R={};let run=false,bad=0;
+ $('bx').onclick=()=>{run=false;ov.remove()};
+ $('bdl').onclick=()=>{if(!Object.keys(R).length){st('Rien à enregistrer.');return}try{const o=JSON.stringify({v:1,bp:R}),a=D.createElement('a');a.href=URL.createObjectURL(new Blob([o],{type:'application/json'}));a.download='meuh-taureaux.json';D.body.appendChild(a);a.click();setTimeout(()=>{a.remove()},4000);st('Fichier « meuh-taureaux.json » enregistré ('+Object.keys(R).length+' taureaux). Retourne dans MEUH : 📂 Choisir le fichier.')}catch(e){st('Enregistrement impossible : '+e.message)}};
+ $('bgo').onclick=async()=>{if(run){run=false;return}
+  const L=[...new Set(($('bta').value.split(/[\s,;]+/).filter(x=>/[A-Za-z]{2}0*\d{3,}/.test(x))))];if(!L.length){st('Aucun code trouvé.');return}
+  run=true;bad=0;$('bgo').textContent='⏹ Arrêter';
+  for(let i=0;i<L.length&&run;i++){const m=String(L[i]).toUpperCase().replace(/[^A-Z0-9]/g,'').match(/^(?:\d{1,4})?([A-Z]{2,3})0*(\d+)$/);st('Lecture '+(i+1)+' / '+L.length+' ('+L[i]+') · '+Object.keys(R).length+' ok, '+bad+' échecs');
+   try{if(!m)throw new Error('code');const cd='0200'+m[1]+m[2].padStart(5,'0'),r=await fetch('/inc/bull/'+cd+'&lang=en&data=tpi&print=n',{credentials:'include'});if(!r.ok)throw new Error('réponse '+r.status);const P=pP(await r.text());if(!P)throw new Error('profil incomplet');P.d='Semex';R[m[1]+m[2]]=P}catch(e){bad++}
+   await new Promise(r=>setTimeout(r,500))}
+  run=false;$('bgo').textContent='▶ Démarrer';st('Terminé : '+Object.keys(R).length+' taureaux lus, '+bad+' échecs. Touche « Enregistrer le fichier ».')}}
+function bpScript(){return '(async()=>{const BPLAB='+JSON.stringify(BPLAB)+';'+bpParse+';await ('+bpJob+')(bpParse)})()'}
+function bpUserscript(){return '// ==UserScript==\n// @name MEUH Semex\n// @match https://www.semex.com/*\n// @match https://semex.com/*\n// @grant none\n// @noframes\n// @run-at document-idle\n// ==/UserScript==\n(function(){try{const run=()=>{'+bpScript()+'};const mk=()=>{if(!document.body||document.getElementById("meuhbtn"))return;const b=document.createElement("button");b.id="meuhbtn";b.textContent="MEUH";b.style.cssText="position:fixed;right:10px;bottom:90px;z-index:2147483646;font:bold 18px sans-serif;padding:12px 16px;border-radius:24px;border:0;background:#1b6e3c;color:#fff";b.addEventListener("click",run);document.body.appendChild(b)};mk();setInterval(mk,1000)}catch(e){alert("MEUH : "+e)}})();'}
+function bpImport(txt){let d;try{d=JSON.parse(String(txt).trim())}catch(e){return 'Fichier illisible.'}
+ if(!d||d.v!==1||!d.bp)return 'Ce n’est pas un fichier de taureaux MEUH.';let n=0;
+ for(const k in d.bp){const P=d.bp[k];if(!P||!P.l||P.l.length<18)continue;const o=BPSEED[k]||BP[k];if(!P.ped&&o&&o.ped)P.ped=o.ped;if(!P.n&&o)P.n=o.n;BP[k]=P;n++}
+ saveBP();return n+' taureau'+(n>1?'x':'')+' importé'+(n>1?'s':'')+' ✓'}
+async function bpAll(){const L=SEM.filter(b=>!isBeef(b));let ok=0,bad=0,msg='';
+ for(let i=0;i<L.length;i++){toast('Profil '+(i+1)+' / '+L.length+' : '+(L[i].nm||L[i].code),1500);
+  try{await bpFetch(L[i]);ok++}catch(e){bad++;msg=String(e&&e.message||e);if(ok===0&&bad>=2)break}
+  await new Promise(r=>setTimeout(r,400))}
+ toast(ok+' profil'+(ok>1?'s':'')+' mis à jour'+(bad?' · '+bad+' échec'+(bad>1?'s':'')+' ('+msg+')':''),7000);semBody()}
+function bpWeb(){const old=$('bpwebmod');if(old)old.remove();const o=document.createElement('div');o.id='bpwebmod';
+ o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:56;display:flex;align-items:flex-end;justify-content:center';
+ const sm='min-height:44px;font-size:15px;margin:3px 0;width:100%';
+ o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto"><div style="font-size:18px;font-weight:800">🌐 Taureaux via le navigateur</div>
+ <div class="mut" style="margin:6px 0;line-height:1.5">Même méthode que pour les vaches.<br><b>1.</b> Copie la liste des taureaux.<br><b>2.</b> Copie le script, puis dans <b>Violentmonkey</b> (Firefox) : ＋ nouveau script, colle, enregistre (une seule fois).<br><b>3.</b> Ouvre <b>semex.com</b> dans Firefox : un bouton vert <b>MEUH</b> apparaît. Touche-le, colle la liste, Démarrer, puis <b>💾 Enregistrer le fichier</b>.<br><b>4.</b> Reviens ici et touche <b>📂 Choisir le fichier</b>.</div>
+ <button data-bw="list" style="${sm}">1. 📋 Copier la liste des taureaux</button><button data-bw="us" style="${sm}">2. 📋 Copier le script (Violentmonkey)</button><button data-bw="file" style="${sm}">4. 📂 Choisir le fichier</button><div id="bwmsg" style="margin:6px 0;font-weight:600"></div><div class="row" style="justify-content:flex-end"><button data-bw="x">Fermer</button></div></div>`;
+ document.body.appendChild(o);
+ o.onclick=ev=>{const b=ev.target.closest('[data-bw]'),M=s=>{$('bwmsg').textContent=s};if(ev.target===o||(b&&b.dataset.bw==='x')){o.remove();return}if(!b)return;const k=b.dataset.bw;
+  if(k==='list')hxCopy(SEM.filter(x=>!isBeef(x)&&x.code).map(x=>x.code).join('\n'),'Liste copiée ✓');
+  else if(k==='us')hxCopy(bpUserscript(),'Script copié ✓');
+  else if(k==='file'){const fi=document.createElement('input');fi.type='file';fi.onchange=async()=>{const f=fi.files[0];if(!f)return;M('⏳ Lecture…');try{M(bpImport(await f.text()));semBody()}catch(e){M('Lecture impossible : '+(e&&e.message||e))}};fi.click()}}}
 document.addEventListener('click',e=>{const a=e.target.closest('a[data-semx=prof]');if(!a)return;e.preventDefault();e.stopPropagation();const b=SEM.find(x=>x.id===a.dataset.id);if(b)bpModal(b)},true);
 
 (function(){try{if(localStorage.getItem('dsa_bpfix1'))return;let ch=0;for(const b of SEM){const c=String(b.code||'');
