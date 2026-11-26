@@ -413,7 +413,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-25a';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-26a';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 /* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
@@ -455,7 +455,7 @@ function semBody(){const b=$('sem-b');if(!b)return;b.innerHTML=SEMTAB==='inv'?se
 
 function semInv(){const tot=SEM.reduce((a,b)=>a+(+b.doses||0),0),L=[...SEM].sort((a,b)=>(a.nm||a.code).localeCompare(b.nm||b.code));
  const card=b=>{const d=+b.doses||0,col=d===0?'var(--mut)':d<=2?'#e08a00':'var(--tx)';
-  return `<div style="${semBox}${d===0?';opacity:.65':''}"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><b style="font-size:17px">${escH(b.nm||b.code)}</b>${b.nm&&b.code?`<div class="mut">${escH(b.code)}</div>`:''}${b.pere||b.mgs?`<div class="mut" style="font-size:12px">${b.pere?'Père : '+escH(b.pere):''}${b.pere&&b.mgs?' · ':''}${b.mgs?'Père de la mère : '+escH(b.mgs):''}</div>`:''}${b.note?`<div style="font-size:13px;margin-top:2px">✚ ${escH(b.note)}</div>`:''}</div>
+  return `<div style="${semBox}${d===0?';opacity:.65':''}"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><b style="font-size:17px">${escH(b.nm||b.code)}</b>${b.nm&&b.code?`<div class="mut">${escH(b.code)}</div>`:''}${b.pere||b.mgs?`<div class="mut" style="font-size:12px">${b.pere?'Père : '+escH(b.pere):''}${b.pere&&b.mgs?' · ':''}${b.mgs?'Père de la mère : '+escH(b.mgs):''}</div>`:''}${b.note?`<div style="font-size:13px;margin-top:2px">✚ ${escH(b.note)}</div>`:''}${bpLine(b)}</div>
   <div style="display:flex;align-items:center;gap:6px;flex:none"><button data-semx="dec" data-id="${b.id}" style="min-width:44px;min-height:44px;font-size:22px">−</button><div style="min-width:38px;text-align:center;font-size:24px;font-weight:800;color:${col}">${d}</div><button data-semx="inc" data-id="${b.id}" style="min-width:44px;min-height:44px;font-size:22px">＋</button></div></div>
   <div class="row" style="margin-top:6px;justify-content:flex-end"><button data-semx="inc10" data-id="${b.id}">＋10</button><button data-semx="edit" data-id="${b.id}">✎ Modifier</button><button data-semx="del" data-id="${b.id}"${SEMDEL===b.id?' class="on" style="background:var(--rd);border-color:var(--rd)"':''}>${SEMDEL===b.id?'Supprimer ?':'🗑'}</button></div></div>`};
  const lg=SEMLOG.slice(-8).reverse().map((l,i)=>{const ix=SEMLOG.length-1-i;return `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--ln)"><div style="flex:1;min-width:0" class="mut">${fmt(l.d)} · <b>${escH(l.nm)}</b> −${l.n} → vache ${escH((l.cows||[]).join(', '))}</div><button data-semx="undo" data-i="${ix}" title="Remettre la dose">↩</button></div>`}).join('');
@@ -508,22 +508,24 @@ function semCow(c){const ch=semChain(c),P=pedGet();
  if(!ch.length)ped=`<div class="mut">Généalogie inconnue : cette vache n’est pas née à la ferme (ou son ATQ n’est pas dans le fichier). Le classement ne peut pas vérifier la parenté.</div>`;
  else{const last=ch[ch.length-1];ped=ch.map((x,i)=>`<div style="margin-left:${i*14}px;${i?'margin-top:2px':''}"><b>${i?'Mère':'Vache'} : ${escH(x.cow.num)} ${escH(x.cow.nom||'')}</b><div class="mut" style="margin-left:14px">Père : ${x.tau?escH(x.tau)+inv(x.sk):'inconnu'}</div></div>`).join('')
   +(last.dam?`<div style="margin-left:${ch.length*14}px;margin-top:2px"><b>Mère : ${escH(last.dam.num)} ${escH(last.dam.nom||'')}</b> <span class="mut">(père inconnu)</span></div>`:'')}
- const av=SEM.filter(b=>(+b.doses||0)>0).map(b=>({b,r:semRisk(b,ch),h:semHerd(b)})),
+ const N=cowNeeds(c),av=SEM.filter(b=>(+b.doses||0)>0).map(b=>{const r=semRisk(b,ch),beef=isBeef(b);return{b,r,h:semHerd(b),beef,f:beef?null:bpFit(b,c,N)}}),
   rate=b=>{const s=P.stat[semK(b.code)];return s&&s.n>=3?s.f/s.n:.5};
- av.sort((x,y)=>(x.r.lvl-y.r.lvl)||(rate(y.b)-rate(x.b))||(x.b.nm||x.b.code).localeCompare(y.b.nm||y.b.code));
+ av.sort((x,y)=>(x.beef-y.beef)||(bpTot(y.f,y.r)-bpTot(x.f,x.r))||(x.r.lvl-y.r.lvl)||(rate(y.b)-rate(x.b))||(x.b.nm||x.b.code).localeCompare(y.b.nm||y.b.code));
+ av.filter(x=>!x.beef&&x.f&&x.f.fit!=null&&x.r.lvl<3).slice(0,3).forEach((x,i)=>{x.rk=i+1});
  const BT=['🟢 Aucune parenté connue','🟡 Faible parenté','🟠 Prudence','🔴 À éviter'];
- const cardB=({b,r,h})=>{const col=r.lvl<0?'var(--mut)':SEMCOL[r.lvl],on=semOnCow(c,b);
-  return `<div style="${semBox};border-left:5px solid ${col}"><div style="display:flex;gap:8px;align-items:baseline"><div style="flex:1;min-width:0"><b style="font-size:17px">${escH(b.nm||b.code)}</b>${b.nm&&b.code?` <span class="mut">${escH(b.code)}</span>`:''}</div><span class="tag">${b.doses} dose${b.doses>1?'s':''}</span></div>
+ const cardB=({b,r,h,f,beef,rk})=>{const col=r.lvl<0?'var(--mut)':SEMCOL[r.lvl],on=semOnCow(c,b);
+  return `<div style="${semBox};border-left:5px solid ${col}"><div style="display:flex;gap:8px;align-items:baseline"><div style="flex:1;min-width:0"><b style="font-size:17px">${rk?'⭐ ':''}${beef?'🥩 ':''}${escH(b.nm||b.code)}</b>${b.nm&&b.code?` <span class="mut">${escH(b.code)}</span>`:''}</div><span class="tag">${b.doses} dose${b.doses>1?'s':''}</span></div>
   <div style="color:${col};font-weight:700;margin:2px 0">${r.lvl<0?'⚪ Parenté non vérifiable':BT[r.lvl]+(r.F>0?' · ≥ '+semPct(r.F):'')}</div>
   ${r.why.map(w=>`<div class="mut" style="font-size:13px">• ${escH(w)}</div>`).join('')}
+  ${bpFitHtml(f)}${beef?'<div class="mut" style="font-size:13px">Taureau de boucherie : pour une vache dont tu ne gardes pas la génisse.</div>':''}
   ${h?`<div class="mut" style="font-size:13px">À la ferme : ${escH(h)}</div>`:''}${on?`<div class="mut" style="font-size:13px">${escH(on)}</div>`:''}
   ${b.note?`<div style="font-size:13px;margin-top:2px">✚ ${escH(b.note)}</div>`:''}
   <div class="row" style="margin-top:6px;justify-content:flex-end"><button data-semx="use" data-id="${b.id}" class="on">❤️ Utiliser sur ${escH(c.num)}</button></div></div>`};
  const none=SEM.filter(b=>(+b.doses||0)<=0);
  return `<div style="${semBox};margin-top:12px"><div style="font-size:18px;font-weight:800">${escH(c.num)} ${escH(c.nom||'')} <span class="mut" style="font-size:13px;font-weight:400">· ${VSHORT[kind(c)]||''}${c.lact?' · lact. '+c.lact:''}</span></div>
   <div class="mut" style="margin:6px 0 2px;font-size:12px;font-weight:600">GÉNÉALOGIE (reconstituée du fichier DSA)</div>${ped}
-  <div class="mut" style="margin:10px 0 2px;font-size:12px;font-weight:600">POINTS À AMÉLIORER (classification)</div>${hxSem(c)}<input id="sem-cn" class="zi" style="width:100%;text-align:left;box-sizing:border-box" value="${escH(SEMC[c.id]||'')}" placeholder="ex. pattes, attache du pis, structure" autocomplete="off"></div>
-  <h3 style="margin:14px 0 2px">Taureaux en inventaire (${av.length})</h3>
+  <div class="mut" style="margin:10px 0 2px;font-size:12px;font-weight:600">POINTS À AMÉLIORER (classification)</div>${hxSem(c)}${N?`<div style="font-size:13px;margin:4px 0">${escH(needTxt(N)||'Aucune faiblesse marquée.')}</div>`:'<div class="mut" style="font-size:13px;margin:4px 0">Classification non chargée : le classement ne tient pas compte de ses faiblesses (bouton 📋 sur la fiche).</div>'}<input id="sem-cn" class="zi" style="width:100%;text-align:left;box-sizing:border-box" value="${escH(SEMC[c.id]||'')}" placeholder="ex. pattes, attache du pis, structure" autocomplete="off"></div>
+  <h3 style="margin:14px 0 2px">Taureaux en inventaire (${av.length})</h3><div class="mut" style="font-size:12px;margin-bottom:4px">Classés du meilleur choix au moins bon : ce qui comble les faiblesses de la vache, sans lien de parenté (🔴 en dernier, bœuf après).</div>
   ${SEM.some(b=>!b.pere&&!b.mgs)?'<div class="mut" style="font-size:12px;margin-bottom:4px">Parenté vérifiée avec le père et les grands-pères de la vache. Ajoute le père du taureau (✎ dans l’inventaire) pour une vérification plus complète.</div>':''}
   ${av.length?av.map(cardB).join(''):'<div class="empty">Aucun taureau avec des doses.</div>'}
   ${none.length?`<div class="mut" style="font-size:12px;margin-top:6px">Sans doses : ${none.map(b=>escH(b.nm||b.code)).join(', ')}</div>`:''}`}
@@ -534,7 +536,7 @@ document.addEventListener('click',e=>{
  if(a==='add')semForm(null);
  else if(a==='edit'&&bl)semForm(bl);
  else if(a==='inc10'&&bl){bl.doses=(+bl.doses||0)+10;saveSEM();semBody();toast('＋10 doses : '+(bl.nm||bl.code)+' → '+bl.doses,2500)}
- else if(a==='seed'&&!SEM.length){[['200HO12399','Dropbox',2,'2'],['200HO7972','Allgaud (ou Albaqua)',12,'2'],['200HO13601','Honoris',3,'2'],['200HO12529','Havenofear',5,'2'],['HO12340','Largon (ou Largan)',6,'2'],['200HO13669','Lestrange-P',3,'2'],['200HO13512','Currency PP',4,'3'],['200HO13515','Alcaraz',5,'3'],['200HO13602','Popfest',5,'3'],['200HO13438','Ludwig',2,'3'],['200AN10775','',5,'5'],['200AN10412','Flattop',12,'5'],['777HO13087','Proficient',5,'6'],['777HO13224','Edward',2,'6']].forEach(x=>SEM.push({id:semUid(),code:x[0],nm:x[1],doses:x[2],cs:x[3],pere:'',mgs:'',note:''}));saveSEM();semBody();toast('Inventaire chargé ✓ (14 taureaux)',3000)}
+ else if(a==='seed'&&!SEM.length){[['200HO12399','Dropbox',2,'2'],['200HO7972','Allgaud',12,'2'],['200HO13601','Honoris',3,'2'],['200HO12529','Havenofear',5,'2'],['200HO12340','Larson',6,'2'],['200HO13669','Lestrange-P',3,'2'],['200HO13512','Currency-PP',4,'3'],['200HO13515','Alcaraz',5,'3'],['200HO13602','Popfest',5,'3'],['200HO13438','Ludwig',2,'3'],['200AN10775','',5,'5'],['200AN10412','Flattop',12,'5'],['777HO13087','Proficient',5,'6'],['777HO13224','Edouard-PP',2,'6']].forEach(x=>SEM.push({id:semUid(),code:x[0],nm:x[1],doses:x[2],cs:x[3],pere:'',mgs:'',note:''}));saveSEM();semBody();toast('Inventaire chargé ✓ (14 taureaux)',3000)}
  else if((a==='inc'||a==='dec')&&bl){bl.doses=Math.max(0,(+bl.doses||0)+(a==='inc'?1:-1));saveSEM();semBody()}
  else if(a==='del'&&bl){if(SEMDEL===id){clearTimeout(SEMDELT);SEMDEL=null;SEM=SEM.filter(x=>x.id!==id);saveSEM();toast('Taureau supprimé',2000)}else{SEMDEL=id;clearTimeout(SEMDELT);SEMDELT=setTimeout(()=>{SEMDEL=null;if(tab==='semence')semBody()},3000)}semBody()}
  else if(a==='undo'){const l=SEMLOG[+b.dataset.i],x=l&&SEM.find(q=>q.id===l.id);if(l){if(x)x.doses=(+x.doses||0)+l.n;SEMLOG.splice(+b.dataset.i,1);saveSEM();semBody();toast(x?'Dose remise ✓':'Journal retiré (taureau supprimé)',2000)}}
@@ -569,11 +571,14 @@ function insem(){$('info').textContent='💉 Insémination';
 function insRes(){const q=INS.q.trim().toLowerCase();if(!q)return '';
  const L=DB.cows.filter(c=>!c.elim&&!INS.ids.includes(c.id)&&((c.num||'').toLowerCase().includes(q)||(c.nom||'').toLowerCase().includes(q))).slice(0,8);
  return L.length?L.map(c=>`<button data-insx="add" data-id="${c.id}" style="display:block;width:100%;text-align:left;min-height:46px;margin:4px 0">${escH(c.num)} <b>${escH(c.nom||'')}</b> <span class="mut">· ${VSHORT[kind(c)]||''}</span></button>`).join(''):'<div class="mut" style="margin:6px 0">Aucune vache trouvée.</div>'}
-function insOpts(c,sel){const ch=c?semChain(c):[],k=r=>r.lvl<0?.5:r.lvl;
- const L=SEM.filter(b=>(+b.doses||0)>0||b.id===sel).map(b=>({b,r:c?semRisk(b,ch):{lvl:-1}})).sort((x,y)=>(k(x.r)-k(y.r))||((x.b.nm||x.b.code).localeCompare(y.b.nm||y.b.code)));
- return '<option value="">— choisir une semence —</option>'+L.map(({b,r})=>`<option value="${b.id}"${b.id===sel?' selected':''}>${c?insIco(r)+' ':''}${escH(b.nm||b.code)}${b.nm&&b.code?' · '+escH(b.code):''}${b.cs?' · casier '+b.cs:''} · ${+b.doses||0} dose${(+b.doses||0)>1?'s':''}</option>`).join('')}
+function insOpts(c,sel){const ch=c?semChain(c):[],N=c?cowNeeds(c):null;
+ const L=SEM.filter(b=>(+b.doses||0)>0||b.id===sel).map(b=>{const beef=isBeef(b),r=c?semRisk(b,ch):{lvl:-1},f=c&&!beef?bpFit(b,c,N):null;return{b,r,beef,t:bpTot(f,r)}})
+  .sort((x,y)=>(x.beef-y.beef)||(y.t-x.t)||((x.b.nm||x.b.code).localeCompare(y.b.nm||y.b.code)));
+ let top=0;return '<option value="">— choisir une semence —</option>'+L.map(({b,r,beef,t})=>{const star=c&&!beef&&r.lvl<3&&t>-500&&top<3&&N?(top++,'⭐ '):'';
+  return `<option value="${b.id}"${b.id===sel?' selected':''}>${star}${c?insIco(r)+' ':''}${beef?'🥩 ':''}${escH(b.nm||b.code)}${b.nm&&b.code?' · '+escH(b.code):''}${b.cs?' · casier '+b.cs:''} · ${+b.doses||0} dose${(+b.doses||0)>1?'s':''}</option>`}).join('')}
 function insCard(c,dn){const bid=INS.bull[c.id]||'',b=bid&&SEM.find(x=>x.id===bid);let info='';
  if(b){const r=semRisk(b,semChain(c));if(r.lvl>=1)info+=`<div style="font-size:13px;color:${SEMCOL[r.lvl]}">${insIco(r)} ${escH(r.why.join(' · '))}</div>`;const on=semOnCow(c,b);if(on)info+=`<div class="mut" style="font-size:13px">${escH(on)}</div>`}
+ if(b&&!isBeef(b))info+=bpFitHtml(bpFit(b,c));
  if(ACT.some(a=>a.st==='p'&&a.ty==='SAIL'&&a.d===dn&&actHas(a,c)))info+='<div style="font-size:13px;color:var(--rd)">⚠ Une saillie est déjà prévue ce jour-là pour cette vache.</div>';
  return `<div style="${semBox}"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><b style="font-size:17px">${escH(c.num)}</b> ${escH(c.nom||'')} <span class="mut" style="font-size:13px">· ${VSHORT[kind(c)]||''}${c.sail?' · saillie il y a '+(todayN-c.sail.d)+' j':''}</span></div><button data-insx="rm" data-id="${c.id}" title="Retirer" style="min-width:44px;min-height:44px">✕</button></div>
  <select data-insb="${c.id}" class="zi" style="width:100%;box-sizing:border-box;text-align:left;margin-top:6px;min-height:44px">${insOpts(c,bid)}</select>${info}</div>`}
@@ -628,6 +633,136 @@ document.addEventListener('input',e=>{if(tab!=='insem')return;const t=e.target;
  else if(t.id==='ins-nm'){INS.nm=t.value;saveINS();insPrev()}
  else if(t.id==='ins-tel'){INS.tel=t.value;saveINS()}});
 /* ===== fin Insémination ===== */
+/* ===== 🧬 Profils des taureaux (forces / faiblesses) et adéquation avec les vaches (page retirable) ===== */
+/* l = 18 pointages linéaires (écart-type, +=vers le haut de l'échelle 1-9) : stature, force, profondeur corps, côtes, angle croupe, largeur croupe,
+   membres arr. côté, membres arr. arrière, angle du pied, indice pieds, attache avant, hauteur pis arr., largeur pis arr., suspension, profondeur pis,
+   trayons avant, longueur trayons, trayons arrière. cp = PTAT, conformation HO, pis, corps, pieds-membres, laitier. hl = vie prod., SCS, DPR, CCR, fertilité. pr = lait lb, gras lb, prot. lb, NM$. */
+const BPSEED={
+'HO13512':{n:'Currency-PP',gt:2793,pr:[990,10,22,99],hl:[0,3.09,-.1,.3,0],cp:[2.07,2,2.06,.92,.93,.86],l:[1.12,.99,1.04,.97,.42,1.9,1.15,1.13,.59,1.16,2.48,2.85,2.27,1.22,2.03,.47,.59,.56],d:'Semex 08-26'},
+'HO13515':{n:'Alcaraz',gt:2749,pr:[996,24,20,7],hl:[-1.6,3.11,-.7,-.7,-.4],cp:[2.4,1.02,1.81,1.24,.88,1.8],l:[2.18,1.59,1.93,1.86,.74,1.87,.81,.85,1.46,1.4,1.68,2.91,3.22,1.98,1.09,1.08,.26,1.38],d:'Semex 08-26'},
+'HO13602':{n:'Popfest',gt:3075,pr:[513,69,34,441],hl:[1.1,2.93,.5,1.3,1],cp:[1.4,2.42,.94,.15,.83,.28],l:[.14,.35,.3,.59,.22,.7,-.16,1.33,.37,.68,1.44,1.25,1.13,.32,.36,.13,.03,.17],d:'Semex 08-26'},
+'HO13601':{n:'Honoris',gt:2828,pr:[501,39,21,148],hl:[-.3,2.99,-.1,.6,.1],cp:[1.93,1.55,1.29,.87,.7,.73],l:[1.62,.83,.93,.96,.73,1.62,.61,.9,.79,1.04,1.8,1.68,1.69,1.46,1.43,.48,.27,.73],d:'Semex 08-26'},
+'HO13669':{n:'Lestrange-P',gt:3036,pr:[911,51,30,433],hl:[1.6,2.97,.9,1.7,1],cp:[1.35,1.82,1.43,.28,.67,.24],l:[.95,.26,.33,.73,1.26,1.15,-.16,.83,.89,.82,2.07,1.71,1.46,.77,1.49,.74,-.08,.65],d:'Semex 08-26'},
+'HO13438':{n:'Ludwig',gt:3120,pr:[631,63,26,593],hl:[2.6,2.78,.4,1,.7],cp:[1.25,2.07,1.53,-.42,.31,.1],l:[.22,-.25,.09,1.06,.99,1.2,.8,.38,.16,.36,1.89,1.8,1.7,.61,1.13,1.23,-.62,.7],d:'Semex 08-26'},
+'HO12529':{n:'Havenofear',gt:2931,pr:[1127,6,41,144],hl:[1.1,3.25,-.9,0,-.3],cp:[2.85,.94,2.13,.95,1.09,1.75],l:[1.96,1.42,1.89,1.96,1.53,1.45,-.56,1.39,2.04,1.4,2.72,3.36,3.31,1.09,1.21,.69,-.24,1.25],d:'Semex 08-26'},
+'HO12399':{n:'Dropbox',gt:3068,pr:[470,29,36,302],hl:[.7,2.66,.6,.9,.7],cp:[2.57,-.46,1.62,1.14,1.02,1.33],l:[3.04,.97,1.21,1.56,1.06,2.24,.73,1.23,1.68,1.7,2.72,2.56,2.13,1.12,2.16,1.44,-.89,1.24],d:'Semex 08-26'},
+'HO7972':{n:'Allgaud',gt:2615,pr:[1407,9,15,-6],hl:[-2,2.92,-1.5,-2,-1.5],cp:[1.47,2.29,1.22,.13,.94,.79],l:[.82,.39,.87,1.44,-.24,1.58,.87,1.06,.86,1.08,1.14,2.08,2.11,1.9,.14,.39,1.5,.96],d:'Semex 08-26'},
+'HO12340':{n:'Larson',gt:3023,pr:[1108,67,38,434],hl:[-.2,2.85,-.3,0,-.1],cp:[1.45,1.82,1.12,.03,-.05,1.3],l:[1.35,.54,1.03,1.92,-.08,.86,.09,.05,1.25,.22,1.27,2.01,2.11,1.06,.58,.33,1.25,.54],d:'Semex 08-26'},
+'HO13087':{n:'Proficient',gt:3026,pr:[297,54,21,395],hl:[1.4,2.78,-.2,.6,.3],cp:[1.85,1.25,1.74,.69,.84,1.04],l:[1.08,1,1.31,1.26,-.04,1.21,-.01,1.08,1.65,.93,2.76,2.16,1.62,.31,1.88,1.52,-.7,1.49],d:'Semex 08-26'},
+'HO13224':{n:'Edouard-PP',gt:2691,pr:[-213,16,6,71],hl:[.3,2.99,.7,.9,.5],cp:[1.07,.95,1.34,1.12,.44,-.3],l:[1.59,.57,.52,-.11,.86,1.46,-.1,.6,.59,.79,2.11,1.7,1.25,.56,2.54,-.15,.69,.02],d:'Semex 08-26'}};
+let BP={};try{BP=JSON.parse(localStorage.getItem('dsa_bp')||'{}')||{}}catch(e){}
+const saveBP=()=>{try{localStorage.setItem('dsa_bp',JSON.stringify(BP))}catch(e){}};
+const bpKey=c=>{const s=String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,''),m=s.match(/^(?:\d{1,4})?([A-Z]{2,3})0*(\d+)$/);return m?m[1]+m[2]:s};
+const bpGet=b=>{const k=bpKey(b&&b.code);return BP[k]||BPSEED[k]||null};
+const isBeef=b=>!!b&&(!!b.beef||/^\d*AN\d/i.test(String(b.code||'')));
+/* cow = pointage Holstein Canada correspondant ; t = hi (plus haut = mieux, cible 7) ou mid (cible tg sur 9) ; w = poids */
+const BPT=[
+ {k:'stat',cow:'Stature',lb:'stature',t:'mid',tg:6,w:.5},
+ {k:'str',cow:'Largeur du poitrail',lb:'force / poitrail',t:'hi',w:1},
+ {k:'bd',cow:'Profondeur du corps',lb:'profondeur du corps',t:'mid',tg:6,w:1},
+ {k:'df',cow:'Structure des côtes',lb:'ouverture des côtes',t:'hi',w:1},
+ {k:'ra',cow:'Angle de la croupe',lb:'angle de la croupe',t:'mid',tg:5,w:1},
+ {k:'rw',cow:'Largeur aux ischions',lb:'largeur de la croupe',t:'hi',w:1},
+ {k:'rls',cow:'Vue côté-membres arrière',lb:'membres arrière (côté)',t:'mid',tg:5,w:1.3},
+ {k:'rlr',cow:'Vue arrière membres',lb:'membres arrière (derrière)',t:'hi',w:1.3},
+ {k:'fa',cow:'Angle du pied',lb:'angle du pied',t:'hi',w:1.3},
+ {k:'fl',lb:'indice pieds et membres'},
+ {k:'fore',cow:'Attache avant',lb:'attache avant du pis',t:'hi',w:1.5},
+ {k:'ruh',cow:'Hauteur attache arrière',lb:'hauteur du pis arrière',t:'hi',w:1.5},
+ {k:'ruw',cow:'Largeur attache arrière',lb:'largeur du pis arrière',t:'hi',w:1.5},
+ {k:'cl',cow:'Suspension médiane',lb:'suspension médiane',t:'hi',w:1.5},
+ {k:'ud',cow:'Profondeur du pis',lb:'profondeur du pis',t:'hi',w:1.5},
+ {k:'ftp',cow:'Position trayons avant',lb:'trayons avant',t:'mid',tg:5.5,w:.7},
+ {k:'tl',cow:'Longueur des trayons',lb:'longueur des trayons',t:'mid',tg:4.5,w:.7},
+ {k:'rtp',cow:'Position trayons arrière',lb:'trayons arrière',t:'mid',tg:5.5,w:.7}];
+const fm=v=>(v>0?'+':'')+(+v).toFixed(1).replace('.',',');
+/* forces et faiblesses propres au taureau */
+function bpSW(P){const s=[],w=[],c=P.cp,h=P.hl,l=P.l;
+ [['pis',c[2]],['pieds et membres',c[4]],['corps',c[3]],['caractère laitier',c[5]]].forEach(([n,v])=>{if(v>=1.2)s.push([v,n+' '+fm(v)]);else if(v<=.2)w.push([.2-v+1,n+' '+fm(v)])});
+ if(h[0]>=1)s.push([h[0],'vie productive '+fm(h[0])]);else if(h[0]<=-.7)w.push([-h[0],'vie productive '+fm(h[0])]);
+ if(h[1]<=2.8)s.push([(2.95-h[1])*5,'cellules (SCS '+String(h[1]).replace('.',',')+')']);else if(h[1]>=3.1)w.push([(h[1]-2.95)*5,'cellules (SCS '+String(h[1]).replace('.',',')+')']);
+ if(h[2]>=.8)s.push([h[2],'fertilité des filles '+fm(h[2])]);else if(h[2]<=-.7)w.push([-h[2],'fertilité des filles '+fm(h[2])]);
+ if(h[3]>=1)s.push([h[3],'conception des vaches '+fm(h[3])]);else if(h[3]<=-.7)w.push([-h[3],'conception des vaches '+fm(h[3])]);
+ if(P.pr[3]>=300)s.push([P.pr[3]/150,'NM$ '+P.pr[3]]);else if(P.pr[3]<150)w.push([(150-P.pr[3])/100,'NM$ '+P.pr[3]]);
+ BPT.forEach((t,i)=>{if(!t.cow)return;const v=l[i];
+  if(t.t==='hi'){if(v>=2.2)s.push([v,t.lb+' '+fm(v)]);else if(v<.4)w.push([.4-v+.5,t.lb+' '+fm(v)])}
+  else{const lim={stat:[2.2,-9],ra:[1.5,-1],rls:[1,-1],bd:[2.2,-9],tl:[1.2,-1],ftp:[1.8,-.5],rtp:[1.8,-.5]}[t.k];
+   if(lim&&(v>=lim[0]||v<=lim[1]))w.push([Math.abs(v)-1+.5,t.lb+' '+fm(v)+(v>0?' (trop)':' (trop peu)')])}});
+ s.sort((a,b)=>b[0]-a[0]);w.sort((a,b)=>b[0]-a[0]);return{s:s.slice(0,4).map(x=>x[1]),w:w.slice(0,4).map(x=>x[1])}}
+const bpLine=b=>{if(isBeef(b))return '<div class="mut" style="font-size:12px;margin-top:2px">🥩 Taureau de boucherie (croisement)</div>';const P=bpGet(b);
+ if(!P)return `<div class="mut" style="font-size:12px;margin-top:2px">Profil non chargé · <a href="#" data-semx="prof" data-id="${b.id}">chercher</a></div>`;
+ const o=bpSW(P);return `<div style="font-size:12px;margin-top:3px;line-height:1.4">${o.s.length?'<span style="color:var(--gr)">✔ '+escH(o.s.join(' · '))+'</span><br>':''}${o.w.length?'<span style="color:#e08a00">⚠ '+escH(o.w.join(' · '))+'</span><br>':''}<a href="#" data-semx="prof" data-id="${b.id}">📊 Profil complet</a></div>`};
+/* besoins d'une vache : classification (si disponible) + génomique */
+function cowNeeds(c){const X=typeof HX!=='undefined'&&c&&c.natl&&HX[c.natl];if(!X)return null;
+ const L={};(X.lin||[]).forEach(a=>{if(typeof a[1]==='number'&&!/-CAN$/.test(a[0]))L[a[0]]=a[1]});
+ const co=X.co||{},ge=X.ge||{},areas={};
+ const ar=(k,cl,gv)=>{let n=0;if(cl!=null)n=Math.max(n,Math.max(0,82-cl)/3);if(gv!=null)n=Math.max(n,Math.max(0,-gv)/3*.8);areas[k]=n};
+ ar('sm',co['Système mammaire'],ge.smg);ar('pm',co['Pieds et membres'],ge.pmg);ar('pl',co['Puissance laitière'],ge.plg);ar('cr',co['Croupe'],ge.croupe);
+ const tr=[];BPT.forEach((t,i)=>{if(!t.cow)return;const s=L[t.cow];if(s==null)return;const need=(t.t==='hi'?7:t.tg)-s,sev=t.t==='hi'?(need>=2?Math.min(3,need-1):0):Math.max(0,Math.min(3,Math.abs(need)-1));tr.push({i,t,s,dir:need>0?1:-1,sev})});
+ return{areas,tr,ge,n:tr.length}}
+const BPAN={sm:'pis',pm:'pieds et membres',pl:'puissance laitière',cr:'croupe'};
+function needTxt(N){if(!N)return '';const a=Object.keys(N.areas).filter(k=>N.areas[k]>=.5).sort((x,y)=>N.areas[y]-N.areas[x]).map(k=>BPAN[k]);
+ const t=N.tr.filter(q=>q.sev>0).sort((x,y)=>y.t.w*y.sev-x.t.w*x.sev).slice(0,4).map(q=>q.t.lb+' ('+q.s+'/9)');
+ const g=[];if(N.ge.repro!=null&&N.ge.repro<480)g.push('fertilité');if(N.ge.sante!=null&&N.ge.sante<480)g.push('santé');if(N.ge.lon!=null&&N.ge.lon<480)g.push('longévité');
+ return [a.length?'zones : '+a.join(', '):'',t.length?'pointages : '+t.join(', '):'',g.length?'génétique faible : '+g.join(', '):''].filter(Boolean).join(' · ')}
+/* adéquation taureau ↔ vache : fit>0 = comble ses faiblesses */
+function bpFit(b,c,N){const P=bpGet(b);if(!P)return null;N=N||cowNeeds(c);if(!N)return{none:1};
+ let fit=0;const help=[],hurt=[],comp={sm:P.cp[2],pm:P.cp[4],pl:(P.cp[5]+P.cp[3])/2,cr:P.l[5]};
+ for(const k in N.areas){const n=N.areas[k];if(n<=0)continue;const v=comp[k],x=2*n*v;fit+=x;
+  if(v>=.7)help.push([x,BPAN[k]+' (taureau '+fm(v)+')']);else if(v<=0)hurt.push([-x,BPAN[k]+' (taureau '+fm(v)+')'])}
+ for(const q of N.tr){const v=P.l[q.i];
+  if(q.sev>0){const eff=v*q.dir,x=q.t.w*q.sev*eff*.8;fit+=x;
+   if(eff>=.6)help.push([x,q.t.lb+' '+q.s+'/9 → '+fm(v)]);else if(eff<=-.3)hurt.push([-x,q.t.lb+' '+q.s+'/9 → '+fm(v)])}
+  else{const over=q.t.t==='hi'?Math.max(0,-.4-v):Math.max(0,Math.abs(v)-1.4);fit-=q.t.w*over*.5}}
+ const g=N.ge,fert=(P.hl[2]+P.hl[3]+P.hl[4])/3;
+ if(g.repro!=null&&g.repro<480){const n=Math.min(2,(500-g.repro)/40),x=n*fert*2.5;fit+=x;if(fert>=.5)help.push([x,'fertilité (taureau '+fm(fert)+')']);else if(fert<=-.5)hurt.push([-x,'fertilité (taureau '+fm(fert)+')'])}
+ if(g.sante!=null&&g.sante<480){const n=Math.min(2,(500-g.sante)/40),x=n*(2.95-P.hl[1])/.15*.4;fit+=x;if(P.hl[1]<=2.8)help.push([x,'cellules somatiques (SCS '+String(P.hl[1]).replace('.',',')+')']);else if(P.hl[1]>=3.1)hurt.push([-x,'cellules somatiques (SCS '+String(P.hl[1]).replace('.',',')+')'])}
+ if(g.lon!=null&&g.lon<480){const n=Math.min(2,(500-g.lon)/40),x=n*P.hl[0]*.8;fit+=x;if(P.hl[0]>=.7)help.push([x,'vie productive ('+fm(P.hl[0])+')']);else if(P.hl[0]<=-.7)hurt.push([-x,'vie productive ('+fm(P.hl[0])+')'])}
+ fit+=P.pr[3]/300;
+ return{fit,help:help.sort((a,b)=>b[0]-a[0]).slice(0,4).map(x=>x[1]),hurt:hurt.sort((a,b)=>b[0]-a[0]).slice(0,3).map(x=>x[1])}}
+const bpFitHtml=f=>!f||f.none||f.fit==null?'':(f.help.length?`<div style="font-size:13px;color:var(--gr)">✔ Comble : ${escH(f.help.join(' · '))}</div>`:'')+(f.hurt.length?`<div style="font-size:13px;color:#e08a00">⚠ Aggrave : ${escH(f.hurt.join(' · '))}</div>`:'');
+/* total de classement : adéquation moins la parenté ; 🔴 en dernier ; bœuf après */
+const bpTot=(f,r)=>(r.lvl>=3?-1000:0)-Math.max(0,r.lvl)*3+(f&&f.fit!=null?f.fit:0);
+/* récupération d'un profil sur semex.com (essai : page HTML publique du taureau) */
+const BPLAB=['Stature','Strength','Body Depth','Dairy Form','Rump Angle','Rump Width','Rear Legs Side View','Rear Legs Rear View','Foot Angle','F & L Score','Fore Attachment','Rear Udder Height','Rear Udder Width','Udder Cleft','Udder Depth','Fore Teat Placement','Teat Length','Rear Teat Placement'];
+function bpParse(html){const t=String(html).replace(/<(script|style)[\s\S]*?<\/\1>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+ const rx=(lb,num)=>{const m=t.match(new RegExp(lb.replace(/ /g,'\\s+').replace(/&/g,'&')+num));return m?parseFloat(m[1]):null};
+ const l=BPLAB.map(n=>rx(n,'\\s+(?:[A-Za-z&.\\- ]{0,25}?)\\s*([+-]\\d+\\.\\d+)')),
+  cp=['PTAT','HO Conformation Composite','Udder Composite','Body Composite','Feet & Legs Composite','Dairy Composite'].map(n=>rx(n,'\\s+(-?\\d+\\.\\d+)')),
+  hl=[rx('Productive Life','\\s+(-?\\d+\\.\\d+)'),rx('Somatic Cell Score','\\s+(-?\\d+\\.\\d+)'),rx('Daughter Pregnancy Rate','\\s+(-?\\d+\\.\\d+)'),rx('Cow Conception Rate','\\s+(-?\\d+\\.\\d+)'),rx('Fertility Index','\\s+(-?\\d+\\.\\d+)')],
+  pr=[rx('Milk lbs','\\s+(-?\\d+)'),rx('Fat lbs','\\s+(-?\\d+)'),rx('Protein lbs','\\s+(-?\\d+)'),rx('NM\\$','\\s+(-?\\d+)')],gm=t.match(/GTPI\s+(\d{4})/);
+ const ok=l.filter(x=>x!=null).length>=15&&cp.slice(2).every(x=>x!=null)&&hl.slice(0,3).every(x=>x!=null);if(!ok)return null;
+ const z=a=>a.map(x=>x==null?0:x);return{gt:gm?+gm[1]:0,pr:z(pr),hl:z(hl),cp:z(cp),l:z(l)}}
+async function bpFetch(b){const k=bpKey(b.code),m=k.match(/^([A-Z]+)(\d+)$/);if(!m)throw new Error('code illisible');
+ const cd='0200'+m[1]+m[2].padStart(5,'0'),urls=['https://www.semex.com/inc/bull/'+cd+'&lang=en&data=tpi&print=n','https://www.semex.com/di/nz/inc/bull/'+cd+'&lang=en&data=tpi&print=n'];
+ let last='';for(const u of urls){try{const h=await gdGet(u,'text'),P=bpParse(h);if(P){P.n=b.nm||b.code;P.d='Semex '+iso(todayN);BP[k]=P;saveBP();return P}last='page lue mais profil incomplet'}catch(e){last=String(e&&e.message||e)}}
+ throw new Error(last||'introuvable')}
+function bpModal(b){const old=$('bpmod');if(old)old.remove();const P=bpGet(b),o=document.createElement('div');o.id='bpmod';
+ o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:55;display:flex;align-items:flex-end;justify-content:center';
+ let body;
+ if(isBeef(b))body='<div class="mut">Taureau de boucherie : pas de profil laitier. À utiliser sur les vaches dont tu ne gardes pas la génisse.</div>';
+ else if(!P)body='<div class="mut">Aucun profil chargé pour ce taureau.</div>';
+ else{const sw=bpSW(P),col=v=>v>=1?'var(--gr)':v<0?'#e08a00':'var(--tx)',row=(n,v)=>`<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--ln);padding:3px 0"><span>${n}</span><b style="color:${col(v)}">${fm(v)}</b></div>`;
+  const C=['PTAT','Conformation HO','Pis (composite)','Corps (composite)','Pieds et membres (composite)','Laitier (composite)'],H=['Vie productive','SCS (cellules)','Fertilité des filles','Conception des vaches','Indice de fertilité'];
+  body=`<div class="mut" style="font-size:12px">${escH(P.d||'')} · GTPI ${P.gt||'?'} · NM$ ${P.pr[3]} · lait ${P.pr[0]} lb · gras ${P.pr[1]} · prot. ${P.pr[2]}</div>
+  ${sw.s.length?`<div style="color:var(--gr);margin-top:6px"><b>✔ Forces :</b> ${escH(sw.s.join(' · '))}</div>`:''}${sw.w.length?`<div style="color:#e08a00;margin-top:4px"><b>⚠ Faiblesses :</b> ${escH(sw.w.join(' · '))}</div>`:''}
+  <div class="mut" style="margin:10px 0 2px;font-size:12px;font-weight:600">COMPOSITES</div>${P.cp.map((v,i)=>row(C[i],v)).join('')}
+  <div class="mut" style="margin:10px 0 2px;font-size:12px;font-weight:600">SANTÉ ET FERTILITÉ</div>${P.hl.map((v,i)=>i===1?`<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--ln);padding:3px 0"><span>${H[i]}</span><b>${String(v).replace('.',',')}</b></div>`:row(H[i],v)).join('')}
+  <div class="mut" style="margin:10px 0 2px;font-size:12px;font-weight:600">POINTAGES (écarts-types ; + = vers le haut de l’échelle 1-9)</div>${BPT.map((t,i)=>row(t.lb,P.l[i])).join('')}`}
+ o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow:auto"><h3 style="margin:0 0 4px">${escH(b.nm||b.code)} <span class="mut" style="font-size:13px;font-weight:400">${escH(b.code||'')}</span></h3>${body}
+ <div class="row" style="margin-top:12px;justify-content:flex-end">${isBeef(b)?'':'<button data-bpx="upd">🔄 Chercher / mettre à jour (Semex)</button>'}<button class="on" data-bpx="x">Fermer</button></div><div id="bpmsg" class="mut" style="margin-top:6px"></div></div>`;
+ document.body.appendChild(o);
+ o.onclick=async ev=>{const t=ev.target.closest('[data-bpx]');if(ev.target===o||(t&&t.dataset.bpx==='x')){o.remove();return}if(!t)return;
+  if(t.dataset.bpx==='upd'){$('bpmsg').textContent='⏳ Recherche sur semex.com…';try{await bpFetch(b);bpModal(b);if(tab==='semence')semBody()}catch(e){$('bpmsg').textContent='Échec : '+(e&&e.message||e)+'. Le site refuse peut-être la lecture depuis l’app.'}}}}
+document.addEventListener('click',e=>{const a=e.target.closest('a[data-semx=prof]');if(!a)return;e.preventDefault();e.stopPropagation();const b=SEM.find(x=>x.id===a.dataset.id);if(b)bpModal(b)},true);
+
+(function(){try{if(localStorage.getItem('dsa_bpfix1'))return;let ch=0;for(const b of SEM){const c=String(b.code||'');
+ if(c==='HO12340'){b.code='200HO12340';ch++}
+ if(/^Largon/i.test(b.nm||'')){b.nm='Larson';ch++}
+ if(/^Allgaud \(ou/i.test(b.nm||'')){b.nm='Allgaud';ch++}
+ if(c==='777HO13224'&&/^Edward$/i.test(b.nm||'')){b.nm='Edouard-PP';ch++}}
+ if(ch)saveSEM();localStorage.setItem('dsa_bpfix1','1')}catch(e){}})();
+/* ===== fin Profils ===== */
 
 
 /* ===== 📋 Holstein : classification + génétique + parents (lu sur les pages AIS de portal.holstein.ca) ===== */
