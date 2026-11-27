@@ -413,7 +413,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-27d';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-27e';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 /* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
@@ -803,8 +803,10 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-semx=prof
 /* ===== 🌳 Arbre généalogique profond et consanguinité estimée (page retirable) ===== */
 let PEDX={};try{PEDX=JSON.parse(localStorage.getItem('dsa_pedx')||'{}')||{}}catch(e){}
 const savePX=()=>{try{localStorage.setItem('dsa_pedx',JSON.stringify(PEDX))}catch(e){}};
+let PXB={};try{PXB=JSON.parse(localStorage.getItem('dsa_pxb')||'{}')||{}}catch(e){}
+const savePXB=()=>{try{localStorage.setItem('dsa_pxb',JSON.stringify(PXB))}catch(e){}};
 let PXG=null;
-const lvlOf=F=>F>=.125?3:F>=.0625?2:F>=.015?1:0;
+const lvlOf=F=>F>=.125?3:F>=.09?2:F>=.065?1:0;
 const pxCowKey=c=>{const id=typeof HOL!=='undefined'&&HOL[c.natl];return id?'H'+id:'C'+c.natl};
 function pxBuild(){const g={},idx={};
  const add=(k,n)=>{if(!g[k])g[k]={n:n||'',s:null,d:null};else if(n&&!g[k].n)g[k].n=n;return g[k]};
@@ -816,7 +818,9 @@ function pxBuild(){const g={},idx={};
  return{g,idx,bb:{}}}
 function pxFind(G,name){const m=normN(name);if(m.length<4)return null;if(G.idx[m])return G.idx[m][0];
  for(const k in G.idx)if(k.endsWith(' '+m)||m.endsWith(' '+k))return G.idx[k][0];return null}
-function pxBull(G,b){if(G.bb[b.id])return G.bb[b.id];const bk='B'+bpKey(b.code),P=bpGet(b),pe=P&&P.ped||[],pd=[b.pere||pe[0],b.mgs||pe[1],pe[2]];
+function pxBull(G,b){if(G.bb[b.id])return G.bb[b.id];
+ const xb=PXB[bpKey(b.code)];if(xb&&xb.id&&G.g['H'+xb.id]&&(G.g['H'+xb.id].s||G.g['H'+xb.id].d)){G.bb[b.id]='H'+xb.id;return G.bb[b.id]}
+const bk='B'+bpKey(b.code),P=bpGet(b),pe=P&&P.ped||[],pd=[b.pere||pe[0],b.mgs||pe[1],pe[2]];
  const k=(b.nm&&pxFind(G,b.nm))||(P&&P.n&&pxFind(G,P.n))||null,node=k||bk;
  if(!G.g[node])G.g[node]={n:b.nm||(P&&P.n)||b.code,s:null,d:null};const nd=G.g[node];
  const leaf=nm=>{if(!nm)return null;const f=pxFind(G,nm);if(f)return f;const lk='N:'+normN(nm);if(!G.g[lk]){G.g[lk]={n:nm,s:null,d:null};const m=normN(nm);if(m.length>=4)(G.idx[m]=G.idx[m]||[]).push(lk)}return lk};
@@ -824,7 +828,17 @@ function pxBull(G,b){if(G.bb[b.id])return G.bb[b.id];const bk='B'+bpKey(b.code),
  if(!nd.d&&(pd[1]||pd[2])){const dk='V:'+bk+':D',mk='V:'+bk+':M';G.g[dk]={n:'(mère de '+nd.n+')',s:leaf(pd[1]),d:pd[2]?mk:null};if(pd[2])G.g[mk]={n:'(grand-mère de '+nd.n+')',s:leaf(pd[2]),d:null};nd.d=dk}
  G.bb[b.id]=node;return node}
 function pxAnc(g,k,max){const out=new Map(),rec=(n,d,via)=>{if(d>=max)return;const nd=g[n];if(!nd)return;for(const p of [nd.s,nd.d]){if(!p)continue;const v=via.concat(p);if(!out.has(p))out.set(p,[]);out.get(p).push({d:d+1,via:v});rec(p,d+1,v)}};rec(k,0,[]);return out}
-function pxF(g,bk,ck){const A=pxAnc(g,bk,6),B=pxAnc(g,ck,6);A.set(bk,[{d:0,via:[]}]);
+/* parenté additive exacte (méthode tabulaire récursive) : F du veau = a(père, mère) / 2 */
+function pxKin(G,sk,dk){const g=G.g;G.ix=G.ix||{};G.nx=G.nx||0;G.rk=G.rk||{};G.kin=G.kin||new Map();if(G.kin.size>1500000)G.kin.clear();
+ const ix=n=>G.ix[n]!=null?G.ix[n]:(G.ix[n]=++G.nx),
+ rank=n=>{if(G.rk[n]!=null)return G.rk[n];G.rk[n]=0;const nd=g[n];let r=0;if(nd){if(nd.s&&g[nd.s])r=Math.max(r,rank(nd.s)+1);if(nd.d&&g[nd.d])r=Math.max(r,rank(nd.d)+1)}return G.rk[n]=r},
+ a=(x,y)=>{if(!x||!y||!g[x]||!g[y])return 0;let i=ix(x),j=ix(y);if(i>j){const t=x;x=y;y=t;const u=i;i=j;j=u}
+  const key=i*1048576+j,hit=G.kin.get(key);if(hit!==undefined)return hit;let v;
+  if(x===y){const nd=g[x];v=1+((nd.s||nd.d)?.5*a(nd.s,nd.d):0)}
+  else{const rx=rank(x),ry=rank(y),hi=rx>=ry?x:y,lo=hi===x?y:x,nh=g[hi];v=(nh.s||nh.d)?.5*(a(nh.s,lo)+a(nh.d,lo)):0}
+  G.kin.set(key,v);return v};
+ return .5*a(sk,dk)}
+function pxF(g,bk,ck){const A=pxAnc(g,bk,9),B=pxAnc(g,ck,9);A.set(bk,[{d:0,via:[]}]);
  const com=[...A.keys()].filter(k=>B.has(k)&&k!==ck),S=new Set(com);let F=0;const det=[];
  for(const a of com){const ok=v=>v.via.slice(0,-1).every(x=>!S.has(x)),pa=A.get(a).filter(ok).map(p=>p.d),pb=B.get(a).filter(ok).map(p=>p.d);if(!pa.length||!pb.length)continue;
   const f=.5*pa.reduce((t,d)=>t+Math.pow(.5,d),0)*pb.reduce((t,d)=>t+Math.pow(.5,d),0);F+=f;det.push({k:a,f,da:Math.min(...pa),db:Math.min(...pb)})}
@@ -832,12 +846,25 @@ function pxF(g,bk,ck){const A=pxAnc(g,bk,6),B=pxAnc(g,ck,6);A.set(bk,[{d:0,via:[
 function semRisk(b,ch){const R=semRiskChain(b,ch),c=ch&&ch.cow;if(!c||typeof HX==='undefined'||!HX[c.natl])return R;
  try{const G=PXG||(PXG=pxBuild()),ck=pxCowKey(c);if(!G.g[ck]||(!G.g[ck].s&&!G.g[ck].d))return R;
   const bk=pxBull(G,b),bn=G.g[bk]||{},r=pxF(G.g,bk,ck);
+  const FK=pxKin(G,bk,ck);r.F=Math.max(FK,r.F);
   if(r.F<=R.F)return Object.assign({},R,{part:R.part&&!bn.s,na:r.na,nb:r.nb});
   const why=r.det.sort((x,y)=>y.f-x.f).slice(0,3).map(d=>((G.g[d.k]&&G.g[d.k].n)||'?')+' : '+(d.da?d.da+' gén. côté taureau':'le taureau lui-même')+', '+d.db+' gén. côté vache → '+semPct(d.f));
   return{lvl:lvlOf(r.F),F:r.F,why,part:!bn.s&&!bn.d,na:r.na,nb:r.nb,gr:1}}catch(e){return R}}
 /* liste des ancêtres à lire sur Holstein (id|enregistrement|profondeur|nom) */
-function pxList(depth){const L=[],seen=new Set(),own=new Set();for(const k in HOL)own.add(String(HOL[k]));
- for(const c of(DB?DB.cows:[])){const x=HX[c.natl];if(!x)continue;for(const p of [x.sire,x.dam]){if(!p||!p.id||!p.reg)continue;const id=String(p.id);if(seen.has(id)||PEDX[id]||own.has(id))continue;seen.add(id);L.push(id+'|'+p.reg+'|'+(depth||3)+'|'+(p.n||''))}}return L}
+function pxList(maxGen){maxGen=maxGen||6;const L=[],seen=new Set(),own={};
+ for(const k in HOL)own[String(HOL[k])]=k;
+ let front=[];
+ for(const c of(DB?DB.cows:[])){const x=HX[c.natl];if(!x)continue;for(const p of [x.sire,x.dam])if(p&&p.id)front.push({id:String(p.id),reg:p.reg,n:p.n})}
+ const bulls=(typeof SEM!=='undefined'?SEM:[]).filter(b=>!isBeef(b)&&b.code);
+ for(const b of bulls){const xb=PXB[bpKey(b.code)];if(xb&&xb.id)front.push({id:String(xb.id),reg:xb.reg,n:xb.n});
+  else{const P=bpGet(b),pe=P&&P.ped||[],pd=[b.pere||pe[0],b.mgs||pe[1],pe[2]].filter(Boolean);L.push('B|'+bpKey(b.code)+'|'+(b.nm||b.code)+'|'+(pd[0]||'')+'|'+(pd[1]||'')+'|'+(pd[2]||'')+'|'+maxGen)}}
+ for(let g=1;g<=maxGen&&front.length;g++){const nxt=[];
+  for(const it of front){if(seen.has(it.id))continue;seen.add(it.id);
+   if(own[it.id]){const x=HX[own[it.id]];if(x)for(const p of [x.sire,x.dam])if(p&&p.id)nxt.push({id:String(p.id),reg:p.reg,n:p.n})}
+   else if(PEDX[it.id]){const p=PEDX[it.id];if(p.s)nxt.push({id:String(p.s),reg:p.sr,n:p.sn});if(p.d)nxt.push({id:String(p.d),reg:p.dr,n:p.dn})}
+   else if(it.reg)L.push(it.id+'|'+it.reg+'|'+(maxGen-g+1)+'|'+(it.n||''))}
+  front=nxt}
+ return L}
 /* adéquation : version détaillée (phrases) */
 function bpFit(b,c,N){const P=bpGet(b);if(!P)return null;N=N||cowNeeds(c);if(!N)return{none:1};
  let fit=0;const H=[],D=[],comp={sm:P.cp[2],pm:P.cp[4],pl:(P.cp[5]+P.cp[3])/2,cr:P.l[5]},cn={sm:'indice du pis',pm:'indice pieds et membres',pl:'caractère laitier et corps',cr:'largeur de croupe'};
@@ -994,27 +1021,50 @@ async function hxJob(pM,pC){
  if(location.hostname!=='portal.holstein.ca'){alert('Ouvre d’abord une page de portal.holstein.ca (Holstein Canada), puis relance.');return}
  const old=D.getElementById('meuhov');if(old)old.remove();
  const ov=D.createElement('div');ov.id='meuhov';ov.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#fff;color:#111;padding:14px;font:16px sans-serif;overflow:auto';
- ov.innerHTML='<div style="font-size:20px;font-weight:800">MEUH : lecture Holstein · v27d</div><div id="mst" style="margin:8px 0">Colle la liste des vaches (copiée dans MEUH), puis touche Démarrer.</div><textarea id="mta" style="width:100%;height:150px;font-size:14px;box-sizing:border-box"></textarea><div style="margin-top:8px"><button id="mgo" style="font-size:18px;padding:10px 14px;margin:2px">▶ Démarrer</button> <button id="mdl" style="font-size:18px;padding:10px 14px;margin:2px">💾 Enregistrer le fichier</button> <button id="mcp" style="font-size:18px;padding:10px 14px;margin:2px">📋 Copier (en parties)</button> <button id="mtr" style="font-size:18px;padding:10px 14px;margin:2px">🌳 Lire l’arbre</button> <button id="mx" style="font-size:18px;padding:10px 14px;margin:2px">Fermer</button></div>';
+ ov.innerHTML='<div style="font-size:20px;font-weight:800">MEUH : lecture Holstein · v27e</div><div id="mst" style="margin:8px 0">Colle la liste des vaches (copiée dans MEUH), puis touche Démarrer.</div><textarea id="mta" style="width:100%;height:150px;font-size:14px;box-sizing:border-box"></textarea><div style="margin-top:8px"><button id="mgo" style="font-size:18px;padding:10px 14px;margin:2px">▶ Démarrer</button> <button id="mdl" style="font-size:18px;padding:10px 14px;margin:2px">💾 Enregistrer le fichier</button> <button id="mcp" style="font-size:18px;padding:10px 14px;margin:2px">📋 Copier (en parties)</button> <button id="mtr" style="font-size:18px;padding:10px 14px;margin:2px">🌳 Lire l’arbre</button> <button id="mx" style="font-size:18px;padding:10px 14px;margin:2px">Fermer</button></div>';
  D.body.appendChild(ov);
  const $=i=>D.getElementById(i),st=s=>{$('mst').textContent=s},sf=m=>{const e=new Error(m);e.soft=1;return e};
  try{const t=await navigator.clipboard.readText();if(/\d{6}/.test(t))$('mta').value=t}catch(e){}
- let run=false,R={},ID={},INFO={},X={},bad=0;
- const out=()=>JSON.stringify({v:1,hx:R,hol:ID,holi:INFO,px:X});
+ let run=false,R={},ID={},INFO={},X={},BU={},bad=0;
+ const out=()=>JSON.stringify({v:1,hx:R,hol:ID,holi:INFO,px:X,bu:BU});
  const get=async(u,x)=>{const r=await fetch(u,{credentials:'include',headers:x?{'X-Requested-With':'XMLHttpRequest'}:{}});const t=await r.text();if(!r.ok)throw new Error('réponse '+r.status+(/Just a moment/.test(t)?' (Cloudflare : recharge la page Holstein puis relance)':''));return t};
  $('mx').onclick=()=>{run=false;ov.remove()};
  $('mtr').onclick=async()=>{if(run){run=false;return}
-  const Q=$('mta').value.split('\n').map(l=>l.trim().split('|')).filter(a=>a.length>=3&&/^\d+$/.test(a[0])).map(a=>({id:a[0],reg:a[1],d:+a[2]||1,n:a[3]||''}));
-  if(!Q.length){st('Colle d’abord la liste de l’arbre (lignes id|enregistrement|profondeur|nom) copiée dans MEUH.');return}
-  run=true;$('mtr').textContent='⏹ Arrêter';const seen=new Set();let ok=0,bad2=0,err=0,msg='';
+  const raw=$('mta').value.split('\n').map(l=>l.trim().split('|')),
+   Q=raw.filter(a=>a.length>=3&&/^\d+$/.test(a[0])).map(a=>({id:a[0],reg:a[1],d:+a[2]||1,n:a[3]||''})),
+   BL=raw.filter(a=>a[0]==='B'&&a.length>=3).map(a=>({k:a[1],nm:a[2],ped:[a[3],a[4],a[5]].filter(Boolean),d:+a[6]||6}));
+  if(!Q.length&&!BL.length){st('Colle d’abord la liste de l’arbre (copiée dans MEUH avec « 🌳 Copier la liste de l’arbre »).');return}
+  run=true;$('mtr').textContent='⏹ Arrêter';const seen=new Set();let ok=0,bad2=0,err=0,msg='',nb=0;const miss=[];
+  const sl=ms=>new Promise(r=>setTimeout(r,ms)),up=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''),
+   nodeOf=(n,m)=>{const nd={n:n};if(m.sire&&m.sire.id){nd.s=m.sire.id;nd.sn=m.sire.n;nd.sr=m.sire.reg}if(m.dam&&m.dam.id){nd.d=m.dam.id;nd.dn=m.dam.n;nd.dr=m.dam.reg}return nd},
+   regsOf=a=>{const o=[];for(const k in a){const v=a[k];if(typeof v==='string'&&/^HO[A-Z0-9]{3}[MF]\d+$/i.test(v.replace(/\s/g,'')))o.push(v.replace(/\s/g,''))}
+    const n=String(a.RegNumber||'').replace(/\D/g,'');if(n){const cc=String(a.CountryCode||a.RegCountryCode||a.Country||'').toUpperCase().slice(0,3);if(cc)o.push('HO'+cc+'M'+n);o.push('HOCANM'+n,'HOUSAM'+n)}return [...new Set(o)]},
+   aisUrl=(id,reg)=>'/fr/AIS/AIS?animalId='+id+'&animalRegNo='+encodeURIComponent(reg)+'&uom=KG&me=BCA';
+  for(const b of BL){if(!run)break;nb++;st('Taureau '+nb+' / '+BL.length+' : '+b.nm+' · '+Object.keys(BU).length+' trouvés');
+   let found=null,dbg='';
+   try{const core=up(String(b.nm).toUpperCase().replace(/\*[A-Z]*/g,'').replace(/-(SEXED|SEXEE|SEXE|PP|P|RC|ET|TV|TL)(?![A-Z])/g,'').split(/[\s-]+/)[0]);
+    const d=JSON.parse(await get('/en/AIS/ReadAnimalSearchGrid?animalSearchString='+encodeURIComponent(core),1)),
+     l=(d.Data||[]).filter(x=>x.SexCode==='M'&&up(x.DisplayAnimalName).includes(core)).slice(0,8);
+    if(!l.length)dbg=' (recherche : '+((d.Data||[]).length)+' résultats, aucun mâle au nom « '+core+' »)';
+    else dbg=' (champs : '+Object.keys(l[0]).join(',')+')';
+    for(const a of l){if(found)break;
+     for(const reg of regsOf(a)){let m=null;try{m=pM(await get(aisUrl(a.AnimalId,reg)))}catch(e){}
+      await sl(300);if(!m)continue;
+      if(m.sire&&m.sire.id){const sn=up(m.sire.n),p0=up(b.ped[0]);if(!p0||sn.includes(p0)||p0.includes(sn)){found={id:String(a.AnimalId),reg:reg,m:m,n:a.DisplayAnimalName||b.nm}}break}}}
+   }catch(e){dbg=' ('+e.message+')'}
+   if(found){BU[b.k]={id:found.id,reg:found.reg,n:found.n};X[found.id]=nodeOf(found.n,found.m);seen.add(found.id);ok++;
+    if(b.d>1)for(const p of [found.m.sire,found.m.dam])if(p&&p.id&&p.reg&&!seen.has(String(p.id)))Q.push({id:String(p.id),reg:p.reg,d:b.d-1,n:p.n||''})}
+   else miss.push(b.nm+dbg);
+   await sl(450)}
   while(Q.length&&run){const it=Q.shift();if(seen.has(it.id))continue;seen.add(it.id);st('Arbre : '+ok+' lus, '+Q.length+' à lire, '+bad2+' échecs');
-   try{const h=await get('/fr/AIS/AIS?animalId='+it.id+'&animalRegNo='+encodeURIComponent(it.reg)+'&uom=KG&me=BCA'),m=pM(h),nd={n:it.n};
-    if(m.sire&&m.sire.id){nd.s=m.sire.id;nd.sn=m.sire.n;nd.sr=m.sire.reg}if(m.dam&&m.dam.id){nd.d=m.dam.id;nd.dn=m.dam.n;nd.dr=m.dam.reg}
-    X[it.id]=nd;ok++;err=0;
+   try{const h=await get('/fr/AIS/AIS?animalId='+it.id+'&animalRegNo='+encodeURIComponent(it.reg)+'&uom=KG&me=BCA'),m=pM(h);
+    X[it.id]=nodeOf(it.n,m);ok++;err=0;
     if(it.d>1)for(const p of [m.sire,m.dam])if(p&&p.id&&p.reg&&!seen.has(String(p.id)))Q.push({id:String(p.id),reg:p.reg,d:it.d-1,n:p.n||''})}
    catch(e){bad2++;if(++err>=6){msg=' Arrêt : '+e.message+'.';break}}
-   await new Promise(r=>setTimeout(r,450))}
-  run=false;$('mtr').textContent='🌳 Lire l’arbre';st('Arbre terminé : '+ok+' animaux lus, '+bad2+' échecs.'+msg+' Touche « Enregistrer le fichier » puis importe-le dans MEUH.')};
- $('mdl').onclick=()=>{if(!Object.keys(R).length&&!Object.keys(X).length){st('Rien à enregistrer.');return}try{const bl=new Blob([out()],{type:'application/json'}),a=D.createElement('a');a.href=URL.createObjectURL(bl);a.download='meuh-holstein.json';D.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href)},4000);st('Fichier « meuh-holstein.json » enregistré ('+Object.keys(R).length+' vaches, '+Math.round(out().length/1000)+' ko). Retourne dans MEUH : 📂 Choisir le fichier.')}catch(e){st('Enregistrement impossible : '+e.message)}};
+   await sl(450)}
+  run=false;$('mtr').textContent='🌳 Lire l’arbre';
+  st('Arbre terminé : '+ok+' animaux lus, '+bad2+' échecs, '+Object.keys(BU).length+' taureaux trouvés.'+msg+(miss.length?' Taureaux non trouvés : '+miss.join(' ; ')+'.':'')+' Touche « Enregistrer le fichier » puis importe-le dans MEUH.')};
+ $('mdl').onclick=()=>{if(!Object.keys(R).length&&!Object.keys(X).length&&!Object.keys(BU).length){st('Rien à enregistrer.');return}try{const bl=new Blob([out()],{type:'application/json'}),a=D.createElement('a');a.href=URL.createObjectURL(bl);a.download='meuh-holstein.json';D.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href)},4000);st('Fichier « meuh-holstein.json » enregistré ('+Object.keys(R).length+' vaches, '+Math.round(out().length/1000)+' ko). Retourne dans MEUH : 📂 Choisir le fichier.')}catch(e){st('Enregistrement impossible : '+e.message)}};
  let PP=[],pi=0;
  const chunks=()=>{const P=[];let cur={v:1,hx:{},hol:{},holi:{}},sz=0;for(const k of Object.keys(R)){const one=JSON.stringify(R[k]).length+200;if(sz+one>90000&&Object.keys(cur.hx).length){P.push(cur);cur={v:1,hx:{},hol:{},holi:{}};sz=0}cur.hx[k]=R[k];cur.hol[k]=ID[k];cur.holi[k]=INFO[k];sz+=one}if(Object.keys(cur.hx).length)P.push(cur);return P.map(x=>JSON.stringify(x))};
  $('mcp').onclick=async()=>{if(pi>=PP.length){PP=chunks();pi=0}
@@ -1043,14 +1093,15 @@ async function hxJob(pM,pC){
  };
 }
 function hxScript(){return '(async()=>{const hxNum='+hxNum+',hxCells='+hxCells+',hxAfter='+hxAfter+',hxCL='+hxCL+';'+hxParseMain+';'+hxParseConf+';await ('+hxJob+')(hxParseMain,hxParseConf)})()'}
-function hxUserscript(){return '// ==UserScript==\n// @name MEUH Holstein\n// @match https://portal.holstein.ca/*\n// @grant none\n// @noframes\n// @run-at document-idle\n// ==/UserScript==\n(function(){try{const run=()=>{'+hxScript()+'};const mk=()=>{if(!document.body)return;const o=document.getElementById("meuhbtn");if(o&&o.dataset.v==="27d")return;if(o)o.remove();const b=document.createElement("button");b.id="meuhbtn";b.dataset.v="27d";b.textContent="MEUH";b.style.cssText="position:fixed;right:10px;bottom:90px;z-index:2147483646;font:bold 18px sans-serif;padding:12px 16px;border-radius:24px;border:0;background:#1b6e3c;color:#fff";b.addEventListener("click",run);document.body.appendChild(b)};mk();setInterval(mk,1000)}catch(e){alert("MEUH : "+e)}})();'}
+function hxUserscript(){return '// ==UserScript==\n// @name MEUH Holstein\n// @match https://portal.holstein.ca/*\n// @grant none\n// @noframes\n// @run-at document-idle\n// ==/UserScript==\n(function(){try{const run=()=>{'+hxScript()+'};const mk=()=>{if(!document.body)return;const o=document.getElementById("meuhbtn");if(o&&o.dataset.v==="27e")return;if(o)o.remove();const b=document.createElement("button");b.id="meuhbtn";b.dataset.v="27e";b.textContent="MEUH";b.style.cssText="position:fixed;right:10px;bottom:90px;z-index:2147483646;font:bold 18px sans-serif;padding:12px 16px;border-radius:24px;border:0;background:#1b6e3c;color:#fff";b.addEventListener("click",run);document.body.appendChild(b)};mk();setInterval(mk,1000)}catch(e){alert("MEUH : "+e)}})();'}
 function hxCopy(t,ok){const f=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();let r=false;try{r=document.execCommand('copy')}catch(e){}a.remove();toast(r?ok:'Copie impossible.',3000)};
  try{navigator.clipboard.writeText(t).then(()=>toast(ok,3000),f)}catch(e){f()}}
 function hxImport(txt){let d;try{d=JSON.parse(String(txt).trim())}catch(e){return'Texte illisible : le résultat est incomplet ou mal collé.'}
- if(!d||d.v!==1||(!d.hx&&!d.px))return'Ce n’est pas un résultat MEUH.';let n=0,m=0;
+ if(!d||d.v!==1||(!d.hx&&!d.px&&!d.bu))return'Ce n’est pas un résultat MEUH.';let n=0,m=0,tb=0;
+ if(d.bu){for(const k in d.bu){if(d.bu[k]&&d.bu[k].id){PXB[k]=d.bu[k];tb++}}savePXB();PXG=null}
  if(d.px){for(const id in d.px){PEDX[id]=Object.assign(PEDX[id]||{},d.px[id]);m++}savePX();PXG=null}
  for(const k in (d.hx||{})){const r=d.hx[k];if(!r||!(r.cl||r.ge||r.co||r.lin))continue;HX[k]=Object.assign({},HX[k]||{},r);n++;if(d.hol&&d.hol[k])HOL[k]=+d.hol[k];if(d.holi&&d.holi[k])HOLI[k]=d.holi[k]}
- saveHX();saveHOL();PXG=null;return (n?n+' vache'+(n>1?'s':'')+' importée'+(n>1?'s':'')+' ✓':'')+(m?(n?' · ':'')+m+' ancêtre'+(m>1?'s':'')+' importé'+(m>1?'s':'')+' ✓':'')}
+ saveHX();saveHOL();PXG=null;return (n?n+' vache'+(n>1?'s':'')+' importée'+(n>1?'s':'')+' ✓':'')+(m?(n?' · ':'')+m+' ancêtre'+(m>1?'s':'')+' importé'+(m>1?'s':'')+' ✓':'')+(tb?((n||m)?' · ':'')+tb+' taureau'+(tb>1?'x':'')+' retrouvé'+(tb>1?'s':'')+' ✓':'')}
 function hxBulk(){const old=$('hxbulkmod');if(old)old.remove();
  const o=document.createElement('div');o.id='hxbulkmod';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center';
  const L=(DB?DB.cows:[]).filter(c=>!c.elim&&c.natl&&!HX[c.natl]).map(c=>c.natl);
@@ -1058,7 +1109,7 @@ function hxBulk(){const old=$('hxbulkmod');if(old)old.remove();
  const sm='min-height:44px;font-size:15px;margin:3px 0;width:100%';
  o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto"><div style="font-size:18px;font-weight:800">📥 Holstein via le navigateur</div>
  <div class="mut" style="margin:6px 0;line-height:1.5">Le navigateur du cell passe la protection du site ; MEUH reçoit ensuite le résultat.<br><b>1.</b> Copie la liste (${L.length} vache${L.length>1?'s':''} sans données).<br><i>Pour la généalogie : si les parents des vaches déjà lues manquent (parenté à 0 %), utilise plutôt « 1b » : il relit tout le troupeau, sans effacer ce qui existe.</i><br><b>2.</b> Copie le script.<br><b>3. Méthode recommandée (Firefox) :</b> installe <b>Firefox</b> puis l’extension <b>Violentmonkey</b> (menu ⋮ → Modules complémentaires). Ouvre Violentmonkey → ＋ (nouveau script), efface tout, colle le script « Firefox » (bouton 2) et enregistre. Ensuite, sur <b>portal.holstein.ca</b> (connecté), un bouton vert <b>MEUH</b> apparaît en bas à droite : touche-le.<br><i>Autre méthode (Chrome, capricieuse) : barre d’adresse, écrire javascript: puis coller le script « Chrome ».</i><br><b>4.</b> Colle la liste, touche Démarrer, puis <b>💾 Enregistrer le fichier</b>.<br><b>6. Parenté (facultatif, une fois les vaches importées) :</b> 🌳 copie la liste de l’arbre, ouvre le bouton MEUH sur Holstein, colle la liste, touche <b>🌳 Lire l’arbre</b> (quelques minutes), puis 💾 Enregistrer.<br><b>5.</b> Reviens ici et touche <b>📂 Choisir le fichier</b> : prends « meuh-holstein.json » (dossier Téléchargements). Le collage de texte reste possible en secours.</div>
- <button data-hb="list" style="${sm}"${L.length?'':' disabled'}>1. 📋 Copier la liste des vaches</button><button data-hb="all" style="${sm}">1b. 📋 Copier TOUT le troupeau (${AL.length}) · relire pour la généalogie${NOID?' — '+NOID+' sans parents lisibles':''}</button><button data-hb="us" style="${sm}">2. 📋 Copier le script (Firefox + Violentmonkey)</button><button data-hb="scr" style="${sm}">2. 📋 Copier le script (Chrome)</button><button data-hb="tree" style="${sm}">🌳 Copier la liste de l’arbre (parenté)</button>
+ <button data-hb="list" style="${sm}"${L.length?'':' disabled'}>1. 📋 Copier la liste des vaches</button><button data-hb="all" style="${sm}">1b. 📋 Copier TOUT le troupeau (${AL.length}) · relire pour la généalogie${NOID?' — '+NOID+' sans parents lisibles':''}</button><button data-hb="us" style="${sm}">2. 📋 Copier le script (Firefox + Violentmonkey)</button><button data-hb="scr" style="${sm}">2. 📋 Copier le script (Chrome)</button><button data-hb="tree" style="${sm}">🌳 Copier la liste de l’arbre (taureaux + 6 générations)</button>
  <button data-hb="clip" class="on" style="${sm}">5. 📋 Importer ce que j’ai copié (sans coller dans la case)</button><button data-hb="file" style="${sm}">5. 📂 Importer un fichier meuh-holstein.json</button>
  <textarea id="hbta" placeholder="Case de secours (inutile avec les boutons 5)" style="width:100%;height:110px;box-sizing:border-box;margin-top:6px;font-size:13px"></textarea><div id="hbmsg" style="margin:6px 0;font-weight:600"></div>
  <div class="row" style="justify-content:flex-end"><button data-hb="file">📂 Choisir le fichier</button><button data-hb="paste">Coller</button><button data-hb="imp" class="on">Importer</button><button data-hb="x">Fermer</button></div></div>`;
@@ -1067,7 +1118,7 @@ function hxBulk(){const old=$('hxbulkmod');if(old)old.remove();
   if(k==='list')hxCopy(L.join('\n'),'Liste copiée ✓');
   else if(k==='all')hxCopy(AL.join('\n'),'Liste du troupeau complet copiée ✓ ('+AL.length+')');
   else if(k==='us')hxCopy(hxUserscript(),'Script Firefox copié ✓');
-  else if(k==='tree'){const L=pxList(3);if(!L.length)M(NOID?'Rien à lire : '+NOID+' vache(s) n’ont pas leurs parents en mémoire. Utilise « 1b » (tout le troupeau) puis importe, et reviens ici.':'Rien à lire : charge d’abord les vaches (📋), ou l’arbre est déjà complet.');else hxCopy(L.join('\n'),L.length+' ancêtres à lire ✓ : colle dans MEUH (Firefox), touche 🌳 Lire l’arbre')}
+  else if(k==='tree'){const L=pxList(6);if(!L.length)M(NOID?'Rien à lire : '+NOID+' vache(s) n’ont pas leurs parents en mémoire. Utilise « 1b » (tout le troupeau) puis importe, et reviens ici.':'Rien à lire : charge d’abord les vaches (📋), ou l’arbre est déjà complet.');else{const nbb=L.filter(x=>x[0]==='B').length;hxCopy(L.join('\n'),L.length+' lignes copiées ✓ ('+nbb+' taureaux à retrouver, '+(L.length-nbb)+' ancêtres à lire). Colle dans Firefox (bouton vert MEUH) et touche 🌳 Lire l’arbre')}}
   else if(k==='scr')hxCopy(encodeURIComponent(hxScript()),'Script copié ✓ (écris javascript: avant de coller)');
   else if(k==='file'){const fi=document.createElement('input');fi.type='file';fi.onchange=async()=>{const f=fi.files[0];if(!f)return;M('⏳ Lecture…');try{M(hxImport(await f.text()))}catch(e){M('Lecture impossible : '+(e&&e.message||e))}};fi.click()}
   else if(k==='clip'){let t='';try{t=await navigator.clipboard.readText()}catch(e){M('Lecture du presse-papier refusée : utilise « 📂 Importer un fichier » (💾 Enregistrer le fichier dans Firefox).');return}
