@@ -413,7 +413,7 @@ function nameForm(){const old=$('usrmod');if(old)old.remove();const d=document.c
  const go=()=>{if(!i.value.trim()){toast('Entre ton nom.');return}saveUser(i.value);d.remove();toast('Bonjour '+USER+' ✓',2000);if(tab==='saisies')saisies()};
  $('usr-ok').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$('usr-x').onclick=()=>d.remove()}
 setTimeout(()=>{if(!USER)nameForm()},1200);
-const BUILD='2026-11-27g';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
+const BUILD='2026-11-27h';try{if(localStorage.getItem('dsa_build')!==BUILD){localStorage.setItem('dsa_build',BUILD);setTimeout(()=>toast('MEUH mise à jour ✓ ('+BUILD+')',4000),2600)}}catch(e){}
 let FQ=0;
 
 /* ===== 🐂 Choix de taureau : inventaire de semence + aide au choix (page retirable : tout est ici + 5 branchements marqués SEM) ===== */
@@ -805,6 +805,8 @@ let PEDX={};try{PEDX=JSON.parse(localStorage.getItem('dsa_pedx')||'{}')||{}}catc
 const savePX=()=>{try{localStorage.setItem('dsa_pedx',JSON.stringify(PEDX))}catch(e){}};
 let PXB={};try{PXB=JSON.parse(localStorage.getItem('dsa_pxb')||'{}')||{}}catch(e){}
 const savePXB=()=>{try{localStorage.setItem('dsa_pxb',JSON.stringify(PXB))}catch(e){}};
+let PXT=0.04,PXSUG=null;try{const t=parseFloat(localStorage.getItem('dsa_theta'));if(t>=0&&t<=0.2)PXT=t}catch(e){}
+const savePXT=()=>{try{localStorage.setItem('dsa_theta',String(PXT))}catch(e){}};
 let PXG=null;
 const lvlOf=F=>F>=.125?3:F>=.09?2:F>=.065?1:0;
 const pxCowKey=c=>{const id=typeof HOL!=='undefined'&&HOL[c.natl];return id?'H'+id:'C'+c.natl};
@@ -829,13 +831,14 @@ const bk='B'+bpKey(b.code),P=bpGet(b),pe=P&&P.ped||[],pd=[b.pere||pe[0],b.mgs||p
  G.bb[b.id]=node;return node}
 function pxAnc(g,k,max){const out=new Map(),rec=(n,d,via)=>{if(d>=max)return;const nd=g[n];if(!nd)return;for(const p of [nd.s,nd.d]){if(!p)continue;const v=via.concat(p);if(!out.has(p))out.set(p,[]);out.get(p).push({d:d+1,via:v});rec(p,d+1,v)}};rec(k,0,[]);return out}
 /* parenté additive exacte (méthode tabulaire récursive) : F du veau = a(père, mère) / 2 */
-function pxKin(G,sk,dk){const g=G.g;G.ix=G.ix||{};G.nx=G.nx||0;G.rk=G.rk||{};G.kin=G.kin||new Map();if(G.kin.size>1500000)G.kin.clear();
+function pxKin(G,sk,dk){const g=G.g,T0=PXT;G.ix=G.ix||{};G.nx=G.nx||0;G.rk=G.rk||{};G.kin=G.kin||new Map();if(G.kin.size>1500000||G.th!==T0){G.kin.clear();G.th=T0}
+ /* ancêtres inconnus ou au bout de l'arbre : parenté de fond = 2×T0 (coascendance de base T0), comme un groupe génétique de départ */
  const ix=n=>G.ix[n]!=null?G.ix[n]:(G.ix[n]=++G.nx),
  rank=n=>{if(G.rk[n]!=null)return G.rk[n];G.rk[n]=0;const nd=g[n];let r=0;if(nd){if(nd.s&&g[nd.s])r=Math.max(r,rank(nd.s)+1);if(nd.d&&g[nd.d])r=Math.max(r,rank(nd.d)+1)}return G.rk[n]=r},
- a=(x,y)=>{if(!x||!y||!g[x]||!g[y])return 0;let i=ix(x),j=ix(y);if(i>j){const t=x;x=y;y=t;const u=i;i=j;j=u}
+ a=(x,y)=>{if(!x||!y||!g[x]||!g[y])return 2*T0;let i=ix(x),j=ix(y);if(i>j){const t=x;x=y;y=t;const u=i;i=j;j=u}
   const key=i*1048576+j,hit=G.kin.get(key);if(hit!==undefined)return hit;let v;
-  if(x===y){const nd=g[x];v=1+((nd.s||nd.d)?.5*a(nd.s,nd.d):0)}
-  else{const rx=rank(x),ry=rank(y),hi=rx>=ry?x:y,lo=hi===x?y:x,nh=g[hi];v=(nh.s||nh.d)?.5*(a(nh.s,lo)+a(nh.d,lo)):0}
+  if(x===y){const nd=g[x];v=1+((nd.s||nd.d)?.5*a(nd.s,nd.d):T0)}
+  else{const rx=rank(x),ry=rank(y),hi=rx>=ry?x:y,lo=hi===x?y:x,nh=g[hi];v=(nh.s||nh.d)?.5*(a(nh.s,lo)+a(nh.d,lo)):2*T0}
   G.kin.set(key,v);return v};
  return .5*a(sk,dk)}
 function pxF(g,bk,ck){const A=pxAnc(g,bk,9),B=pxAnc(g,ck,9);A.set(bk,[{d:0,via:[]}]);
@@ -846,15 +849,16 @@ function pxF(g,bk,ck){const A=pxAnc(g,bk,9),B=pxAnc(g,ck,9);A.set(bk,[{d:0,via:[
 function semRisk(b,ch){const R=semRiskChain(b,ch),c=ch&&ch.cow;if(!c||typeof HX==='undefined'||!HX[c.natl])return R;
  try{const G=PXG||(PXG=pxBuild()),ck=pxCowKey(c);if(!G.g[ck]||(!G.g[ck].s&&!G.g[ck].d))return R;
   const bk=pxBull(G,b),bn=G.g[bk]||{},r=pxF(G.g,bk,ck);
+  if(r.nb<15||r.na<15)return Object.assign({},R,{part:true,na:r.na,nb:r.nb});
   const FK=pxKin(G,bk,ck);r.F=Math.max(FK,r.F);
-  if(r.F<=R.F)return Object.assign({},R,{part:R.part&&!bn.s,na:r.na,nb:r.nb});
+  if(r.F<=R.F)return Object.assign({},R,{part:false,na:r.na,nb:r.nb});
   const why=r.det.sort((x,y)=>y.f-x.f).slice(0,3).map(d=>((G.g[d.k]&&G.g[d.k].n)||'?')+' : '+(d.da?d.da+' gén. côté taureau':'le taureau lui-même')+', '+d.db+' gén. côté vache → '+semPct(d.f));
   return{lvl:lvlOf(r.F),F:r.F,why,part:!bn.s&&!bn.d,na:r.na,nb:r.nb,gr:1}}catch(e){return R}}
 /* liste des ancêtres à lire sur Holstein (id|enregistrement|profondeur|nom) */
 function pxDiag(){try{const G=PXG||(PXG=pxBuild()),cows=(DB?DB.cows:[]).filter(c=>HX[c.natl]),Ls=[];
  const withPar=cows.filter(c=>{const x=HX[c.natl];return x.sire&&x.sire.id&&x.dam&&x.dam.id}).length;
  Ls.push('Ancêtres en mémoire : '+Object.keys(PEDX).length+' · taureaux retrouvés : '+Object.keys(PXB).length);
- Ls.push('Vaches lues : '+cows.length+' (parents lisibles : '+withPar+')');
+ Ls.push('Vaches lues : '+cows.length+' (parents lisibles : '+withPar+') · base commune : '+(PXT*100).toFixed(1)+' %');
  const dep=k=>{let n=0,fr=[k];const seen=new Set([k]);for(let g=0;g<14&&fr.length;g++){const nx=[];for(const x of fr){const nd=G.g[x];if(!nd)continue;for(const p of [nd.s,nd.d])if(p&&!seen.has(p)){seen.add(p);nx.push(p)}}if(nx.length)n=g+1;fr=nx}return[n,seen.size-1]};
  const bulls=(typeof SEM!=='undefined'?SEM:[]).filter(b=>!isBeef(b)&&b.code);
  if(cows[0]){const [gd,sz]=dep(pxCowKey(cows[0]));Ls.push('Vache test '+cows[0].num+' : '+sz+' ancêtres sur '+gd+' générations')}
@@ -863,6 +867,19 @@ function pxDiag(){try{const G=PXG||(PXG=pxBuild()),cows=(DB?DB.cows:[]).filter(c
  for(const c of cows.slice(0,2)){Ls.push('Parenté avec '+c.num+' '+(c.nom||'')+' :');
   for(const b of bulls.slice(0,8)){const ck=pxCowKey(c),bk=pxBull(G,b),r=pxF(G.g,bk,ck),FK=pxKin(G,bk,ck);Ls.push(' • '+(b.nm||b.code)+' : '+semPct(Math.max(FK,r.F))+' ('+r.nb+' anc. taureau, '+r.na+' anc. vache)')}}
  return Ls.join('\n')}catch(e){return'Diagnostic impossible : '+e.message}}
+const PXREF={PROFICIENT:6.1,LUDWIG:6.2,POWERANGER:6.1,LESTRANGE:6.4,COOPS:6.1,EDOUARD:6.2,LARSON:5.7,ALLGAUD:5.1,POPFEST:6.4,HONORIS:6.1,HAVENOFEAR:5.0};
+async function pxCalib(prog){try{const G=PXG||(PXG=pxBuild()),cows=(DB?DB.cows:[]).filter(c=>HX[c.natl]&&G.g[pxCowKey(c)]),Ls=[],diffs=[];
+ const ok=cows.filter(c=>{const k=pxCowKey(c);return pxAnc(G.g,k,9).size>=15});
+ const step=Math.max(1,Math.ceil(ok.length/70)),smp=ok.filter((c,i)=>i%step===0);
+ Ls.push('Moyenne sur '+smp.length+' vaches (base commune '+(PXT*100).toFixed(1)+' %) — MEUH · OptiMate (feuille du 23 juillet) :');
+ const bulls=(typeof SEM!=='undefined'?SEM:[]).filter(b=>!isBeef(b)&&b.code);let n=0;
+ for(const b of bulls){n++;prog('Calcul '+n+' / '+bulls.length+' : '+(b.nm||b.code)+'…');await new Promise(r=>setTimeout(r,20));
+  const bk=pxBull(G,b);if(pxAnc(G.g,bk,9).size<15){Ls.push(' • '+(b.nm||b.code)+' : pedigree incomplet, ignoré');continue}
+  let t=0;for(const c of smp)t+=pxKin(G,bk,pxCowKey(c));const m=t/smp.length*100,key=String(b.nm||'').toUpperCase().split(/[\s*-]+/)[0],ref=PXREF[key];
+  Ls.push(' • '+(b.nm||b.code)+' : '+m.toFixed(1).replace('.',',')+' %'+(ref!=null?' · OptiMate '+String(ref).replace('.',',')+' %':''));if(ref!=null)diffs.push(ref-m)}
+ if(diffs.length){const d=diffs.reduce((x,y)=>x+y,0)/diffs.length;PXSUG=Math.max(0,Math.min(0.2,PXT+d/100));Ls.push('Écart moyen : '+(d>=0?'+':'')+d.toFixed(1).replace('.',',')+' point → base suggérée : '+(PXSUG*100).toFixed(1).replace('.',',')+' %. Touche « 🎯 Appliquer la base suggérée ».')}
+ else Ls.push('Aucun taureau comparable (pedigree incomplet).');
+ return Ls.join('\n')}catch(e){return'Calibration impossible : '+e.message}}
 function pxList(maxGen){maxGen=maxGen||6;const L=[],seen=new Set(),own={};
  for(const k in HOL)own[String(HOL[k])]=k;
  let front=[];
@@ -1033,7 +1050,7 @@ async function hxJob(pM,pC){
  if(location.hostname!=='portal.holstein.ca'){alert('Ouvre d’abord une page de portal.holstein.ca (Holstein Canada), puis relance.');return}
  const old=D.getElementById('meuhov');if(old)old.remove();
  const ov=D.createElement('div');ov.id='meuhov';ov.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#fff;color:#111;padding:14px;font:16px sans-serif;overflow:auto';
- ov.innerHTML='<div style="font-size:20px;font-weight:800">MEUH : lecture Holstein · v27g</div><div id="mst" style="margin:8px 0">Colle la liste des vaches (copiée dans MEUH), puis touche Démarrer.</div><textarea id="mta" style="width:100%;height:150px;font-size:14px;box-sizing:border-box"></textarea><div style="margin-top:8px"><button id="mgo" style="font-size:18px;padding:10px 14px;margin:2px">▶ Démarrer</button> <button id="mdl" style="font-size:18px;padding:10px 14px;margin:2px">💾 Enregistrer le fichier</button> <button id="mcp" style="font-size:18px;padding:10px 14px;margin:2px">📋 Copier (en parties)</button> <button id="mtr" style="font-size:18px;padding:10px 14px;margin:2px">🌳 Lire l’arbre</button> <button id="mx" style="font-size:18px;padding:10px 14px;margin:2px">Fermer</button></div>';
+ ov.innerHTML='<div style="font-size:20px;font-weight:800">MEUH : lecture Holstein · v27h</div><div id="mst" style="margin:8px 0">Colle la liste des vaches (copiée dans MEUH), puis touche Démarrer.</div><textarea id="mta" style="width:100%;height:150px;font-size:14px;box-sizing:border-box"></textarea><div style="margin-top:8px"><button id="mgo" style="font-size:18px;padding:10px 14px;margin:2px">▶ Démarrer</button> <button id="mdl" style="font-size:18px;padding:10px 14px;margin:2px">💾 Enregistrer le fichier</button> <button id="mcp" style="font-size:18px;padding:10px 14px;margin:2px">📋 Copier (en parties)</button> <button id="mtr" style="font-size:18px;padding:10px 14px;margin:2px">🌳 Lire l’arbre</button> <button id="mx" style="font-size:18px;padding:10px 14px;margin:2px">Fermer</button></div>';
  D.body.appendChild(ov);
  const $=i=>D.getElementById(i),st=s=>{$('mst').textContent=s},sf=m=>{const e=new Error(m);e.soft=1;return e};
  try{const t=await navigator.clipboard.readText();if(/\d{6}/.test(t))$('mta').value=t}catch(e){}
@@ -1110,7 +1127,7 @@ async function hxJob(pM,pC){
  };
 }
 function hxScript(){return '(async()=>{const hxNum='+hxNum+',hxCells='+hxCells+',hxAfter='+hxAfter+',hxCL='+hxCL+';'+hxParseMain+';'+hxParseConf+';await ('+hxJob+')(hxParseMain,hxParseConf)})()'}
-function hxUserscript(){return '// ==UserScript==\n// @name MEUH Holstein\n// @match https://portal.holstein.ca/*\n// @grant none\n// @noframes\n// @run-at document-idle\n// ==/UserScript==\n(function(){try{const run=()=>{'+hxScript()+'};const mk=()=>{if(!document.body)return;const o=document.getElementById("meuhbtn");if(o&&o.dataset.v==="27g")return;if(o)o.remove();const b=document.createElement("button");b.id="meuhbtn";b.dataset.v="27g";b.textContent="MEUH";b.style.cssText="position:fixed;right:10px;bottom:90px;z-index:2147483646;font:bold 18px sans-serif;padding:12px 16px;border-radius:24px;border:0;background:#1b6e3c;color:#fff";b.addEventListener("click",run);document.body.appendChild(b)};mk();setInterval(mk,1000)}catch(e){alert("MEUH : "+e)}})();'}
+function hxUserscript(){return '// ==UserScript==\n// @name MEUH Holstein\n// @match https://portal.holstein.ca/*\n// @grant none\n// @noframes\n// @run-at document-idle\n// ==/UserScript==\n(function(){try{const run=()=>{'+hxScript()+'};const mk=()=>{if(!document.body)return;const o=document.getElementById("meuhbtn");if(o&&o.dataset.v==="27h")return;if(o)o.remove();const b=document.createElement("button");b.id="meuhbtn";b.dataset.v="27h";b.textContent="MEUH";b.style.cssText="position:fixed;right:10px;bottom:90px;z-index:2147483646;font:bold 18px sans-serif;padding:12px 16px;border-radius:24px;border:0;background:#1b6e3c;color:#fff";b.addEventListener("click",run);document.body.appendChild(b)};mk();setInterval(mk,1000)}catch(e){alert("MEUH : "+e)}})();'}
 function hxCopy(t,ok){const f=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();let r=false;try{r=document.execCommand('copy')}catch(e){}a.remove();toast(r?ok:'Copie impossible.',3000)};
  try{navigator.clipboard.writeText(t).then(()=>toast(ok,3000),f)}catch(e){f()}}
 function hxImport(txt){let d;try{d=JSON.parse(String(txt).trim())}catch(e){return'Texte illisible : le résultat est incomplet ou mal collé.'}
@@ -1126,7 +1143,7 @@ function hxBulk(){const old=$('hxbulkmod');if(old)old.remove();
  const sm='min-height:44px;font-size:15px;margin:3px 0;width:100%';
  o.innerHTML=`<div style="background:var(--bg);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto"><div style="font-size:18px;font-weight:800">📥 Holstein via le navigateur</div>
  <div class="mut" style="margin:6px 0;line-height:1.5">Le navigateur du cell passe la protection du site ; MEUH reçoit ensuite le résultat.<br><b>1.</b> Copie la liste (${L.length} vache${L.length>1?'s':''} sans données).<br><i>Pour la généalogie : si les parents des vaches déjà lues manquent (parenté à 0 %), utilise plutôt « 1b » : il relit tout le troupeau, sans effacer ce qui existe.</i><br><b>2.</b> Copie le script.<br><b>3. Méthode recommandée (Firefox) :</b> installe <b>Firefox</b> puis l’extension <b>Violentmonkey</b> (menu ⋮ → Modules complémentaires). Ouvre Violentmonkey → ＋ (nouveau script), efface tout, colle le script « Firefox » (bouton 2) et enregistre. Ensuite, sur <b>portal.holstein.ca</b> (connecté), un bouton vert <b>MEUH</b> apparaît en bas à droite : touche-le.<br><i>Autre méthode (Chrome, capricieuse) : barre d’adresse, écrire javascript: puis coller le script « Chrome ».</i><br><b>4.</b> Colle la liste, touche Démarrer, puis <b>💾 Enregistrer le fichier</b>.<br><b>6. Parenté (facultatif, une fois les vaches importées) :</b> 🌳 copie la liste de l’arbre, ouvre le bouton MEUH sur Holstein, colle la liste, touche <b>🌳 Lire l’arbre</b> (quelques minutes), puis 💾 Enregistrer.<br><b>5.</b> Reviens ici et touche <b>📂 Choisir le fichier</b> : prends « meuh-holstein.json » (dossier Téléchargements). Le collage de texte reste possible en secours.</div>
- <button data-hb="list" style="${sm}"${L.length?'':' disabled'}>1. 📋 Copier la liste des vaches</button><button data-hb="all" style="${sm}">1b. 📋 Copier TOUT le troupeau (${AL.length}) · relire pour la généalogie${NOID?' — '+NOID+' sans parents lisibles':''}</button><button data-hb="us" style="${sm}">2. 📋 Copier le script (Firefox + Violentmonkey)</button><button data-hb="scr" style="${sm}">2. 📋 Copier le script (Chrome)</button><button data-hb="tree" style="${sm}">🌳 Copier la liste de l’arbre (taureaux + 6 générations)</button><button data-hb="diag" style="${sm}">🔎 Diagnostic de la parenté</button>
+ <button data-hb="list" style="${sm}"${L.length?'':' disabled'}>1. 📋 Copier la liste des vaches</button><button data-hb="all" style="${sm}">1b. 📋 Copier TOUT le troupeau (${AL.length}) · relire pour la généalogie${NOID?' — '+NOID+' sans parents lisibles':''}</button><button data-hb="us" style="${sm}">2. 📋 Copier le script (Firefox + Violentmonkey)</button><button data-hb="scr" style="${sm}">2. 📋 Copier le script (Chrome)</button><button data-hb="tree" style="${sm}">🌳 Copier la liste de l’arbre (taureaux + 6 générations)</button><button data-hb="diag" style="${sm}">🔎 Diagnostic de la parenté</button><button data-hb="calib" style="${sm}">📊 Comparer avec OptiMate (moyennes par taureau)</button><button data-hb="calapp" style="${sm}">🎯 Appliquer la base suggérée</button>
  <button data-hb="clip" class="on" style="${sm}">5. 📋 Importer ce que j’ai copié (sans coller dans la case)</button><button data-hb="file" style="${sm}">5. 📂 Importer un fichier meuh-holstein.json</button>
  <textarea id="hbta" placeholder="Case de secours (inutile avec les boutons 5)" style="width:100%;height:110px;box-sizing:border-box;margin-top:6px;font-size:13px"></textarea><div id="hbmsg" style="margin:6px 0;font-weight:600;white-space:pre-wrap;font-size:13px"></div>
  <div class="row" style="justify-content:flex-end"><button data-hb="file">📂 Choisir le fichier</button><button data-hb="paste">Coller</button><button data-hb="imp" class="on">Importer</button><button data-hb="x">Fermer</button></div></div>`;
@@ -1136,6 +1153,8 @@ function hxBulk(){const old=$('hxbulkmod');if(old)old.remove();
   else if(k==='all')hxCopy(AL.join('\n'),'Liste du troupeau complet copiée ✓ ('+AL.length+')');
   else if(k==='us')hxCopy(hxUserscript(),'Script Firefox copié ✓');
   else if(k==='diag'){M(pxDiag())}
+  else if(k==='calib'){M('Calcul en cours…');pxCalib(M).then(t=>M(t))}
+  else if(k==='calapp'){if(PXSUG==null)M('Fais d’abord « 📊 Comparer avec OptiMate ».');else{PXT=PXSUG;savePXT();PXG=null;M('Base commune réglée à '+(PXT*100).toFixed(1).replace('.',',')+' %. Refais 📊 pour vérifier l’écart.')}}
   else if(k==='tree'){const L=pxList(6);if(!L.length)M(NOID?'Rien à lire : '+NOID+' vache(s) n’ont pas leurs parents en mémoire. Utilise « 1b » (tout le troupeau) puis importe, et reviens ici.':'Rien à lire : charge d’abord les vaches (📋), ou l’arbre est déjà complet.');else{const nbb=L.filter(x=>x[0]==='B').length;hxCopy(L.join('\n'),L.length+' lignes copiées ✓ ('+nbb+' taureaux à retrouver, '+(L.length-nbb)+' ancêtres à lire). Colle dans Firefox (bouton vert MEUH) et touche 🌳 Lire l’arbre')}}
   else if(k==='scr')hxCopy(encodeURIComponent(hxScript()),'Script copié ✓ (écris javascript: avant de coller)');
   else if(k==='file'){const fi=document.createElement('input');fi.type='file';fi.onchange=async()=>{const f=fi.files[0];if(!f)return;M('⏳ Lecture…');try{M(hxImport(await f.text()))}catch(e){M('Lecture impossible : '+(e&&e.message||e))}};fi.click()}
